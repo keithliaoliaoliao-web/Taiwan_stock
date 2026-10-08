@@ -1058,12 +1058,16 @@
      * 6. K線圖彈窗邏輯
      */
     function openChartModal(ticker) {
-      if (!globalScanData || !globalScanData.signals) return;
-      const signal = globalScanData.signals.find(s => s.ticker === ticker);
-      if (!signal) return;
+      if (!globalScanData) return;
+      const item = (globalScanData.signals || []).find(s => s.ticker === ticker)
+                || (globalScanData.forming || []).find(f => f.ticker === ticker);
+      if (!item) return;
 
-      document.getElementById('modal-chart-title').innerText = `${signal.ticker} ${signal.name} - 技術結構圖`;
-      document.getElementById('modal-chart-subtitle').innerText = `最新收盤: $${signal.close} | 觸發進場: $${signal.trigger_price} | 停損: $${signal.stop_loss} | 目標: $${signal.target_price}`;
+      const isSignal = !!item.trigger_price;
+      document.getElementById('modal-chart-title').innerText = `${item.ticker} ${item.name} - 技術結構圖 ${isSignal ? '(突破訊號)' : '(醞釀中回測)'}`;
+      document.getElementById('modal-chart-subtitle').innerText = isSignal
+        ? `最新收盤: $${item.close} | 觸發進場: $${item.trigger_price} | 停損: $${item.stop_loss} | 目標: $${item.target_price}`
+        : `最新收盤: $${item.close} | 20EMA: $${item.ema20} | 正在 20EMA 附近回測打底，等待訊號棒確認`;
 
       const modal = document.getElementById('chart-modal');
       modal.classList.remove('hidden');
@@ -1103,59 +1107,67 @@
         wickUpColor: '#ef4444',
         wickDownColor: '#22c55e',
       });
-      candleSeries.setData(signal.candles || []);
 
-      if (signal.ema && signal.ema.length > 0) {
+      const candles = item.candles || [];
+      currentSignalCandlesCount = candles.length;
+      candleSeries.setData(candles);
+
+      if (item.ema && item.ema.length > 0) {
         const emaSeries = currentChart.addLineSeries({
           color: '#3b82f6',
           lineWidth: 2,
           title: '20EMA'
         });
-        emaSeries.setData(signal.ema);
+        emaSeries.setData(item.ema);
       }
 
-      candleSeries.createPriceLine({
-        price: signal.trigger_price,
-        color: '#10b981',
-        lineWidth: 2,
-        lineStyle: LightweightCharts.LineStyle.Dashed,
-        axisLabelVisible: true,
-        title: '觸發進場價'
-      });
-
-      candleSeries.createPriceLine({
-        price: signal.stop_loss,
-        color: '#ef4444',
-        lineWidth: 2,
-        lineStyle: LightweightCharts.LineStyle.Dashed,
-        axisLabelVisible: true,
-        title: '停損價'
-      });
-
-      candleSeries.createPriceLine({
-        price: signal.target_price,
-        color: '#3b82f6',
-        lineWidth: 2,
-        lineStyle: LightweightCharts.LineStyle.Dashed,
-        axisLabelVisible: true,
-        title: '目標停利'
-      });
-
-      if (signal.candles && signal.candles.length > 0) {
-        const lastCandle = signal.candles[signal.candles.length - 1];
-        candleSeries.setMarkers([
-          {
-            time: lastCandle.time,
-            position: 'belowBar',
+      if (isSignal) {
+        if (item.trigger_price) {
+          candleSeries.createPriceLine({
+            price: item.trigger_price,
             color: '#10b981',
-            shape: 'arrowUp',
-            text: `進場訊號 (${signal.grade}級)`
-          }
-        ]);
-      }
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: '觸發進場價'
+          });
+        }
 
-      const candles = signal.candles || [];
-      currentSignalCandlesCount = candles.length;
+        if (item.stop_loss) {
+          candleSeries.createPriceLine({
+            price: item.stop_loss,
+            color: '#ef4444',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: '停損價'
+          });
+        }
+
+        if (item.target_price) {
+          candleSeries.createPriceLine({
+            price: item.target_price,
+            color: '#3b82f6',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: '目標停利'
+          });
+        }
+
+        if (candles.length > 0) {
+          const lastCandle = candles[candles.length - 1];
+          candleSeries.setMarkers([
+            {
+              time: lastCandle.time,
+              position: 'belowBar',
+              color: '#10b981',
+              shape: 'arrowUp',
+              text: `進場訊號 (${item.grade || 'A'}級)`
+            }
+          ]);
+        }
+      }
 
       // 預設呈現 3 個月 (約 60 根 K 棒) 視野
       setChartRange(60, '3m');
