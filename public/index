@@ -232,9 +232,11 @@
       </div>
       <div class="space-y-4 text-xs">
         <div class="grid grid-cols-2 gap-3">
-          <div>
+          <div class="relative">
             <label class="block text-slate-700 mb-1 font-medium">股票代號 (例: 2330)</label>
-            <input type="text" id="manual-ticker" placeholder="2330.TW" onchange="autoFillStockName()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
+            <input type="text" id="manual-ticker" placeholder="2330.TW" autocomplete="off" oninput="handleTickerInput(this.value)" onchange="autoFillStockName()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
+            <!-- 搜尋建議下拉清單 (依 150 檔即時比對) -->
+            <div id="ticker-autocomplete-list" class="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-52 overflow-y-auto hidden"></div>
           </div>
           <div>
             <label class="block text-slate-700 mb-1 font-medium">股票名稱</label>
@@ -649,6 +651,19 @@
           `;
         }
 
+        const trPrice = s.trigger_price || s.close;
+        const curClose = s.close || 0;
+        const distDiff = (trPrice - curClose);
+        const distPct = curClose > 0 ? ((distDiff / curClose) * 100) : 0;
+        let distBadge = "";
+        if (distDiff > 0) {
+          distBadge = `<span class="inline-flex items-center text-xs font-bold text-blue-700 bg-white px-2.5 py-1 rounded-md border border-blue-200 shadow-2xs mt-0.5">差 +${distDiff.toFixed(1)} 元 (+${distPct.toFixed(2)}%)</span>`;
+        } else if (distDiff === 0) {
+          distBadge = `<span class="inline-flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 shadow-2xs mt-0.5">已達觸發價</span>`;
+        } else {
+          distBadge = `<span class="inline-flex items-center text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200 shadow-2xs mt-0.5">已突破 +${Math.abs(distDiff).toFixed(1)} 元</span>`;
+        }
+
         return `
           <div class="border border-slate-200 bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
             <div>
@@ -658,6 +673,18 @@
                   <span class="text-xs text-slate-500">${s.ticker} · ${s.sector}</span>
                 </div>
                 ${gradeBadge}
+              </div>
+
+              <!-- 今日收盤現價與距觸發價差 醒目提醒區塊 -->
+              <div class="flex items-center justify-between bg-blue-50/70 border border-blue-200/80 rounded-xl px-3.5 py-2.5 mb-3 shadow-2xs">
+                <div>
+                  <span class="text-[11px] text-slate-500 font-medium block">今日收盤現價</span>
+                  <span class="text-xl font-black text-slate-900 tracking-tight">NT$ ${s.close}</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-[11px] text-slate-500 font-medium block">距突破觸發價</span>
+                  ${distBadge}
+                </div>
               </div>
 
               <div class="grid grid-cols-2 gap-2 text-xs py-2.5 px-3 bg-slate-50 border border-slate-100 rounded-lg mb-3">
@@ -897,12 +924,95 @@
       document.getElementById("manual-target-price").value = "";
       document.getElementById("manual-total-amount").value = "";
       document.getElementById("manual-entry-date").value = new Date().toISOString().split("T")[0];
+      const listEl = document.getElementById("ticker-autocomplete-list");
+      if (listEl) {
+        listEl.classList.add("hidden");
+        listEl.innerHTML = "";
+      }
       document.getElementById("manual-modal").classList.remove("hidden");
     }
 
     function closeManualHoldingModal() {
       document.getElementById("manual-modal").classList.add("hidden");
+      const listEl = document.getElementById("ticker-autocomplete-list");
+      if (listEl) {
+        listEl.classList.add("hidden");
+        listEl.innerHTML = "";
+      }
     }
+
+    function handleTickerInput(query) {
+      const listEl = document.getElementById("ticker-autocomplete-list");
+      if (!listEl) return;
+      const q = (query || "").trim().toUpperCase();
+      if (!q || !globalData || !globalData.universe || globalData.universe.length === 0) {
+        listEl.classList.add("hidden");
+        listEl.innerHTML = "";
+        return;
+      }
+
+      // 依 150 檔觀察池即時比對代號與名稱 (例如輸入 23 顯示所有 23 開頭標的)
+      const matches = globalData.universe.filter(u => {
+        const rawTicker = u.ticker.replace(".TW", "").toUpperCase();
+        const fullTicker = u.ticker.toUpperCase();
+        const name = (u.name || "").toUpperCase();
+        return rawTicker.startsWith(q) || fullTicker.startsWith(q) || rawTicker.includes(q) || name.includes(q);
+      }).slice(0, 10);
+
+      if (matches.length === 0) {
+        listEl.classList.add("hidden");
+        listEl.innerHTML = "";
+        return;
+      }
+
+      listEl.innerHTML = matches.map(m => `
+        <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center justify-between border-b border-slate-100 last:border-b-0 transition text-xs"
+             onclick="selectAutocompleteStock('${m.ticker}', '${m.name}', ${m.close})">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-blue-700">${m.ticker}</span>
+            <span class="font-medium text-slate-800">${m.name}</span>
+          </div>
+          <div class="text-right text-[11px] text-slate-500">
+            <span class="font-semibold text-slate-900">NT$ ${m.close}</span>
+            <span class="text-slate-400 ml-1">· ${m.sector || ''}</span>
+          </div>
+        </div>
+      `).join("");
+
+      listEl.classList.remove("hidden");
+    }
+
+    function selectAutocompleteStock(ticker, name, close) {
+      document.getElementById("manual-ticker").value = ticker;
+      document.getElementById("manual-name").value = name;
+      document.getElementById("manual-entry-price").value = close;
+      
+      const slInput = document.getElementById("manual-stop-loss");
+      const tpInput = document.getElementById("manual-target-price");
+      if (!slInput.value && close > 0) {
+        slInput.value = (close * 0.98).toFixed(1);
+      }
+      if (!tpInput.value && close > 0) {
+        tpInput.value = (close * 1.04).toFixed(1);
+      }
+
+      calculateManualAmount();
+
+      const listEl = document.getElementById("ticker-autocomplete-list");
+      if (listEl) {
+        listEl.classList.add("hidden");
+        listEl.innerHTML = "";
+      }
+    }
+
+    // 點擊選單外部自動關閉下拉推薦
+    document.addEventListener("click", function(e) {
+      const listEl = document.getElementById("ticker-autocomplete-list");
+      const tickerInput = document.getElementById("manual-ticker");
+      if (listEl && !listEl.contains(e.target) && e.target !== tickerInput) {
+        listEl.classList.add("hidden");
+      }
+    });
 
     function autoFillStockName() {
       let t = document.getElementById("manual-ticker").value.trim().toUpperCase();
@@ -911,15 +1021,23 @@
       document.getElementById("manual-ticker").value = t;
 
       if (globalData && globalData.universe) {
-        const found = globalData.universe.find(u => u.ticker === t);
+        const found = globalData.universe.find(u => u.ticker === t || u.ticker.replace(".TW", "") === t.replace(".TW", ""));
         if (found) {
           if (!document.getElementById("manual-name").value) {
             document.getElementById("manual-name").value = found.name;
           }
           if (!document.getElementById("manual-entry-price").value) {
             document.getElementById("manual-entry-price").value = found.close;
-            calculateManualAmount();
           }
+          const slInput = document.getElementById("manual-stop-loss");
+          const tpInput = document.getElementById("manual-target-price");
+          if (!slInput.value && found.close > 0) {
+            slInput.value = (found.close * 0.98).toFixed(1);
+          }
+          if (!tpInput.value && found.close > 0) {
+            tpInput.value = (found.close * 1.04).toFixed(1);
+          }
+          calculateManualAmount();
         }
       }
     }
