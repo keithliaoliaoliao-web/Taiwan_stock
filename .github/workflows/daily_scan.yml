@@ -25,6 +25,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/scan_result.json watchlist.csv
+          git add public/scan_result.json scan_result.json watchlist.csv
           git diff --staged --quiet || git commit -m "chore: update scan result [skip ci]"
           git push
