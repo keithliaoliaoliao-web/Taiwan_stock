@@ -47,12 +47,17 @@ class SwingType(str, Enum):
 
 class SwingState(str, Enum):
     """
-    State of the real-time causal swing engine. [A][B]
+    Symmetric states of the real-time causal swing engine. [A][B]
     """
-    TREND_PUSH_BULL = "TREND_PUSH_BULL"
-    ABSORPTION_BULL = "ABSORPTION_BULL"
-    PULLBACK_DEVELOPING = "PULLBACK_DEVELOPING"
-    ABSORPTION_PB = "ABSORPTION_PB"
+    SWING_UP = "SWING_UP"
+    ABSORPTION_UP = "ABSORPTION_UP"
+    SWING_DOWN = "SWING_DOWN"
+    ABSORPTION_DOWN = "ABSORPTION_DOWN"
+    # Aliases for backward compatibility
+    TREND_PUSH_BULL = "SWING_UP"
+    ABSORPTION_BULL = "ABSORPTION_UP"
+    PULLBACK_DEVELOPING = "SWING_DOWN"
+    ABSORPTION_PB = "ABSORPTION_DOWN"
 
 
 @dataclass
@@ -68,7 +73,6 @@ class SwingNode:
     confirmed_at_bar: int
     bar_date: Optional[str] = None
     ema_pierced: bool = False
-    two_legs_formed: bool = False
 
 
 @dataclass
@@ -76,7 +80,7 @@ class SwingStructureResult:
     """
     Output of PriceActionSwingEngine for a given evaluation bar. [B]
     """
-    state: SwingState = SwingState.TREND_PUSH_BULL
+    state: SwingState = SwingState.SWING_UP
     major_swing_high: Optional[SwingNode] = None
     major_swing_low: Optional[SwingNode] = None
     recent_swing_high: Optional[SwingNode] = None
@@ -93,125 +97,181 @@ class SwingStructureResult:
 
 class PriceActionSwingEngine:
     """
-    Causal, real-time Price Action Swing Structure Engine v1.
+    Symmetric Causal Price Action Swing Structure Engine v1.
     Strictly zero arbitrary numerical thresholds, zero repainting, no fixed window pivots.
-    Identifies Major/Minor Swings, handles Inside Bar absorption, and detects Break of Structure (BOS).
+    Identifies Major/Minor Swings symmetrically, handles Inside Bar absorption, and detects Break of Structure (BOS).
+    Runs in linear O(N) time across entire series.
     """
 
-    @staticmethod
-    def evaluate(
+    @classmethod
+    def evaluate_series(
+        cls,
         df: pd.DataFrame,
-        up_to_idx: int,
         start_idx: int = 0
-    ) -> SwingStructureResult:
-        res = SwingStructureResult()
-        if df.empty or up_to_idx < 0:
-            return res
+    ) -> List[SwingStructureResult]:
+        n = len(df)
+        if n == 0:
+            return []
 
-        limit_idx = min(up_to_idx, len(df) - 1)
-        actual_start = max(0, min(start_idx, limit_idx))
-
-        res.tentative_high = float(df["High"].iloc[actual_start])
-        res.tentative_high_idx = actual_start
-        res.tentative_low = float(df["Low"].iloc[actual_start])
-        res.tentative_low_idx = actual_start
-        res.state = SwingState.TREND_PUSH_BULL
-
+        results: List[SwingStructureResult] = []
         ema_col = "EMA_20" if "EMA_20" in df.columns else None
-        pb_ema_pierced = False
-        pb_two_legs = False
 
-        for b in range(actual_start + 1, limit_idx + 1):
+        actual_start = max(0, min(start_idx, n - 1))
+
+        # Initial bar
+        state = SwingState.SWING_UP
+        tentative_high = float(df["High"].iloc[actual_start])
+        tentative_high_idx = actual_start
+        tentative_low = float(df["Low"].iloc[actual_start])
+        tentative_low_idx = actual_start
+
+        major_high: Optional[SwingNode] = None
+        major_low: Optional[SwingNode] = None
+        recent_high: Optional[SwingNode] = None
+        recent_low: Optional[SwingNode] = None
+        all_swings: List[SwingNode] = []
+        minor_nodes: List[SwingNode] = []
+        bos = False
+        ema_pierced_in_pb = False
+
+        # Fill any bars before actual_start with default
+        for b in range(actual_start):
+            results.append(SwingStructureResult(
+                state=state,
+                tentative_high=tentative_high,
+                tentative_high_idx=tentative_high_idx,
+                tentative_low=tentative_low,
+                tentative_low_idx=tentative_low_idx
+            ))
+
+        results.append(SwingStructureResult(
+            state=state,
+            tentative_high=tentative_high,
+            tentative_high_idx=tentative_high_idx,
+            tentative_low=tentative_low,
+            tentative_low_idx=tentative_low_idx
+        ))
+
+        for b in range(actual_start + 1, n):
             cur_o = float(df["Open"].iloc[b])
             cur_h = float(df["High"].iloc[b])
             cur_l = float(df["Low"].iloc[b])
             cur_c = float(df["Close"].iloc[b])
             prev_h = float(df["High"].iloc[b - 1])
             prev_l = float(df["Low"].iloc[b - 1])
-
             cur_ema = float(df[ema_col].iloc[b]) if ema_col and pd.notna(df[ema_col].iloc[b]) else None
 
             # 3.C: Inside Bar / Congestion Absorption
             is_inside = (cur_h <= prev_h) and (cur_l >= prev_l)
 
-            # 3.A: Shift in Control Causal Triggers
+            # 3.A: Shift in Control Causal Triggers (Pure OHLC boolean)
             shift_to_sellers = (cur_c < prev_l) or (cur_c < cur_o and cur_l < prev_l)
             shift_to_bulls = (cur_c > prev_h) or (cur_c > cur_o and cur_h > prev_h)
 
-            # --- State: TREND_PUSH_BULL or ABSORPTION_BULL ---
-            if res.state in (SwingState.TREND_PUSH_BULL, SwingState.ABSORPTION_BULL):
-                if cur_h > res.tentative_high:
-                    res.tentative_high = cur_h
-                    res.tentative_high_idx = b
-                    res.state = SwingState.TREND_PUSH_BULL
+            # --- Symmetrical State 1: SWING_UP or ABSORPTION_UP ---
+            if state in (SwingState.SWING_UP, SwingState.ABSORPTION_UP):
+                if cur_h > tentative_high:
+                    tentative_high = cur_h
+                    tentative_high_idx = b
+                    state = SwingState.SWING_UP
+
+                    # Al Brooks Major Low rule: A major higher low is a low that precedes a new high.
+                    # If this push breaks prior major high, the preceding swing low is promoted to Major Low
+                    if major_high is not None and tentative_high > major_high.price:
+                        if recent_low is not None and recent_low.swing_type == SwingType.MINOR_LOW:
+                            recent_low.swing_type = SwingType.MAJOR_LOW
+                            major_low = recent_low
                 elif is_inside:
-                    res.state = SwingState.ABSORPTION_BULL
+                    state = SwingState.ABSORPTION_UP
                 elif shift_to_sellers:
-                    # Freeze tentative high as confirmed Swing High
-                    s_type = SwingType.MAJOR_HIGH
-                    if res.major_swing_high and res.tentative_high <= res.major_swing_high.price:
-                        s_type = SwingType.MINOR_HIGH
+                    # 3.A: Freeze tentative high as confirmed Swing High without repainting
+                    is_major_h = (major_high is None) or (tentative_high > major_high.price)
+                    s_type = SwingType.MAJOR_HIGH if is_major_h else SwingType.MINOR_HIGH
 
                     node = SwingNode(
-                        index=res.tentative_high_idx,
-                        price=res.tentative_high,
+                        index=tentative_high_idx,
+                        price=tentative_high,
                         swing_type=s_type,
                         confirmed_at_bar=b
                     )
-                    res.all_swings.append(node)
-                    res.recent_swing_high = node
-                    if s_type == SwingType.MAJOR_HIGH:
-                        res.major_swing_high = node
+                    all_swings.append(node)
+                    recent_high = node
+                    if is_major_h:
+                        major_high = node
                     else:
-                        res.minor_nodes.append(node)
+                        minor_nodes.append(node)
 
-                    # Transition to PULLBACK_DEVELOPING
-                    res.state = SwingState.PULLBACK_DEVELOPING
-                    res.tentative_low = cur_l
-                    res.tentative_low_idx = b
-                    pb_ema_pierced = (cur_ema is not None and cur_c < cur_ema)
-                    pb_two_legs = False
+                    # Symmetrical Transition to SWING_DOWN
+                    state = SwingState.SWING_DOWN
+                    tentative_low = cur_l
+                    tentative_low_idx = b
+                    ema_pierced_in_pb = (cur_ema is not None and cur_c < cur_ema)
 
-            # --- State: PULLBACK_DEVELOPING or ABSORPTION_PB ---
-            elif res.state in (SwingState.PULLBACK_DEVELOPING, SwingState.ABSORPTION_PB):
-                if cur_l < res.tentative_low:
-                    res.tentative_low = cur_l
-                    res.tentative_low_idx = b
-                    res.state = SwingState.PULLBACK_DEVELOPING
+            # --- Symmetrical State 2: SWING_DOWN or ABSORPTION_DOWN ---
+            elif state in (SwingState.SWING_DOWN, SwingState.ABSORPTION_DOWN):
+                if cur_l < tentative_low:
+                    tentative_low = cur_l
+                    tentative_low_idx = b
+                    state = SwingState.SWING_DOWN
                     if cur_ema is not None and cur_c < cur_ema:
-                        pb_ema_pierced = True
+                        ema_pierced_in_pb = True
                 elif is_inside:
-                    res.state = SwingState.ABSORPTION_PB
+                    state = SwingState.ABSORPTION_DOWN
                 elif shift_to_bulls:
-                    # Freeze tentative low as confirmed Swing Low
-                    s_type = SwingType.MAJOR_LOW if (pb_ema_pierced or pb_two_legs) else SwingType.MINOR_LOW
+                    # 3.A: Freeze tentative low as confirmed Swing Low without repainting
+                    # Major vs Minor: Pierced EMA (deep structural retracement) -> Major Low;
+                    # else Minor Low (promoted to Major if subsequent push exceeds major high)
+                    s_type = SwingType.MAJOR_LOW if ema_pierced_in_pb else SwingType.MINOR_LOW
+
                     node = SwingNode(
-                        index=res.tentative_low_idx,
-                        price=res.tentative_low,
+                        index=tentative_low_idx,
+                        price=tentative_low,
                         swing_type=s_type,
                         confirmed_at_bar=b,
-                        ema_pierced=pb_ema_pierced,
-                        two_legs_formed=pb_two_legs
+                        ema_pierced=ema_pierced_in_pb
                     )
-                    res.all_swings.append(node)
-                    res.recent_swing_low = node
+                    all_swings.append(node)
+                    recent_low = node
                     if s_type == SwingType.MAJOR_LOW:
-                        res.major_swing_low = node
+                        major_low = node
                     else:
-                        res.minor_nodes.append(node)
+                        minor_nodes.append(node)
 
-                    # Transition back to TREND_PUSH_BULL
-                    res.state = SwingState.TREND_PUSH_BULL
-                    res.tentative_high = cur_h
-                    res.tentative_high_idx = b
+                    # Symmetrical Transition to SWING_UP
+                    state = SwingState.SWING_UP
+                    tentative_high = cur_h
+                    tentative_high_idx = b
 
-            # Check Break of Structure (BOS)
-            if res.major_swing_low is not None:
-                if cur_c < res.major_swing_low.price:
-                    res.bos = True
+            # Break of Structure (BOS) Check
+            if major_low is not None and cur_c < major_low.price:
+                bos = True
 
-        return res
+            results.append(SwingStructureResult(
+                state=state,
+                major_swing_high=major_high,
+                major_swing_low=major_low,
+                recent_swing_high=recent_high,
+                recent_swing_low=recent_low,
+                minor_nodes=list(minor_nodes),
+                all_swings=list(all_swings),
+                bos=bos,
+                tentative_high=tentative_high,
+                tentative_high_idx=tentative_high_idx,
+                tentative_low=tentative_low,
+                tentative_low_idx=tentative_low_idx
+            ))
 
+        return results
+
+    @classmethod
+    def evaluate(
+        cls,
+        df: pd.DataFrame,
+        up_to_idx: int,
+        start_idx: int = 0
+    ) -> SwingStructureResult:
+        series = cls.evaluate_series(df.iloc[: up_to_idx + 1], start_idx=start_idx)
+        return series[-1] if series else SwingStructureResult()
 
 class H1H2State(str, Enum):
     """
@@ -279,6 +339,7 @@ class H1H2StateMachine:
         trend_confirmed: bool = True,
         is_trading_range: bool = False,
         trend_start_idx: int = 0,
+        swing_res: Optional[SwingStructureResult] = None,
     ) -> H1H2Diagnostics:
         diag = H1H2Diagnostics()
 
@@ -304,7 +365,9 @@ class H1H2StateMachine:
             return diag
 
         # Rule 2.1 [A]: Price Action Swing Structure Engine v1 & BOS Protection
-        swing_res = PriceActionSwingEngine.evaluate(df, eval_idx, start_idx=trend_start_idx)
+        if swing_res is None:
+            swing_res = PriceActionSwingEngine.evaluate(df, eval_idx, start_idx=trend_start_idx)
+
         if swing_res.bos:
             diag.state = H1H2State.INVALIDATED
             diag.h2_status = NOT_YET_QUANTIFIED_RANGE_CONTEXT
@@ -316,7 +379,7 @@ class H1H2StateMachine:
             return diag
 
         # Rule 3 [A]: Locate the Bull Trend Peak (Swing High before the pullback)
-        # If the active push reached a new high exceeding prior confirmed major high:
+        # If an active push broke above prior major swing high to establish a new trend high:
         if (
             swing_res.tentative_high_idx is not None
             and swing_res.tentative_high_idx >= trend_start_idx
@@ -338,6 +401,15 @@ class H1H2StateMachine:
             peak_high = swing_res.major_swing_high.price
             diag.audit_trail.append(
                 f"[A] Pullback anchor locked to causal Major Swing High at bar {peak_idx} ({peak_high})"
+            )
+        elif (
+            swing_res.recent_swing_high is not None
+            and swing_res.recent_swing_high.index >= trend_start_idx
+        ):
+            peak_idx = swing_res.recent_swing_high.index
+            peak_high = swing_res.recent_swing_high.price
+            diag.audit_trail.append(
+                f"[A] Pullback anchor locked to causal Recent Swing High at bar {peak_idx} ({peak_high})"
             )
         else:
             highs = df["High"].iloc[trend_start_idx : eval_idx + 1]
@@ -576,6 +648,7 @@ class PriceActionEngine:
     def _strict_h1_h2_state(
         df: pd.DataFrame,
         signal_index: int,
+        swing_res: Optional[SwingStructureResult] = None,
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         嚴格 Al Brooks H2 順勢拉回確認與 A/B 分級評估。
@@ -642,6 +715,7 @@ class PriceActionEngine:
             eval_idx=signal_index,
             trend_confirmed=trend_confirmed,
             trend_start_idx=trend_start_idx,
+            swing_res=swing_res,
         )
 
         # 訊號棒品質門檻 [Frozen Strategy Rule - NOT modified]
@@ -821,6 +895,9 @@ class PriceActionEngine:
         if out.empty:
             return out
 
+        # O(N) 單次全序列評估波段結構，避免 O(N^2) 重複重算
+        swing_series = PriceActionSwingEngine.evaluate_series(out)
+
         for i in range(1, len(out)):
             row = out.iloc[i]
 
@@ -829,7 +906,8 @@ class PriceActionEngine:
                 out.at[out.index[i], "Invalidation_Reason"] = "INVALID_OHLC_BAR"
                 continue
 
-            confirmed, details = cls._strict_h1_h2_state(out, i)
+            swing_info = swing_series[i]
+            confirmed, details = cls._strict_h1_h2_state(out, i, swing_res=swing_info)
             out.at[out.index[i], "H2_Status"] = details.get("h2_status", "CONFIRMED" if confirmed else "NOT_CONFIRMED")
             out.at[out.index[i], "H2_Reason"] = details.get("reason", "")
             out.at[out.index[i], "Setup_Type"] = details.get("setup_type", "NONE")
@@ -846,8 +924,7 @@ class PriceActionEngine:
             out.at[out.index[i], "Leg_State"] = details.get("leg_state", "NONE")
             out.at[out.index[i], "Invalidation_Reason"] = details.get("invalidation_reason", "")
 
-            # 記錄 Swing 結構狀態
-            swing_info = PriceActionSwingEngine.evaluate(out, i)
+            # 記錄 Swing 結構狀態 (O(1) 讀取)
             out.at[out.index[i], "Swing_State"] = swing_info.state.value
             if swing_info.major_swing_high is not None:
                 out.at[out.index[i], "Major_Swing_High"] = swing_info.major_swing_high.price
