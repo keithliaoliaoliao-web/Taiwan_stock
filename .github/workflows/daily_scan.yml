@@ -2,9 +2,9 @@ name: Taiwan Stock Scanner
 
 on:
   schedule:
-    - cron: '30 7 * * 1-5'      # 台灣時間 15:30 收盤掃描 (UTC 07:30)
-    - cron: '*/30 1-5 * * 1-5'  # 台灣時間 09:00-13:30 盤中每30分鐘 (UTC 01:00-05:30)
-  workflow_dispatch:              # 允許手動觸發
+    - cron: '30 7 * * 1-5'      # 台灣時間 15:30 收盤完整掃描 (UTC 07:30)
+    - cron: '*/15 1-5 * * 1-5'  # 台灣時間 09:00-13:30 盤中每 15 分鐘掃描 (UTC 01:00-05:30)
+  workflow_dispatch:            # 支援於 GitHub Actions 介面手動觸發
 
 permissions:
   contents: write
