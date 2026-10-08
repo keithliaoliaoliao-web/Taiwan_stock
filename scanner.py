@@ -165,6 +165,8 @@ def run_scanner():
                 "sector": sector,
                 "close": round(close_price, 2),
                 "ema20": round(ema20, 2),
+                "candles": candles,
+                "ema": ema_series,
             })
 
     # 5. 評估現有持倉 (若持倉中有不在觀察池之標的，補抓最新行情)
