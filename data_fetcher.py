@@ -14,7 +14,7 @@ def fetch_history(ticker: str, lookback_days: int = config.DATA_LOOKBACK_DAYS) -
     抓取指定標的日線資料，回傳標準 OHLCV DataFrame
     """
     try:
-        fetch_days = max(lookback_days + 60, 150)
+        fetch_days = max(lookback_days + 60, 420)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=fetch_days)
 
