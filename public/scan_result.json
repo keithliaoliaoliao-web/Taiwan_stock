@@ -1,104 +1,801 @@
 {
   "scan_date": "2026-10-08",
-  "scan_time": "15:30",
+  "scan_time": "16:02",
   "market_status": {
-    "close": 22450.0,
-    "ema20": 21980.0,
+    "close": 49313.44,
+    "ema20": 48007.18,
     "bullish": true
   },
   "signals": [
     {
-      "ticker": "2330.TW",
-      "name": "台積電",
-      "sector": "半導體",
+      "ticker": "2412.TW",
+      "name": "中華電",
+      "sector": "通信網路",
       "grade": "A",
-      "close": 985.0,
-      "trigger_price": 990.0,
-      "stop_loss": 965.0,
-      "target_price": 1040.0,
-      "risk_pct": 2.53,
+      "close": 146.5,
+      "trigger_price": 147.0,
+      "stop_loss": 144.5,
+      "target_price": 152.0,
+      "risk_pct": 1.7007,
       "net_rr": 2.0,
       "candles": [
-        {"time": "2026-09-10", "open": 940.0, "high": 955.0, "low": 935.0, "close": 950.0},
-        {"time": "2026-09-11", "open": 952.0, "high": 960.0, "low": 945.0, "close": 958.0},
-        {"time": "2026-09-12", "open": 960.0, "high": 970.0, "low": 955.0, "close": 968.0},
-        {"time": "2026-09-15", "open": 965.0, "high": 975.0, "low": 960.0, "close": 972.0},
-        {"time": "2026-09-16", "open": 970.0, "high": 982.0, "low": 968.0, "close": 978.0},
-        {"time": "2026-09-17", "open": 975.0, "high": 985.0, "low": 970.0, "close": 980.0},
-        {"time": "2026-09-18", "open": 976.0, "high": 982.0, "low": 965.0, "close": 968.0},
-        {"time": "2026-09-19", "open": 965.0, "high": 972.0, "low": 960.0, "close": 963.0},
-        {"time": "2026-09-22", "open": 962.0, "high": 970.0, "low": 958.0, "close": 966.0},
-        {"time": "2026-09-23", "open": 968.0, "high": 978.0, "low": 965.0, "close": 975.0},
-        {"time": "2026-09-24", "open": 974.0, "high": 988.0, "low": 970.0, "close": 985.0}
+        {
+          "time": "2026-07-15",
+          "open": 133.0,
+          "high": 134.0,
+          "low": 133.0,
+          "close": 133.0
+        },
+        {
+          "time": "2026-07-16",
+          "open": 133.5,
+          "high": 136.5,
+          "low": 133.5,
+          "close": 136.0
+        },
+        {
+          "time": "2026-07-17",
+          "open": 136.5,
+          "high": 140.0,
+          "low": 136.0,
+          "close": 138.0
+        },
+        {
+          "time": "2026-07-20",
+          "open": 139.0,
+          "high": 140.0,
+          "low": 137.0,
+          "close": 139.0
+        },
+        {
+          "time": "2026-07-21",
+          "open": 138.0,
+          "high": 139.5,
+          "low": 137.0,
+          "close": 139.0
+        },
+        {
+          "time": "2026-07-22",
+          "open": 137.5,
+          "high": 139.0,
+          "low": 137.0,
+          "close": 138.5
+        },
+        {
+          "time": "2026-07-23",
+          "open": 139.0,
+          "high": 139.0,
+          "low": 137.5,
+          "close": 138.0
+        },
+        {
+          "time": "2026-07-24",
+          "open": 137.5,
+          "high": 139.0,
+          "low": 137.5,
+          "close": 139.0
+        },
+        {
+          "time": "2026-07-27",
+          "open": 139.5,
+          "high": 140.5,
+          "low": 139.0,
+          "close": 140.5
+        },
+        {
+          "time": "2026-07-28",
+          "open": 140.5,
+          "high": 141.0,
+          "low": 139.5,
+          "close": 141.0
+        },
+        {
+          "time": "2026-07-29",
+          "open": 141.0,
+          "high": 142.5,
+          "low": 139.0,
+          "close": 140.5
+        },
+        {
+          "time": "2026-07-30",
+          "open": 141.0,
+          "high": 141.0,
+          "low": 138.5,
+          "close": 140.5
+        },
+        {
+          "time": "2026-07-31",
+          "open": 140.5,
+          "high": 140.5,
+          "low": 138.5,
+          "close": 139.5
+        },
+        {
+          "time": "2026-08-03",
+          "open": 138.5,
+          "high": 140.0,
+          "low": 138.0,
+          "close": 139.0
+        },
+        {
+          "time": "2026-08-04",
+          "open": 138.0,
+          "high": 138.5,
+          "low": 136.0,
+          "close": 136.5
+        },
+        {
+          "time": "2026-08-05",
+          "open": 136.5,
+          "high": 138.0,
+          "low": 136.0,
+          "close": 137.0
+        },
+        {
+          "time": "2026-08-06",
+          "open": 136.5,
+          "high": 137.5,
+          "low": 136.5,
+          "close": 137.0
+        },
+        {
+          "time": "2026-08-07",
+          "open": 137.0,
+          "high": 138.0,
+          "low": 136.5,
+          "close": 137.5
+        },
+        {
+          "time": "2026-08-10",
+          "open": 137.5,
+          "high": 137.5,
+          "low": 136.0,
+          "close": 136.5
+        },
+        {
+          "time": "2026-08-11",
+          "open": 136.5,
+          "high": 137.0,
+          "low": 136.0,
+          "close": 136.0
+        },
+        {
+          "time": "2026-08-12",
+          "open": 137.0,
+          "high": 137.0,
+          "low": 135.5,
+          "close": 136.0
+        },
+        {
+          "time": "2026-08-13",
+          "open": 135.5,
+          "high": 136.0,
+          "low": 135.0,
+          "close": 136.0
+        },
+        {
+          "time": "2026-08-14",
+          "open": 136.0,
+          "high": 136.5,
+          "low": 135.0,
+          "close": 135.0
+        },
+        {
+          "time": "2026-08-17",
+          "open": 135.0,
+          "high": 137.0,
+          "low": 135.0,
+          "close": 136.0
+        },
+        {
+          "time": "2026-08-18",
+          "open": 136.5,
+          "high": 137.5,
+          "low": 135.5,
+          "close": 137.0
+        },
+        {
+          "time": "2026-08-19",
+          "open": 136.5,
+          "high": 137.0,
+          "low": 136.0,
+          "close": 136.0
+        },
+        {
+          "time": "2026-08-20",
+          "open": 136.0,
+          "high": 137.0,
+          "low": 136.0,
+          "close": 136.5
+        },
+        {
+          "time": "2026-08-21",
+          "open": 136.5,
+          "high": 137.0,
+          "low": 136.0,
+          "close": 136.5
+        },
+        {
+          "time": "2026-08-24",
+          "open": 136.5,
+          "high": 137.0,
+          "low": 135.5,
+          "close": 136.5
+        },
+        {
+          "time": "2026-08-25",
+          "open": 136.5,
+          "high": 137.0,
+          "low": 136.0,
+          "close": 136.5
+        },
+        {
+          "time": "2026-08-26",
+          "open": 136.5,
+          "high": 136.5,
+          "low": 135.5,
+          "close": 136.0
+        },
+        {
+          "time": "2026-08-27",
+          "open": 136.5,
+          "high": 136.5,
+          "low": 135.5,
+          "close": 135.5
+        },
+        {
+          "time": "2026-08-28",
+          "open": 136.0,
+          "high": 136.5,
+          "low": 135.0,
+          "close": 135.5
+        },
+        {
+          "time": "2026-08-31",
+          "open": 136.0,
+          "high": 136.0,
+          "low": 135.0,
+          "close": 136.0
+        },
+        {
+          "time": "2026-09-01",
+          "open": 136.0,
+          "high": 136.5,
+          "low": 135.5,
+          "close": 136.0
+        },
+        {
+          "time": "2026-09-02",
+          "open": 136.5,
+          "high": 137.5,
+          "low": 136.0,
+          "close": 137.5
+        },
+        {
+          "time": "2026-09-03",
+          "open": 137.5,
+          "high": 138.5,
+          "low": 136.5,
+          "close": 138.0
+        },
+        {
+          "time": "2026-09-04",
+          "open": 138.0,
+          "high": 138.0,
+          "low": 137.0,
+          "close": 137.5
+        },
+        {
+          "time": "2026-09-07",
+          "open": 138.5,
+          "high": 138.5,
+          "low": 136.5,
+          "close": 138.0
+        },
+        {
+          "time": "2026-09-08",
+          "open": 137.5,
+          "high": 139.0,
+          "low": 137.0,
+          "close": 139.0
+        },
+        {
+          "time": "2026-09-09",
+          "open": 138.0,
+          "high": 139.5,
+          "low": 137.5,
+          "close": 139.5
+        },
+        {
+          "time": "2026-09-10",
+          "open": 138.5,
+          "high": 139.5,
+          "low": 138.5,
+          "close": 139.5
+        },
+        {
+          "time": "2026-09-11",
+          "open": 140.0,
+          "high": 140.5,
+          "low": 139.0,
+          "close": 140.5
+        },
+        {
+          "time": "2026-09-14",
+          "open": 141.0,
+          "high": 142.5,
+          "low": 140.5,
+          "close": 142.5
+        },
+        {
+          "time": "2026-09-15",
+          "open": 143.5,
+          "high": 143.5,
+          "low": 142.5,
+          "close": 143.5
+        },
+        {
+          "time": "2026-09-16",
+          "open": 143.5,
+          "high": 144.0,
+          "low": 142.0,
+          "close": 143.5
+        },
+        {
+          "time": "2026-09-17",
+          "open": 143.5,
+          "high": 145.0,
+          "low": 143.0,
+          "close": 145.0
+        },
+        {
+          "time": "2026-09-18",
+          "open": 145.0,
+          "high": 145.5,
+          "low": 144.0,
+          "close": 145.5
+        },
+        {
+          "time": "2026-09-21",
+          "open": 145.0,
+          "high": 145.0,
+          "low": 143.0,
+          "close": 144.5
+        },
+        {
+          "time": "2026-09-22",
+          "open": 145.0,
+          "high": 145.0,
+          "low": 143.0,
+          "close": 145.0
+        },
+        {
+          "time": "2026-09-23",
+          "open": 145.0,
+          "high": 145.5,
+          "low": 144.5,
+          "close": 145.5
+        },
+        {
+          "time": "2026-09-24",
+          "open": 145.5,
+          "high": 146.0,
+          "low": 145.0,
+          "close": 145.0
+        },
+        {
+          "time": "2026-09-29",
+          "open": 146.0,
+          "high": 146.0,
+          "low": 143.0,
+          "close": 144.0
+        },
+        {
+          "time": "2026-09-30",
+          "open": 145.0,
+          "high": 145.0,
+          "low": 143.0,
+          "close": 143.5
+        },
+        {
+          "time": "2026-10-01",
+          "open": 144.0,
+          "high": 146.0,
+          "low": 143.0,
+          "close": 145.5
+        },
+        {
+          "time": "2026-10-02",
+          "open": 145.0,
+          "high": 146.5,
+          "low": 144.0,
+          "close": 146.0
+        },
+        {
+          "time": "2026-10-05",
+          "open": 147.0,
+          "high": 147.0,
+          "low": 144.0,
+          "close": 145.5
+        },
+        {
+          "time": "2026-10-06",
+          "open": 145.5,
+          "high": 145.5,
+          "low": 144.0,
+          "close": 145.5
+        },
+        {
+          "time": "2026-10-07",
+          "open": 145.5,
+          "high": 145.5,
+          "low": 144.0,
+          "close": 145.5
+        },
+        {
+          "time": "2026-10-08",
+          "open": 145.0,
+          "high": 146.5,
+          "low": 145.0,
+          "close": 146.5
+        }
       ],
       "ema": [
-        {"time": "2026-09-10", "value": 938.0},
-        {"time": "2026-09-11", "value": 942.0},
-        {"time": "2026-09-12", "value": 946.0},
-        {"time": "2026-09-15", "value": 951.0},
-        {"time": "2026-09-16", "value": 955.0},
-        {"time": "2026-09-17", "value": 960.0},
-        {"time": "2026-09-18", "value": 962.0},
-        {"time": "2026-09-19", "value": 963.0},
-        {"time": "2026-09-22", "value": 964.0},
-        {"time": "2026-09-23", "value": 966.0},
-        {"time": "2026-09-24", "value": 969.0}
-      ]
-    },
-    {
-      "ticker": "2382.TW",
-      "name": "廣達",
-      "sector": "電腦及週邊",
-      "grade": "B",
-      "close": 285.0,
-      "trigger_price": 288.0,
-      "stop_loss": 276.0,
-      "target_price": 312.0,
-      "risk_pct": 4.17,
-      "net_rr": 2.0,
-      "candles": [
-        {"time": "2026-09-10", "open": 270.0, "high": 278.0, "low": 268.0, "close": 275.0},
-        {"time": "2026-09-11", "open": 276.0, "high": 282.0, "low": 274.0, "close": 280.0},
-        {"time": "2026-09-12", "open": 280.0, "high": 285.0, "low": 278.0, "close": 284.0},
-        {"time": "2026-09-15", "open": 283.0, "high": 288.0, "low": 281.0, "close": 286.0},
-        {"time": "2026-09-16", "open": 284.0, "high": 286.0, "low": 277.0, "close": 278.0},
-        {"time": "2026-09-17", "open": 278.0, "high": 281.0, "low": 275.0, "close": 276.0},
-        {"time": "2026-09-18", "open": 277.0, "high": 282.0, "low": 276.0, "close": 280.0},
-        {"time": "2026-09-19", "open": 280.0, "high": 286.0, "low": 279.0, "close": 285.0}
-      ],
-      "ema": [
-        {"time": "2026-09-10", "value": 269.0},
-        {"time": "2026-09-11", "value": 271.0},
-        {"time": "2026-09-12", "value": 273.0},
-        {"time": "2026-09-15", "value": 275.0},
-        {"time": "2026-09-16", "value": 276.0},
-        {"time": "2026-09-17", "value": 276.5},
-        {"time": "2026-09-18", "value": 277.0},
-        {"time": "2026-09-19", "value": 278.5}
+        {
+          "time": "2026-07-15",
+          "value": 135.22
+        },
+        {
+          "time": "2026-07-16",
+          "value": 135.29
+        },
+        {
+          "time": "2026-07-17",
+          "value": 135.55
+        },
+        {
+          "time": "2026-07-20",
+          "value": 135.88
+        },
+        {
+          "time": "2026-07-21",
+          "value": 136.18
+        },
+        {
+          "time": "2026-07-22",
+          "value": 136.4
+        },
+        {
+          "time": "2026-07-23",
+          "value": 136.55
+        },
+        {
+          "time": "2026-07-24",
+          "value": 136.78
+        },
+        {
+          "time": "2026-07-27",
+          "value": 137.14
+        },
+        {
+          "time": "2026-07-28",
+          "value": 137.5
+        },
+        {
+          "time": "2026-07-29",
+          "value": 137.79
+        },
+        {
+          "time": "2026-07-30",
+          "value": 138.05
+        },
+        {
+          "time": "2026-07-31",
+          "value": 138.19
+        },
+        {
+          "time": "2026-08-03",
+          "value": 138.26
+        },
+        {
+          "time": "2026-08-04",
+          "value": 138.1
+        },
+        {
+          "time": "2026-08-05",
+          "value": 137.99
+        },
+        {
+          "time": "2026-08-06",
+          "value": 137.9
+        },
+        {
+          "time": "2026-08-07",
+          "value": 137.86
+        },
+        {
+          "time": "2026-08-10",
+          "value": 137.73
+        },
+        {
+          "time": "2026-08-11",
+          "value": 137.57
+        },
+        {
+          "time": "2026-08-12",
+          "value": 137.42
+        },
+        {
+          "time": "2026-08-13",
+          "value": 137.28
+        },
+        {
+          "time": "2026-08-14",
+          "value": 137.06
+        },
+        {
+          "time": "2026-08-17",
+          "value": 136.96
+        },
+        {
+          "time": "2026-08-18",
+          "value": 136.97
+        },
+        {
+          "time": "2026-08-19",
+          "value": 136.87
+        },
+        {
+          "time": "2026-08-20",
+          "value": 136.84
+        },
+        {
+          "time": "2026-08-21",
+          "value": 136.81
+        },
+        {
+          "time": "2026-08-24",
+          "value": 136.78
+        },
+        {
+          "time": "2026-08-25",
+          "value": 136.75
+        },
+        {
+          "time": "2026-08-26",
+          "value": 136.68
+        },
+        {
+          "time": "2026-08-27",
+          "value": 136.57
+        },
+        {
+          "time": "2026-08-28",
+          "value": 136.47
+        },
+        {
+          "time": "2026-08-31",
+          "value": 136.42
+        },
+        {
+          "time": "2026-09-01",
+          "value": 136.38
+        },
+        {
+          "time": "2026-09-02",
+          "value": 136.49
+        },
+        {
+          "time": "2026-09-03",
+          "value": 136.63
+        },
+        {
+          "time": "2026-09-04",
+          "value": 136.71
+        },
+        {
+          "time": "2026-09-07",
+          "value": 136.84
+        },
+        {
+          "time": "2026-09-08",
+          "value": 137.04
+        },
+        {
+          "time": "2026-09-09",
+          "value": 137.28
+        },
+        {
+          "time": "2026-09-10",
+          "value": 137.49
+        },
+        {
+          "time": "2026-09-11",
+          "value": 137.78
+        },
+        {
+          "time": "2026-09-14",
+          "value": 138.23
+        },
+        {
+          "time": "2026-09-15",
+          "value": 138.73
+        },
+        {
+          "time": "2026-09-16",
+          "value": 139.18
+        },
+        {
+          "time": "2026-09-17",
+          "value": 139.74
+        },
+        {
+          "time": "2026-09-18",
+          "value": 140.29
+        },
+        {
+          "time": "2026-09-21",
+          "value": 140.69
+        },
+        {
+          "time": "2026-09-22",
+          "value": 141.1
+        },
+        {
+          "time": "2026-09-23",
+          "value": 141.52
+        },
+        {
+          "time": "2026-09-24",
+          "value": 141.85
+        },
+        {
+          "time": "2026-09-29",
+          "value": 142.05
+        },
+        {
+          "time": "2026-09-30",
+          "value": 142.19
+        },
+        {
+          "time": "2026-10-01",
+          "value": 142.51
+        },
+        {
+          "time": "2026-10-02",
+          "value": 142.84
+        },
+        {
+          "time": "2026-10-05",
+          "value": 143.09
+        },
+        {
+          "time": "2026-10-06",
+          "value": 143.32
+        },
+        {
+          "time": "2026-10-07",
+          "value": 143.53
+        },
+        {
+          "time": "2026-10-08",
+          "value": 143.81
+        }
       ]
     }
   ],
   "forming": [
     {
-      "ticker": "2454.TW",
-      "name": "聯發科",
-      "sector": "半導體",
-      "close": 1280.0,
-      "ema20": 1265.0
+      "ticker": "2308.TW",
+      "name": "台達電",
+      "sector": "電子零組件",
+      "close": 1965.0,
+      "ema20": 1878.79
     },
     {
-      "ticker": "2317.TW",
-      "name": "鴻海",
-      "sector": "其他電子",
-      "close": 215.0,
-      "ema20": 212.0
+      "ticker": "2881.TW",
+      "name": "富邦金",
+      "sector": "金融保險",
+      "close": 153.0,
+      "ema20": 150.65
     },
     {
-      "ticker": "3711.TW",
-      "name": "日月光投控",
+      "ticker": "2357.TW",
+      "name": "華碩",
+      "sector": "電腦及週邊",
+      "close": 996.0,
+      "ema20": 967.32
+    },
+    {
+      "ticker": "2884.TW",
+      "name": "玉山金",
+      "sector": "金融保險",
+      "close": 45.0,
+      "ema20": 44.78
+    },
+    {
+      "ticker": "1101.TW",
+      "name": "台泥",
+      "sector": "水泥工業",
+      "close": 25.7,
+      "ema20": 25.06
+    },
+    {
+      "ticker": "2379.TW",
+      "name": "瑞昱",
       "sector": "半導體",
-      "close": 162.0,
-      "ema20": 160.5
+      "close": 749.0,
+      "ema20": 739.32
+    },
+    {
+      "ticker": "2395.TW",
+      "name": "研華",
+      "sector": "電腦及週邊",
+      "close": 727.0,
+      "ema20": 709.8
+    },
+    {
+      "ticker": "5876.TW",
+      "name": "上海商銀",
+      "sector": "金融保險",
+      "close": 49.65,
+      "ema20": 48.53
+    },
+    {
+      "ticker": "2409.TW",
+      "name": "友達",
+      "sector": "光電業",
+      "close": 36.6,
+      "ema20": 34.56
+    },
+    {
+      "ticker": "3481.TW",
+      "name": "群創",
+      "sector": "光電業",
+      "close": 51.0,
+      "ema20": 50.64
+    },
+    {
+      "ticker": "3017.TW",
+      "name": "奇鋐",
+      "sector": "電腦及週邊",
+      "close": 3440.0,
+      "ema20": 3422.46
+    },
+    {
+      "ticker": "2408.TW",
+      "name": "南亞科",
+      "sector": "半導體",
+      "close": 532.0,
+      "ema20": 513.42
+    },
+    {
+      "ticker": "2449.TW",
+      "name": "京元電子",
+      "sector": "半導體",
+      "close": 304.5,
+      "ema20": 289.06
+    },
+    {
+      "ticker": "6239.TW",
+      "name": "力成",
+      "sector": "半導體",
+      "close": 308.0,
+      "ema20": 291.93
+    },
+    {
+      "ticker": "3035.TW",
+      "name": "智原",
+      "sector": "半導體",
+      "close": 202.0,
+      "ema20": 199.13
+    },
+    {
+      "ticker": "1513.TW",
+      "name": "中興電",
+      "sector": "電機機械",
+      "close": 167.0,
+      "ema20": 166.3
     }
   ],
   "holdings_status": [],
@@ -107,28 +804,28 @@
       "ticker": "2330.TW",
       "name": "台積電",
       "sector": "半導體",
-      "close": 985.0,
-      "ema20": 969.0,
-      "trend_up": true,
-      "has_signal": true,
-      "grade": "A"
-    },
-    {
-      "ticker": "2317.TW",
-      "name": "鴻海",
-      "sector": "其他電子",
-      "close": 215.0,
-      "ema20": 212.0,
+      "close": 2550.0,
+      "ema20": 2491.84,
       "trend_up": true,
       "has_signal": false,
       "grade": null
     },
     {
-      "ticker": "2454.TW",
-      "name": "聯發科",
-      "sector": "半導體",
-      "close": 1280.0,
-      "ema20": 1265.0,
+      "ticker": "2317.TW",
+      "name": "鴻海",
+      "sector": "其他電子",
+      "close": 249.0,
+      "ema20": 251.69,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2308.TW",
+      "name": "台達電",
+      "sector": "電子零組件",
+      "close": 1965.0,
+      "ema20": 1878.79,
       "trend_up": true,
       "has_signal": false,
       "grade": null
@@ -137,19 +834,9 @@
       "ticker": "2382.TW",
       "name": "廣達",
       "sector": "電腦及週邊",
-      "close": 285.0,
-      "ema20": 278.5,
-      "trend_up": true,
-      "has_signal": true,
-      "grade": "B"
-    },
-    {
-      "ticker": "2308.TW",
-      "name": "台達電",
-      "sector": "電子零組件",
-      "close": 395.0,
-      "ema20": 390.0,
-      "trend_up": true,
+      "close": 325.5,
+      "ema20": 334.65,
+      "trend_up": false,
       "has_signal": false,
       "grade": null
     },
@@ -157,8 +844,8 @@
       "ticker": "2881.TW",
       "name": "富邦金",
       "sector": "金融保險",
-      "close": 88.5,
-      "ema20": 87.2,
+      "close": 153.0,
+      "ema20": 150.65,
       "trend_up": true,
       "has_signal": false,
       "grade": null
@@ -167,8 +854,68 @@
       "ticker": "2882.TW",
       "name": "國泰金",
       "sector": "金融保險",
-      "close": 65.2,
-      "ema20": 64.8,
+      "close": 110.0,
+      "ema20": 110.74,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2412.TW",
+      "name": "中華電",
+      "sector": "通信網路",
+      "close": 146.5,
+      "ema20": 143.81,
+      "trend_up": true,
+      "has_signal": true,
+      "grade": "A"
+    },
+    {
+      "ticker": "2303.TW",
+      "name": "聯電",
+      "sector": "半導體",
+      "close": 147.5,
+      "ema20": 148.69,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3711.TW",
+      "name": "日月光投控",
+      "sector": "半導體",
+      "close": 744.0,
+      "ema20": 686.05,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2891.TW",
+      "name": "中信金",
+      "sector": "金融保險",
+      "close": 67.3,
+      "ema20": 68.09,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3231.TW",
+      "name": "緯創",
+      "sector": "電腦及週邊",
+      "close": 188.5,
+      "ema20": 185.97,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2357.TW",
+      "name": "華碩",
+      "sector": "電腦及週邊",
+      "close": 996.0,
+      "ema20": 967.32,
       "trend_up": true,
       "has_signal": false,
       "grade": null
@@ -177,8 +924,548 @@
       "ticker": "2603.TW",
       "name": "長榮",
       "sector": "航運業",
-      "close": 192.0,
-      "ema20": 189.5,
+      "close": 232.5,
+      "ema20": 236.43,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2886.TW",
+      "name": "兆豐金",
+      "sector": "金融保險",
+      "close": 49.3,
+      "ema20": 49.57,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2884.TW",
+      "name": "玉山金",
+      "sector": "金融保險",
+      "close": 45.0,
+      "ema20": 44.78,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2892.TW",
+      "name": "第一金",
+      "sector": "金融保險",
+      "close": 38.65,
+      "ema20": 38.46,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2885.TW",
+      "name": "元大金",
+      "sector": "金融保險",
+      "close": 68.3,
+      "ema20": 68.56,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2890.TW",
+      "name": "永豐金",
+      "sector": "金融保險",
+      "close": 44.05,
+      "ema20": 43.92,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2880.TW",
+      "name": "華南金",
+      "sector": "金融保險",
+      "close": 45.8,
+      "ema20": 45.26,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "5880.TW",
+      "name": "合庫金",
+      "sector": "金融保險",
+      "close": 26.45,
+      "ema20": 26.37,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1216.TW",
+      "name": "統一",
+      "sector": "食品工業",
+      "close": 75.6,
+      "ema20": 74.66,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2002.TW",
+      "name": "中鋼",
+      "sector": "鋼鐵工業",
+      "close": 18.95,
+      "ema20": 18.91,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1301.TW",
+      "name": "台塑",
+      "sector": "塑膠工業",
+      "close": 81.3,
+      "ema20": 67.83,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1303.TW",
+      "name": "南亞",
+      "sector": "塑膠工業",
+      "close": 310.0,
+      "ema20": 258.02,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1326.TW",
+      "name": "台化",
+      "sector": "塑膠工業",
+      "close": 77.6,
+      "ema20": 70.04,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "6505.TW",
+      "name": "台塑化",
+      "sector": "油電燃氣",
+      "close": 110.5,
+      "ema20": 93.02,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1101.TW",
+      "name": "台泥",
+      "sector": "水泥工業",
+      "close": 25.7,
+      "ema20": 25.06,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1102.TW",
+      "name": "亞泥",
+      "sector": "水泥工業",
+      "close": 36.35,
+      "ema20": 35.44,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2379.TW",
+      "name": "瑞昱",
+      "sector": "半導體",
+      "close": 749.0,
+      "ema20": 739.32,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3034.TW",
+      "name": "聯詠",
+      "sector": "半導體",
+      "close": 531.0,
+      "ema20": 540.5,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3045.TW",
+      "name": "台灣大",
+      "sector": "通信網路",
+      "close": 124.0,
+      "ema20": 121.53,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "4904.TW",
+      "name": "遠傳",
+      "sector": "通信網路",
+      "close": 106.0,
+      "ema20": 104.98,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2327.TW",
+      "name": "國巨",
+      "sector": "電子零組件",
+      "close": 635.0,
+      "ema20": 590.69,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3037.TW",
+      "name": "欣興",
+      "sector": "電子零組件",
+      "close": 1270.0,
+      "ema20": 1161.69,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2395.TW",
+      "name": "研華",
+      "sector": "電腦及週邊",
+      "close": 727.0,
+      "ema20": 709.8,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "6669.TW",
+      "name": "緯穎",
+      "sector": "電腦及週邊",
+      "close": 2240.0,
+      "ema20": 2195.23,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3661.TW",
+      "name": "世芯-KY",
+      "sector": "半導體",
+      "close": 4345.0,
+      "ema20": 3883.57,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2609.TW",
+      "name": "陽明",
+      "sector": "航運業",
+      "close": 59.7,
+      "ema20": 59.18,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2615.TW",
+      "name": "萬海",
+      "sector": "航運業",
+      "close": 111.5,
+      "ema20": 112.62,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2887.TW",
+      "name": "台新金",
+      "sector": "金融保險",
+      "close": 41.0,
+      "ema20": 41.61,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2883.TW",
+      "name": "開發金",
+      "sector": "金融保險",
+      "close": 37.55,
+      "ema20": 37.63,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2801.TW",
+      "name": "彰銀",
+      "sector": "金融保險",
+      "close": 27.95,
+      "ema20": 27.45,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "5876.TW",
+      "name": "上海商銀",
+      "sector": "金融保險",
+      "close": 49.65,
+      "ema20": 48.53,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2301.TW",
+      "name": "光寶科",
+      "sector": "電腦及週邊",
+      "close": 297.5,
+      "ema20": 288.27,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2409.TW",
+      "name": "友達",
+      "sector": "光電業",
+      "close": 36.6,
+      "ema20": 34.56,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3481.TW",
+      "name": "群創",
+      "sector": "光電業",
+      "close": 51.0,
+      "ema20": 50.64,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1504.TW",
+      "name": "東元",
+      "sector": "電機機械",
+      "close": 71.7,
+      "ema20": 70.23,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2376.TW",
+      "name": "技嘉",
+      "sector": "電腦及週邊",
+      "close": 363.0,
+      "ema20": 363.89,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2377.TW",
+      "name": "微星",
+      "sector": "電腦及週邊",
+      "close": 154.5,
+      "ema20": 152.95,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2356.TW",
+      "name": "英業達",
+      "sector": "電腦及週邊",
+      "close": 57.5,
+      "ema20": 60.43,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2353.TW",
+      "name": "宏碁",
+      "sector": "電腦及週邊",
+      "close": 31.3,
+      "ema20": 31.48,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2324.TW",
+      "name": "仁寶",
+      "sector": "電腦及週邊",
+      "close": 35.5,
+      "ema20": 36.95,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "4938.TW",
+      "name": "和碩",
+      "sector": "電腦及週邊",
+      "close": 89.7,
+      "ema20": 90.09,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3017.TW",
+      "name": "奇鋐",
+      "sector": "電腦及週邊",
+      "close": 3440.0,
+      "ema20": 3422.46,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "6415.TW",
+      "name": "矽力*-KY",
+      "sector": "半導體",
+      "close": 462.5,
+      "ema20": 432.42,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2408.TW",
+      "name": "南亞科",
+      "sector": "半導體",
+      "close": 532.0,
+      "ema20": 513.42,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2344.TW",
+      "name": "華邦電",
+      "sector": "半導體",
+      "close": 177.0,
+      "ema20": 176.11,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "6770.TW",
+      "name": "力積電",
+      "sector": "半導體",
+      "close": 72.2,
+      "ema20": 72.74,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2449.TW",
+      "name": "京元電子",
+      "sector": "半導體",
+      "close": 304.5,
+      "ema20": 289.06,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "6239.TW",
+      "name": "力成",
+      "sector": "半導體",
+      "close": 308.0,
+      "ema20": 291.93,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "3035.TW",
+      "name": "智原",
+      "sector": "半導體",
+      "close": 202.0,
+      "ema20": 199.13,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2360.TW",
+      "name": "致茂",
+      "sector": "電子零組件",
+      "close": 2330.0,
+      "ema20": 2239.66,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2618.TW",
+      "name": "長榮航",
+      "sector": "航運業",
+      "close": 41.4,
+      "ema20": 42.01,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1513.TW",
+      "name": "中興電",
+      "sector": "電機機械",
+      "close": 167.0,
+      "ema20": 166.3,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "1519.TW",
+      "name": "華城",
+      "sector": "電機機械",
+      "close": 692.0,
+      "ema20": 702.12,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2834.TW",
+      "name": "臺企銀",
+      "sector": "金融保險",
+      "close": 17.45,
+      "ema20": 17.6,
+      "trend_up": false,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "9904.TW",
+      "name": "寶成",
+      "sector": "其他",
+      "close": 25.05,
+      "ema20": 24.71,
       "trend_up": true,
       "has_signal": false,
       "grade": null
