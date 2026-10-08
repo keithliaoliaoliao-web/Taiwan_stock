@@ -1,0 +1,187 @@
+{
+  "scan_date": "2026-10-08",
+  "scan_time": "15:30",
+  "market_status": {
+    "close": 22450.0,
+    "ema20": 21980.0,
+    "bullish": true
+  },
+  "signals": [
+    {
+      "ticker": "2330.TW",
+      "name": "台積電",
+      "sector": "半導體",
+      "grade": "A",
+      "close": 985.0,
+      "trigger_price": 990.0,
+      "stop_loss": 965.0,
+      "target_price": 1040.0,
+      "risk_pct": 2.53,
+      "net_rr": 2.0,
+      "candles": [
+        {"time": "2026-09-10", "open": 940.0, "high": 955.0, "low": 935.0, "close": 950.0},
+        {"time": "2026-09-11", "open": 952.0, "high": 960.0, "low": 945.0, "close": 958.0},
+        {"time": "2026-09-12", "open": 960.0, "high": 970.0, "low": 955.0, "close": 968.0},
+        {"time": "2026-09-15", "open": 965.0, "high": 975.0, "low": 960.0, "close": 972.0},
+        {"time": "2026-09-16", "open": 970.0, "high": 982.0, "low": 968.0, "close": 978.0},
+        {"time": "2026-09-17", "open": 975.0, "high": 985.0, "low": 970.0, "close": 980.0},
+        {"time": "2026-09-18", "open": 976.0, "high": 982.0, "low": 965.0, "close": 968.0},
+        {"time": "2026-09-19", "open": 965.0, "high": 972.0, "low": 960.0, "close": 963.0},
+        {"time": "2026-09-22", "open": 962.0, "high": 970.0, "low": 958.0, "close": 966.0},
+        {"time": "2026-09-23", "open": 968.0, "high": 978.0, "low": 965.0, "close": 975.0},
+        {"time": "2026-09-24", "open": 974.0, "high": 988.0, "low": 970.0, "close": 985.0}
+      ],
+      "ema": [
+        {"time": "2026-09-10", "value": 938.0},
+        {"time": "2026-09-11", "value": 942.0},
+        {"time": "2026-09-12", "value": 946.0},
+        {"time": "2026-09-15", "value": 951.0},
+        {"time": "2026-09-16", "value": 955.0},
+        {"time": "2026-09-17", "value": 960.0},
+        {"time": "2026-09-18", "value": 962.0},
+        {"time": "2026-09-19", "value": 963.0},
+        {"time": "2026-09-22", "value": 964.0},
+        {"time": "2026-09-23", "value": 966.0},
+        {"time": "2026-09-24", "value": 969.0}
+      ]
+    },
+    {
+      "ticker": "2382.TW",
+      "name": "廣達",
+      "sector": "電腦及週邊",
+      "grade": "B",
+      "close": 285.0,
+      "trigger_price": 288.0,
+      "stop_loss": 276.0,
+      "target_price": 312.0,
+      "risk_pct": 4.17,
+      "net_rr": 2.0,
+      "candles": [
+        {"time": "2026-09-10", "open": 270.0, "high": 278.0, "low": 268.0, "close": 275.0},
+        {"time": "2026-09-11", "open": 276.0, "high": 282.0, "low": 274.0, "close": 280.0},
+        {"time": "2026-09-12", "open": 280.0, "high": 285.0, "low": 278.0, "close": 284.0},
+        {"time": "2026-09-15", "open": 283.0, "high": 288.0, "low": 281.0, "close": 286.0},
+        {"time": "2026-09-16", "open": 284.0, "high": 286.0, "low": 277.0, "close": 278.0},
+        {"time": "2026-09-17", "open": 278.0, "high": 281.0, "low": 275.0, "close": 276.0},
+        {"time": "2026-09-18", "open": 277.0, "high": 282.0, "low": 276.0, "close": 280.0},
+        {"time": "2026-09-19", "open": 280.0, "high": 286.0, "low": 279.0, "close": 285.0}
+      ],
+      "ema": [
+        {"time": "2026-09-10", "value": 269.0},
+        {"time": "2026-09-11", "value": 271.0},
+        {"time": "2026-09-12", "value": 273.0},
+        {"time": "2026-09-15", "value": 275.0},
+        {"time": "2026-09-16", "value": 276.0},
+        {"time": "2026-09-17", "value": 276.5},
+        {"time": "2026-09-18", "value": 277.0},
+        {"time": "2026-09-19", "value": 278.5}
+      ]
+    }
+  ],
+  "forming": [
+    {
+      "ticker": "2454.TW",
+      "name": "聯發科",
+      "sector": "半導體",
+      "close": 1280.0,
+      "ema20": 1265.0
+    },
+    {
+      "ticker": "2317.TW",
+      "name": "鴻海",
+      "sector": "其他電子",
+      "close": 215.0,
+      "ema20": 212.0
+    },
+    {
+      "ticker": "3711.TW",
+      "name": "日月光投控",
+      "sector": "半導體",
+      "close": 162.0,
+      "ema20": 160.5
+    }
+  ],
+  "holdings_status": [],
+  "universe": [
+    {
+      "ticker": "2330.TW",
+      "name": "台積電",
+      "sector": "半導體",
+      "close": 985.0,
+      "ema20": 969.0,
+      "trend_up": true,
+      "has_signal": true,
+      "grade": "A"
+    },
+    {
+      "ticker": "2317.TW",
+      "name": "鴻海",
+      "sector": "其他電子",
+      "close": 215.0,
+      "ema20": 212.0,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2454.TW",
+      "name": "聯發科",
+      "sector": "半導體",
+      "close": 1280.0,
+      "ema20": 1265.0,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2382.TW",
+      "name": "廣達",
+      "sector": "電腦及週邊",
+      "close": 285.0,
+      "ema20": 278.5,
+      "trend_up": true,
+      "has_signal": true,
+      "grade": "B"
+    },
+    {
+      "ticker": "2308.TW",
+      "name": "台達電",
+      "sector": "電子零組件",
+      "close": 395.0,
+      "ema20": 390.0,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2881.TW",
+      "name": "富邦金",
+      "sector": "金融保險",
+      "close": 88.5,
+      "ema20": 87.2,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2882.TW",
+      "name": "國泰金",
+      "sector": "金融保險",
+      "close": 65.2,
+      "ema20": 64.8,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    },
+    {
+      "ticker": "2603.TW",
+      "name": "長榮",
+      "sector": "航運業",
+      "close": 192.0,
+      "ema20": 189.5,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": null
+    }
+  ]
+}
