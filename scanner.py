@@ -115,7 +115,7 @@ def run_scanner():
         })
 
         # 整理最近 60 根 K 線與 EMA 供前端 Lightweight Charts 渲染
-        recent_bars = analyzed_df.tail(60)
+        recent_bars = analyzed_df.tail(120)
         candles = []
         ema_series = []
         for _, b in recent_bars.iterrows():

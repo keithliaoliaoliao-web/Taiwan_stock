@@ -378,11 +378,15 @@ class H1H2StateMachine:
             )
             return diag
 
-        # Rule 3 [A]: Locate the Bull Trend Peak (Swing High before the pullback)
-        # If an active push broke above prior major swing high to establish a new trend high:
+        # Rule 3 [A][B]: Locate the Bull Trend Peak (Swing High before the pullback).
+        # IMPORTANT: the evaluation bar itself must never become the pullback anchor.
+        # Otherwise an H2 signal bar that makes a new intrabar high can be promoted
+        # to the tentative trend high by PriceActionSwingEngine, causing the H2 bar
+        # to be interpreted as "at the peak" and suppressing its own signal.
         if (
             swing_res.tentative_high_idx is not None
             and swing_res.tentative_high_idx >= trend_start_idx
+            and swing_res.tentative_high_idx < eval_idx
             and (
                 swing_res.major_swing_high is None
                 or swing_res.tentative_high >= swing_res.major_swing_high.price
@@ -412,7 +416,17 @@ class H1H2StateMachine:
                 f"[A] Pullback anchor locked to causal Recent Swing High at bar {peak_idx} ({peak_high})"
             )
         else:
-            highs = df["High"].iloc[trend_start_idx : eval_idx + 1]
+            # Fallback peak must also be strictly before eval_idx.
+            # The current signal bar is not allowed to define the pullback it is
+            # supposed to complete.
+            end_exclusive = eval_idx if eval_idx > trend_start_idx else eval_idx + 1
+            highs = df["High"].iloc[trend_start_idx:end_exclusive]
+            if len(highs) == 0:
+                diag.state = H1H2State.NOT_YET_QUANTIFIED
+                diag.h2_status = NOT_YET_QUANTIFIED
+                diag.invalidation_reason = "NO_PRIOR_TREND_PEAK"
+                diag.audit_trail.append("[B] No prior bar available to anchor the pullback")
+                return diag
             peak_rel_idx = int(highs.argmax())
             peak_idx = trend_start_idx + peak_rel_idx
             peak_high = float(df["High"].iloc[peak_idx])
@@ -489,15 +503,18 @@ class H1H2StateMachine:
                     h1_high = max(h1_high, cur_high) if h1_high is not None else cur_high
                     diag.h1_high = h1_high
                     diag.audit_trail.append(f"[A] Bar {b}: H1 attempt extended higher ({cur_high})")
-                # Rule 9 [A]: Did H1 attempt stall and sellers resume (H1 Failure)?
-                elif cur_low < prev_low or cur_high < prev_high:
+                # Rule 9 [A]: H1 failure is defined against the H1 attempt itself,
+                # not against the immediately preceding bar. A subsequent bar whose
+                # High fails to exceed H1's High means the first bullish attempt has
+                # stalled/failed and the second leg may develop.
+                elif h1_high is not None and cur_high <= h1_high:
                     current_state = H1H2State.FIRST_ATTEMPT_FAILED
                     diag.h1_status = "FAILED"
                     diag.pullback_state = "LEG_2_DOWN"
                     diag.leg_state = "LEG_2_DOWN"
                     leg2_low = cur_low
                     diag.audit_trail.append(
-                        f"[A] Bar {b}: H1 attempt failed; seller resumption (Low {cur_low} < prev Low {prev_low}); "
+                        f"[A] Bar {b}: H1 attempt failed; High {cur_high} did not exceed H1 High {h1_high}; "
                         "Leg 2 down initiated"
                     )
                 else:
@@ -692,7 +709,8 @@ class PriceActionEngine:
 
         cond1_slope = (up_count >= slope_period)
         cond2_length = (up_count >= min_up_bars)
-        cond3_above_ema = bool(sig["Close"] >= ema)
+        # "站上 EMA" is treated strictly: Close must be above EMA, not merely equal.
+        cond3_above_ema = bool(sig["Close"] > ema)
 
         trend_confirmed = cond1_slope and cond2_length and cond3_above_ema
 
@@ -736,9 +754,17 @@ class PriceActionEngine:
         pullback_low = diag.pullback_low if diag.pullback_low is not None else float(sig["Low"])
 
         ema_atr_tolerance = float(getattr(config, "EMA_ATR_TOLERANCE", 1.0))
+        # The original specification also rejects a pullback that is too shallow
+        # to meaningfully test the 20 EMA. Because no numerical lower bound was
+        # specified, expose it as a config parameter instead of silently inventing
+        # a strategy rule. Default: 0.25 ATR.
+        ema_atr_min_proximity = float(getattr(config, "EMA_ATR_MIN_PROXIMITY", 0.25))
         distance_to_ema = abs(pullback_low - ema)
         max_allowed_dist = (ema_atr_tolerance * atr) if (pd.notna(atr) and atr > 0) else float("inf")
-        within_ema_range = distance_to_ema <= max_allowed_dist
+        min_required_dist = (ema_atr_min_proximity * atr) if (pd.notna(atr) and atr > 0) else 0.0
+        not_too_shallow = distance_to_ema >= min_required_dist
+        not_too_deep = distance_to_ema <= max_allowed_dist
+        within_ema_range = not_too_shallow and not_too_deep
 
         # 醞釀中判定：趨勢確立、H1 失敗或建立、回測在 20EMA 附近且尚未出現 H2 觸發
         is_forming = (
@@ -764,6 +790,11 @@ class PriceActionEngine:
             "peak_high": diag.peak_high,
             "pullback_low": pullback_low,
             "bar_count": bar_count,
+            "ema_distance": distance_to_ema,
+            "ema_min_required_distance": min_required_dist,
+            "ema_max_allowed_distance": max_allowed_dist,
+            "ema_not_too_shallow": not_too_shallow,
+            "ema_not_too_deep": not_too_deep,
             "trend_confirmed": True,
             "is_forming": is_forming,
             "invalidation_reason": diag.invalidation_reason,
@@ -788,9 +819,13 @@ class PriceActionEngine:
 
         # 檢查 EMA 距離 [Frozen Layer]
         if not within_ema_range:
-            details["reason"] = "EMA_ATR_PROXIMITY_NOT_MET"
+            if not not_too_shallow:
+                details["reason"] = "EMA_ATR_PROXIMITY_TOO_SHALLOW"
+            else:
+                details["reason"] = "EMA_ATR_PROXIMITY_TOO_DEEP"
             details["is_forming"] = False
             details["distance"] = distance_to_ema
+            details["min_required"] = min_required_dist
             details["max_allowed"] = max_allowed_dist
             return False, details
 
