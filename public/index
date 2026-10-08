@@ -982,29 +982,32 @@
       alert(`已成功自本機${actionName}「${target.ticker} ${target.name}」！`);
     }
 
-    // GitHub API 核心寫入函式 (Base64 UTF-8) - 容錯與自動清洗格式
+    // GitHub API 核心寫入函式 (Base64 UTF-8) - 具備防快取與 409 SHA 衝突自動重試
     async function updateGithubFile(repo, token, path, content, message) {
       if (!repo || !token) return false;
       const cleanR = cleanRepoString(repo);
       const cleanT = token.trim();
       if (!cleanR || !cleanT) return false;
 
-      const getUrl = `https://api.github.com/repos/${cleanR}/contents/${path}`;
+      const baseApiUrl = `https://api.github.com/repos/${cleanR}/contents/${path}`;
       const authHeader = (cleanT.startsWith("Bearer ") || cleanT.startsWith("token ")) ? cleanT : `token ${cleanT}`;
       const headers = {
         'Authorization': authHeader,
-        'Accept': 'application/vnd.github.v3+json'
+        'Accept': 'application/vnd.github.v3+json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
       };
 
+      // 1. 強制防快取取得最新檔案 SHA
       let sha = "";
       try {
-        const getRes = await fetch(getUrl, { headers });
+        const getRes = await fetch(`${baseApiUrl}?t=${Date.now()}`, { headers });
         if (getRes.ok) {
           const fileInfo = await getRes.json();
           sha = fileInfo.sha;
         }
       } catch (e) {
-        console.warn("取得檔案 SHA 略過:", e);
+        console.warn("取得檔案 SHA 失敗:", e);
       }
 
       // 支援中文字元的 UTF-8 Base64 編碼
@@ -1015,7 +1018,8 @@
       }
       const base64Content = window.btoa(binaryStr);
 
-      const putRes = await fetch(getUrl, {
+      // 2. 發送 PUT 更新請求
+      let putRes = await fetch(baseApiUrl, {
         method: 'PUT',
         headers: {
           ...headers,
@@ -1027,6 +1031,32 @@
           sha: sha || undefined
         })
       });
+
+      // 3. 若遇到 409 樂觀鎖衝突 (SHA mismatch)，自動重新抓取最新 SHA 並立即重試一次
+      if (putRes.status === 409) {
+        console.warn("偵測到 SHA 衝突 (409 Conflict)，重新抓取最新 SHA 並自動重試...");
+        try {
+          const retryGetRes = await fetch(`${baseApiUrl}?t=${Date.now()}`, { headers });
+          if (retryGetRes.ok) {
+            const retryInfo = await retryGetRes.json();
+            const freshSha = retryInfo.sha;
+            putRes = await fetch(baseApiUrl, {
+              method: 'PUT',
+              headers: {
+                ...headers,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                message: message,
+                content: base64Content,
+                sha: freshSha
+              })
+            });
+          }
+        } catch (retryErr) {
+          console.warn("自動重試失敗:", retryErr);
+        }
+      }
 
       if (!putRes.ok) {
         const errJson = await putRes.json().catch(() => ({}));
