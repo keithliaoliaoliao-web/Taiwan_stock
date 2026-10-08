@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "ticker": "2317.TW",
+    "name": "鴻海",
+    "grade": "手動",
+    "entry_date": "2026-10-08",
+    "entry_price": 249,
+    "shares": 100,
+    "stop_loss": 236.55,
+    "target_price": 273.9
+  }
+]
