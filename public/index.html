@@ -417,7 +417,7 @@
 
       const scanDate = data.scan_date || '';
       const scanTime = data.scan_time || '';
-      document.getElementById('header-update-time').innerText = `最後掃描時間：${scanDate} ${scanTime}`;
+      document.getElementById('header-update-time').innerText = scanDate ? `最後掃描時間：${scanDate} ${scanTime}` : '等待 GitHub Actions 首次掃描執行中...';
 
       const ms = data.market_status || {};
       const badge = document.getElementById('market-status-badge');
