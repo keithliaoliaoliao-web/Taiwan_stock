@@ -50,17 +50,33 @@
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 class="text-base font-semibold text-white">本月可用預算管理</h2>
-          <p class="text-xs text-slate-400 mt-0.5">預算僅保存在本機瀏覽器工作階段 (sessionStorage)，關閉頁面後自動清除</p>
+          <p class="text-xs text-slate-400 mt-0.5">
+            輸入本月總投資預算，系統將依純比例自動計算 A 級（50%）與 B 級（33%）之建議進場股數與損益（無固定金額上限）。
+          </p>
         </div>
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <div class="relative flex-1 sm:w-48">
-            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-sm">NT$</span>
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-sm font-bold">NT$</span>
             <input type="number" id="budget-input" placeholder="輸入金額" class="w-full pl-11 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500">
           </div>
-          <button onclick="applyBudget()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition">
+          <button onclick="applyBudget()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition shadow-sm">
             套用
           </button>
+          <button onclick="resetBudget()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition border border-slate-700">
+            重設
+          </button>
         </div>
+      </div>
+      <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-3 text-xs">
+        <span class="px-3 py-1 rounded-md bg-slate-950 text-slate-300 border border-slate-800 font-medium">
+          當前套用預算：<span id="budget-display" class="text-emerald-400 font-bold">尚未輸入</span>
+        </span>
+        <span class="px-3 py-1 rounded-md bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">
+          A 級投入配比：50%（依預算純比例無上限）
+        </span>
+        <span class="px-3 py-1 rounded-md bg-amber-950/60 text-amber-400 border border-amber-800/60">
+          B 級投入配比：33%（依預算純比例無上限）
+        </span>
       </div>
     </section>
 
@@ -286,36 +302,55 @@
     let chartInstance = null;
     let selectedSignal = null;
 
-    const GRADE_A_CAP = 15000.0;
-    const GRADE_B_CAP = 10000.0;
+    // GRADE_A_CAP removed per user pure-ratio request
+    // GRADE_B_CAP removed per user pure-ratio request
 
     // 頁面初始化
     document.addEventListener("DOMContentLoaded", () => {
       const savedBudget = sessionStorage.getItem("monthly_budget");
       if (savedBudget) {
         document.getElementById("budget-input").value = savedBudget;
+        updateBudgetDisplay(parseFloat(savedBudget));
+      } else {
+        updateBudgetDisplay(0);
       }
       fetchData();
     });
 
-    // 取得 scan_result.json
-    function fetchData() {
-      fetch('scan_result.json')
-        .then(res => {
-          if (!res.ok) throw new Error("無法讀取 scan_result.json");
-          return res.json();
-        })
-        .then(data => {
-          globalData = data;
-          renderDashboard(data);
-        })
-        .catch(err => {
-          console.error(err);
-          document.getElementById("market-status-badge").innerHTML = `
-            <span class="h-2 w-2 rounded-full bg-red-500"></span>
-            <span>資料載入失敗</span>
-          `;
-        });
+    // 取得 scan_result.json (多路徑自動備援相容根目錄與 public 目錄)
+    async function fetchData() {
+      const candidatePaths = [
+        'public/scan_result.json',
+        'scan_result.json',
+        './public/scan_result.json',
+        './scan_result.json',
+        '../public/scan_result.json'
+      ];
+      let loadedData = null;
+      let usedPath = '';
+
+      for (const p of candidatePaths) {
+        try {
+          const res = await fetch(`${p}?t=${Date.now()}`);
+          if (res.ok) {
+            loadedData = await res.json();
+            usedPath = p;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      if (loadedData) {
+        console.log(`成功載入資料來源: ${usedPath}`);
+        globalData = loadedData;
+        renderDashboard(loadedData);
+      } else {
+        console.error("無法自任何預期路徑載入 scan_result.json");
+        document.getElementById("market-status-badge").innerHTML = `
+          <span class="h-2 w-2 rounded-full bg-red-500"></span>
+          <span>資料載入失敗</span>
+        `;
+      }
     }
 
 
@@ -441,16 +476,39 @@
       renderUniverse();
     }
 
-    // 預算套用
+    // 預算套用 (依純比例無固定金額上限)
     function applyBudget() {
       const val = parseFloat(document.getElementById("budget-input").value);
       if (val && val > 0) {
         sessionStorage.setItem("monthly_budget", val);
+        updateBudgetDisplay(val);
       } else {
         sessionStorage.removeItem("monthly_budget");
+        updateBudgetDisplay(0);
       }
-      if (globalData) {
+      if (globalData && globalData.signals) {
         renderSignals(globalData.signals);
+      }
+    }
+
+    // 預算重設
+    function resetBudget() {
+      sessionStorage.removeItem("monthly_budget");
+      document.getElementById("budget-input").value = "";
+      updateBudgetDisplay(0);
+      if (globalData && globalData.signals) {
+        renderSignals(globalData.signals);
+      }
+    }
+
+    function updateBudgetDisplay(val) {
+      const disp = document.getElementById("budget-display");
+      if (disp) {
+        if (val && val > 0) {
+          disp.innerText = `NT$ ${val.toLocaleString()}`;
+        } else {
+          disp.innerText = "尚未輸入";
+        }
       }
     }
 
@@ -733,8 +791,8 @@
       let initialShares = 10;
 
       if (budget > 0) {
-        const cap = s.grade === "A" ? Math.min(budget * 0.50, GRADE_A_CAP) : Math.min(budget * 0.33, GRADE_B_CAP);
-        const calcShares = Math.floor(cap / s.trigger_price);
+        const targetCap = s.grade === "A" ? (budget * 0.50) : (budget * 0.33);
+        const calcShares = Math.floor(targetCap / s.trigger_price);
         if (calcShares > 0) initialShares = calcShares;
       }
 
