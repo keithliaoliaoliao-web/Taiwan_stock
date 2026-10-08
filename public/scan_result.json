@@ -1,6 +1,6 @@
 {
   "scan_date": "2026-10-08",
-  "scan_time": "16:54",
+  "scan_time": "18:26",
   "market_status": {
     "close": 49313.44,
     "ema20": 48007.18,
@@ -903,7 +903,23 @@
       "ema20": 92.3
     }
   ],
-  "holdings_status": [],
+  "holdings_status": [
+    {
+      "ticker": "2412.TW",
+      "name": "中華電",
+      "grade": "A",
+      "entry_price": 146.5,
+      "entry_date": "2026-10-08",
+      "shares": 34,
+      "stop_loss": 144.5,
+      "target_price": 152.0,
+      "current_close": 146.5,
+      "unrealized_pnl": 0.0,
+      "unrealized_pct": 0.0,
+      "status": "NEAR_STOP",
+      "action_desc": "距離停損小於 5%，請密切注意防守"
+    }
+  ],
   "universe": [
     {
       "ticker": "2330.TW",
