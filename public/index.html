@@ -112,6 +112,38 @@
       <div id="holdings-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- JS 動態渲染 -->
       </div>
+
+      <!-- 已平倉歷史交易紀錄折疊專區 -->
+      <div class="mt-4 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <button type="button" onclick="toggleTradeHistory()" class="w-full px-5 py-3.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-700 transition">
+          <div class="flex items-center gap-2">
+            <span>📜</span>
+            <span>已平倉歷史交易紀錄</span>
+            <span id="history-count-badge" class="px-2 py-0.5 rounded-full text-[11px] bg-slate-200 text-slate-700">0 筆</span>
+            <span id="history-pnl-summary" class="ml-2 font-bold text-slate-500">累計已實現損益：$0</span>
+          </div>
+          <span id="history-toggle-icon" class="text-slate-400 text-sm">▼</span>
+        </button>
+        <div id="history-container" class="hidden p-4 border-t border-slate-200 overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3">標的</th>
+                <th class="py-2.5 px-3">買進日 → 賣出日</th>
+                <th class="py-2.5 px-3 text-right">買進成本</th>
+                <th class="py-2.5 px-3 text-right">賣出價格</th>
+                <th class="py-2.5 px-3 text-right">股數</th>
+                <th class="py-2.5 px-3 text-right">已實現損益</th>
+                <th class="py-2.5 px-3 text-center">操作評估</th>
+                <th class="py-2.5 px-3 text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody" class="divide-y divide-slate-100">
+              <!-- JS 動態渲染 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- ========================================== -->
@@ -198,6 +230,84 @@
   </main>
 
   <!-- ========================================== -->
+  <!-- ========================================== -->
+  <!-- 登記賣出平倉結算彈窗 -->
+  <!-- ========================================== -->
+  <div id="sell-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">登記賣出平倉結算</h3>
+          <p class="text-xs text-slate-500">結算已實現損益並歸檔至歷史交易紀錄</p>
+        </div>
+        <button onclick="closeSellModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+          ✕
+        </button>
+      </div>
+
+      <form id="sell-form" onsubmit="submitSellHolding(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="sell-ticker">
+        <input type="hidden" id="sell-name">
+        <input type="hidden" id="sell-entry-price">
+        <input type="hidden" id="sell-entry-date">
+        <input type="hidden" id="sell-original-shares">
+
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">持股標的：</span>
+            <span id="sell-display-stock" class="font-bold text-slate-900 text-sm">--</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">買進成本：</span>
+            <span id="sell-display-cost" class="font-semibold text-slate-800">--</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">持有股數：</span>
+            <span id="sell-display-shares" class="font-semibold text-slate-800">--</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">賣出日期</label>
+            <input type="date" id="sell-date" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium">
+          </div>
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">賣出價格 (元)</label>
+            <input type="number" step="0.01" id="sell-price" oninput="calculateRealizedPnL()" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-900">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-600 font-semibold mb-1">賣出股數 (Shares)</label>
+          <input type="number" min="1" step="1" id="sell-shares" oninput="calculateRealizedPnL()" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-900">
+          <p class="text-[11px] text-slate-400 mt-1">若股數小於持有股數，將自動進行部分平倉減碼。</p>
+        </div>
+
+        <!-- 試算已實現損益區塊 -->
+        <div id="sell-pnl-box" class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">賣出總市值：</span>
+            <span id="sell-total-revenue" class="font-bold text-slate-900">NT$ 0</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">預計已實現損益：</span>
+            <span id="sell-realized-pnl" class="font-black text-sm text-slate-800">NT$ 0 (0.00%)</span>
+          </div>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-3">
+          <button type="button" onclick="closeSellModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">
+            取消
+          </button>
+          <button type="submit" id="btn-submit-sell" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition">
+            確認平倉結算
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 7. K線圖彈窗 (Lightweight Charts Modal) -->
   <!-- ========================================== -->
   <div id="chart-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -212,8 +322,8 @@
           <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs text-xs font-semibold">
             <button type="button" id="btn-range-1m" onclick="setChartRange(20, '1m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1個月</button>
             <button type="button" id="btn-range-3m" onclick="setChartRange(60, '3m')" class="px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition">3個月</button>
-            <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">6個月</button>
-            <button type="button" id="btn-range-all" onclick="setChartRange(0, 'all')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">全部</button>
+            <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">半年</button>
+            <button type="button" id="btn-range-1y" onclick="setChartRange(250, '1y')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1年</button>
           </div>
           <button onclick="closeChartModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
             ✕
@@ -382,6 +492,7 @@
       }
 
       fetchScanResult();
+      renderTradeHistory(getTradeHistory());
     });
 
     /**
@@ -568,30 +679,72 @@
       }
 
       grid.innerHTML = holdings.map(h => {
-        const isStopLoss = h.status === 'STOP_LOSS';
-        const isTakeProfit = h.status === 'TAKE_PROFIT';
-        const isNearStop = h.status === 'NEAR_STOP';
-        const isTimeExit = h.status === 'TIME_EXIT';
+        const entryPrice = Number(h.entry_price) || 0;
+        const currentClose = Number(h.current_close) || entryPrice;
+        const shares = Number(h.shares) || 0;
+        const stopLoss = Number(h.stop_loss) || 0;
+        const targetPrice = Number(h.target_price) || 0;
 
-        let cardBg = "bg-white border-slate-200 text-slate-800";
-        if (isStopLoss) {
-          cardBg = "bg-rose-50/90 border-rose-500 text-rose-950 ring-2 ring-rose-400";
-        } else if (isTakeProfit) {
-          cardBg = "bg-emerald-50/90 border-emerald-500 text-emerald-950 ring-2 ring-emerald-400";
-        } else if (isNearStop) {
-          cardBg = "bg-amber-50/80 border-amber-400 text-amber-950";
-        }
-
-        const pnl = Number(h.unrealized_pnl) || 0;
-        const pct = Number(h.unrealized_pct) || 0;
-        const pnlColor = pnl >= 0 ? "text-emerald-600 font-bold" : "text-rose-600 font-bold";
+        const totalCost = entryPrice * shares;
+        const currentMarketVal = currentClose * shares;
+        const pnl = Math.round((currentClose - entryPrice) * shares);
+        const pct = entryPrice > 0 ? Math.round(((currentClose - entryPrice) / entryPrice) * 10000) / 100 : 0;
+        const pnlColor = pnl >= 0 ? "text-emerald-600 font-black" : "text-rose-600 font-black";
         const sign = pnl >= 0 ? "+" : "";
 
+        // 風控試算與距停損/停利距離
+        const lossAtStop = stopLoss > 0 ? Math.round((entryPrice - stopLoss) * shares) : 0;
+        const profitAtTarget = targetPrice > 0 ? Math.round((targetPrice - entryPrice) * shares) : 0;
+        const stopDist = stopLoss > 0 ? (currentClose - stopLoss) : 0;
+        const stopDistPct = currentClose > 0 ? ((stopDist / currentClose) * 100).toFixed(2) : 0;
+        const targetDist = targetPrice > 0 ? (targetPrice - currentClose) : 0;
+        const targetDistPct = currentClose > 0 ? ((targetDist / currentClose) * 100).toFixed(2) : 0;
+
+        // 持有天數計算
+        let daysHeld = 1;
+        if (h.entry_date) {
+          const entryTime = new Date(h.entry_date).getTime();
+          const nowTime = new Date().getTime();
+          const diffDays = Math.floor((nowTime - entryTime) / (1000 * 60 * 60 * 24));
+          daysHeld = Math.max(1, diffDays + 1);
+        }
+
+        // 精準 NEAR STOP 與狀態判定 (避免進場即誤報警戒)
+        const riskBuffer = entryPrice - stopLoss;
+        let isStopLoss = false;
+        let isTakeProfit = false;
+        let isNearStop = false;
+        let isTimeExit = daysHeld >= 15;
+
+        if (stopLoss > 0 && currentClose <= stopLoss) {
+          isStopLoss = true;
+        } else if (targetPrice > 0 && currentClose >= targetPrice) {
+          isTakeProfit = true;
+        } else if (riskBuffer > 0 && currentClose <= (entryPrice - riskBuffer * 0.7)) {
+          isNearStop = true;
+        }
+
+        let cardBg = "bg-white border-slate-200 text-slate-800";
         let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">HOLD</span>`;
-        if (isStopLoss) statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white animate-pulse">STOP LOSS</span>`;
-        if (isTakeProfit) statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white animate-pulse">TAKE PROFIT</span>`;
-        if (isNearStop) statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white">NEAR STOP</span>`;
-        if (isTimeExit) statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">TIME EXIT</span>`;
+        let actionDesc = "正常持有中，距防守線尚有安全空間";
+
+        if (isStopLoss) {
+          cardBg = "bg-rose-50/90 border-rose-500 text-rose-950 ring-2 ring-rose-400";
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white animate-pulse">STOP LOSS</span>`;
+          actionDesc = "跌破停損防守價，請嚴格執行紀律平倉出場！";
+        } else if (isTakeProfit) {
+          cardBg = "bg-emerald-50/90 border-emerald-500 text-emerald-950 ring-2 ring-emerald-400";
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white animate-pulse">TAKE PROFIT</span>`;
+          actionDesc = "已達目標停利價，建議分批獲利了結！";
+        } else if (isNearStop) {
+          cardBg = "bg-amber-50/80 border-amber-400 text-amber-950";
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white">NEAR STOP</span>`;
+          actionDesc = "回檔已達風險緩衝 70% 警戒區，密切注意防守！";
+        } else if (isTimeExit) {
+          cardBg = "bg-purple-50/80 border-purple-400 text-purple-950";
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">TIME EXIT</span>`;
+          actionDesc = `持有已達 ${daysHeld} 天（上限 15 天），建議波段換股操作。`;
+        }
 
         return `
           <div class="${cardBg} rounded-2xl border p-5 shadow-sm transition hover:shadow-md flex flex-col justify-between">
@@ -603,46 +756,58 @@
                     <span class="text-sm font-semibold">${h.name}</span>
                     <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${h.grade === 'A' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${h.grade}級</span>
                   </div>
-                  <div class="text-[11px] text-slate-500 mt-0.5">買進日：${h.entry_date} | 股數：${h.shares} 股</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">
+                    買進：${h.entry_date} · <strong>${shares} 股</strong> · 持有 <strong>${daysHeld} 天</strong> (上限 15 天)
+                  </div>
                 </div>
                 <div>${statusBadge}</div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2 text-xs mb-3">
-                <div class="bg-white/60 rounded-lg p-2 border border-slate-200/50">
-                  <span class="text-slate-500 text-[10px]">買進成本</span>
-                  <div class="font-bold text-slate-800 mt-0.5">$${h.entry_price}</div>
+              <!-- 關鍵數據 (4 欄：買進成本、當前收盤、停損防守、目標停利) -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
+                <div class="bg-white/70 rounded-xl p-2.5 border border-slate-200/60">
+                  <span class="text-slate-500 text-[10px] block">買進成本 (總額)</span>
+                  <div class="font-bold text-slate-800 mt-0.5 text-sm">$${entryPrice}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5 font-medium">NT$ ${Math.round(totalCost).toLocaleString()}</div>
                 </div>
-                <div class="bg-white/60 rounded-lg p-2 border border-slate-200/50">
-                  <span class="text-slate-500 text-[10px]">當前收盤</span>
-                  <div class="font-bold text-slate-900 mt-0.5">$${h.current_close}</div>
+                <div class="bg-white/70 rounded-xl p-2.5 border border-slate-200/60">
+                  <span class="text-slate-500 text-[10px] block">當前收盤 (總市值)</span>
+                  <div class="font-bold text-slate-900 mt-0.5 text-sm">$${currentClose}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5 font-medium">NT$ ${Math.round(currentMarketVal).toLocaleString()}</div>
                 </div>
-                <div class="bg-white/60 rounded-lg p-2 border border-slate-200/50">
-                  <span class="text-slate-500 text-[10px]">停損防守</span>
-                  <div class="font-bold text-rose-600 mt-0.5">$${h.stop_loss}</div>
+                <div class="bg-white/70 rounded-xl p-2.5 border border-slate-200/60">
+                  <span class="text-slate-500 text-[10px] block">停損防守 (距停損)</span>
+                  <div class="font-bold text-rose-600 mt-0.5 text-sm">$${stopLoss}</div>
+                  <div class="text-[10px] text-rose-600 mt-0.5 font-medium">${stopDist > 0 ? '-' : '+'}${Math.abs(stopDist).toFixed(1)}元 (${stopDistPct}%)</div>
                 </div>
-                <div class="bg-white/60 rounded-lg p-2 border border-slate-200/50">
-                  <span class="text-slate-500 text-[10px]">目標停利</span>
-                  <div class="font-bold text-blue-600 mt-0.5">$${h.target_price}</div>
+                <div class="bg-white/70 rounded-xl p-2.5 border border-slate-200/60">
+                  <span class="text-slate-500 text-[10px] block">目標停利 (距目標)</span>
+                  <div class="font-bold text-blue-600 mt-0.5 text-sm">$${targetPrice}</div>
+                  <div class="text-[10px] text-blue-600 mt-0.5 font-medium">${targetDist > 0 ? '+' : '-'}${Math.abs(targetDist).toFixed(1)}元 (${targetDistPct}%)</div>
                 </div>
               </div>
 
-              <div class="bg-white/80 rounded-xl p-3 border border-slate-200/60 mb-3">
+              <!-- 損益與風控試算區塊 -->
+              <div class="bg-white/90 rounded-xl p-3 border border-slate-200/60 mb-3 space-y-1.5">
                 <div class="flex justify-between items-center text-xs">
-                  <span class="text-slate-500">未實現損益：</span>
-                  <span class="${pnlColor} text-sm">${sign}$${pnl.toLocaleString()} (${sign}${pct}%)</span>
+                  <span class="text-slate-500 font-medium">未實現損益：</span>
+                  <span class="${pnlColor} text-base">${sign}NT$ ${pnl.toLocaleString()} (${sign}${pct}%)</span>
                 </div>
-                <div class="mt-1 text-[11px] text-slate-600 flex items-center gap-1">
-                  <span>💡</span> <span>${h.action_desc || '正常持有中'}</span>
+                <div class="flex justify-between items-center text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                  <span>若停損虧損：<strong class="text-rose-600">-$${lossAtStop.toLocaleString()}</strong></span>
+                  <span>若達標獲利：<strong class="text-emerald-600">+$${profitAtTarget.toLocaleString()}</strong></span>
+                </div>
+                <div class="mt-1 text-[11px] text-slate-600 flex items-center gap-1.5 pt-0.5">
+                  <span>💡</span> <span>${actionDesc}</span>
                 </div>
               </div>
             </div>
 
             <div class="flex items-center gap-2 pt-2 border-t border-slate-200/50">
-              <button onclick="handleSellHolding('${h.ticker}', '${h.name}')" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition">
-                登記賣出
+              <button onclick="openSellModal('${h.ticker}', '${h.name}', ${entryPrice}, ${shares}, ${currentClose}, '${h.entry_date}')" class="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1">
+                <span>💰</span> 登記賣出
               </button>
-              <button onclick="handleDeleteHolding('${h.ticker}')" class="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg text-xs font-semibold transition">
+              <button onclick="handleDeleteHolding('${h.ticker}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition">
                 刪除
               </button>
             </div>
@@ -997,7 +1162,7 @@
     }
 
     function setChartRange(bars, rangeKey) {
-      const buttons = ['1m', '3m', '6m', 'all'];
+      const buttons = ['1m', '3m', '6m', '1y'];
       buttons.forEach(k => {
         const btn = document.getElementById('btn-range-' + k);
         if (btn) {
@@ -1336,6 +1501,215 @@
     /**
      * 登記賣出或刪除持股
      */
+    // ==========================================
+    // 歷史交易紀錄與賣出平倉結算邏輯
+    // ==========================================
+    function getTradeHistory() {
+      try {
+        return JSON.parse(localStorage.getItem('trade_history') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveTradeHistory(arr) {
+      localStorage.setItem('trade_history', JSON.stringify(arr));
+      renderTradeHistory(arr);
+    }
+
+    function renderTradeHistory(history) {
+      const container = document.getElementById('history-tbody');
+      const badge = document.getElementById('history-count-badge');
+      const summary = document.getElementById('history-pnl-summary');
+      if (!container || !badge) return;
+
+      badge.innerText = `${history.length} 筆`;
+
+      let totalPnl = 0;
+      let winCount = 0;
+
+      if (!history || history.length === 0) {
+        container.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-400">目前尚無已平倉歷史紀錄</td></tr>`;
+        if (summary) summary.innerText = '累計已實現損益：$0';
+        return;
+      }
+
+      container.innerHTML = history.map((item, idx) => {
+        const pnl = Number(item.realized_pnl) || 0;
+        const pct = Number(item.realized_pct) || 0;
+        totalPnl += pnl;
+        if (pnl > 0) winCount++;
+
+        const pnlClass = pnl >= 0 ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
+        const sign = pnl >= 0 ? '+' : '';
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-3 font-bold text-slate-900">${item.ticker} <span class="font-normal text-slate-600">${item.name}</span></td>
+            <td class="py-2.5 px-3 text-slate-500">${item.entry_date} → ${item.sell_date} (${item.days_held}天)</td>
+            <td class="py-2.5 px-3 text-right font-medium text-slate-800">$${item.entry_price}</td>
+            <td class="py-2.5 px-3 text-right font-bold text-slate-900">$${item.sell_price}</td>
+            <td class="py-2.5 px-3 text-right text-slate-700">${item.shares} 股</td>
+            <td class="py-2.5 px-3 text-right ${pnlClass}">${sign}$${pnl.toLocaleString()} (${sign}${pct}%)</td>
+            <td class="py-2.5 px-3 text-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${pnl >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                ${pnl >= 0 ? '獲利出場' : '停損出場'}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 text-center">
+              <button onclick="deleteTradeHistoryItem(${idx})" class="text-slate-400 hover:text-rose-600 text-xs">✕</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const winRate = history.length > 0 ? Math.round((winCount / history.length) * 100) : 0;
+      const sumSign = totalPnl >= 0 ? '+' : '';
+      const sumColor = totalPnl >= 0 ? 'text-emerald-600' : 'text-rose-600';
+      if (summary) {
+        summary.innerHTML = `累計已實現損益：<span class="${sumColor} font-black">${sumSign}$${totalPnl.toLocaleString()}</span> (勝率 ${winRate}%)`;
+      }
+    }
+
+    function toggleTradeHistory() {
+      const box = document.getElementById('history-container');
+      const icon = document.getElementById('history-toggle-icon');
+      if (box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        icon.innerText = '▲';
+      } else {
+        box.classList.add('hidden');
+        icon.innerText = '▼';
+      }
+    }
+
+    function deleteTradeHistoryItem(idx) {
+      if (!confirm('確定要自歷史紀錄中刪除此筆交易嗎？')) return;
+      let history = getTradeHistory();
+      history.splice(idx, 1);
+      saveTradeHistory(history);
+    }
+
+    function openSellModal(ticker, name, entryPrice, shares, currentClose, entryDate) {
+      document.getElementById('sell-ticker').value = ticker;
+      document.getElementById('sell-name').value = name;
+      document.getElementById('sell-entry-price').value = entryPrice;
+      document.getElementById('sell-entry-date').value = entryDate || '';
+      document.getElementById('sell-original-shares').value = shares;
+
+      document.getElementById('sell-display-stock').innerText = `${ticker} ${name}`;
+      document.getElementById('sell-display-cost').innerText = `$${entryPrice} (總額 NT$ ${(entryPrice * shares).toLocaleString()})`;
+      document.getElementById('sell-display-shares').innerText = `${shares} 股`;
+
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('sell-date').value = today;
+      document.getElementById('sell-price').value = currentClose || entryPrice;
+      document.getElementById('sell-shares').value = shares;
+
+      calculateRealizedPnL();
+      document.getElementById('sell-modal').classList.remove('hidden');
+    }
+
+    function closeSellModal() {
+      document.getElementById('sell-modal').classList.add('hidden');
+    }
+
+    function calculateRealizedPnL() {
+      const entryPrice = Number(document.getElementById('sell-entry-price').value) || 0;
+      const sellPrice = Number(document.getElementById('sell-price').value) || 0;
+      const sellShares = Number(document.getElementById('sell-shares').value) || 0;
+
+      const totalRevenue = Math.round(sellPrice * sellShares);
+      const totalCost = Math.round(entryPrice * sellShares);
+      const pnl = totalRevenue - totalCost;
+      const pct = totalCost > 0 ? Math.round((pnl / totalCost) * 10000) / 100 : 0;
+
+      document.getElementById('sell-total-revenue').innerText = `NT$ ${totalRevenue.toLocaleString()}`;
+
+      const pnlEl = document.getElementById('sell-realized-pnl');
+      const sign = pnl >= 0 ? '+' : '';
+      pnlEl.innerText = `${sign}NT$ ${pnl.toLocaleString()} (${sign}${pct}%)`;
+      if (pnl >= 0) {
+        pnlEl.className = 'font-black text-sm text-emerald-600';
+      } else {
+        pnlEl.className = 'font-black text-sm text-rose-600';
+      }
+    }
+
+    async function submitSellHolding(e) {
+      e.preventDefault();
+      const ticker = document.getElementById('sell-ticker').value;
+      const name = document.getElementById('sell-name').value;
+      const entryPrice = Number(document.getElementById('sell-entry-price').value);
+      const entryDate = document.getElementById('sell-entry-date').value;
+      const originalShares = Number(document.getElementById('sell-original-shares').value);
+
+      const sellDate = document.getElementById('sell-date').value;
+      const sellPrice = Number(document.getElementById('sell-price').value);
+      const sellShares = Number(document.getElementById('sell-shares').value);
+
+      if (!sellPrice || sellPrice <= 0 || !sellShares || sellShares <= 0) {
+        alert('請輸入有效的賣出價格與股數！');
+        return;
+      }
+      if (sellShares > originalShares) {
+        alert(`賣出股數 (${sellShares}) 不得大於持有股數 (${originalShares})！`);
+        return;
+      }
+
+      // 計算持有天數
+      let daysHeld = 1;
+      if (entryDate && sellDate) {
+        const d1 = new Date(entryDate).getTime();
+        const d2 = new Date(sellDate).getTime();
+        daysHeld = Math.max(1, Math.floor((d2 - d1) / (1000 * 60 * 60 * 24)) + 1);
+      }
+
+      const pnl = Math.round((sellPrice - entryPrice) * sellShares);
+      const pct = entryPrice > 0 ? Math.round(((sellPrice - entryPrice) / entryPrice) * 10000) / 100 : 0;
+
+      const record = {
+        ticker: ticker,
+        name: name,
+        entry_date: entryDate,
+        sell_date: sellDate,
+        entry_price: entryPrice,
+        sell_price: sellPrice,
+        shares: sellShares,
+        days_held: daysHeld,
+        realized_pnl: pnl,
+        realized_pct: pct,
+        created_at: new Date().toISOString()
+      };
+
+      // 1. 存入已實現交易歷史
+      let history = getTradeHistory();
+      history.unshift(record);
+      saveTradeHistory(history);
+
+      // 2. 更新現有持股 (全數平倉或部分減碼)
+      if (sellShares >= originalShares) {
+        await removeHoldingFromRemote(ticker);
+      } else {
+        let localList = getLocalHoldings();
+        const idx = localList.findIndex(h => h.ticker === ticker);
+        if (idx >= 0) {
+          localList[idx].shares = originalShares - sellShares;
+          saveLocalHoldings(localList);
+        }
+        if (globalScanData && globalScanData.holdings_status) {
+          const hIdx = globalScanData.holdings_status.findIndex(h => h.ticker === ticker);
+          if (hIdx >= 0) {
+            globalScanData.holdings_status[hIdx].shares = originalShares - sellShares;
+            renderHoldings(globalScanData.holdings_status);
+          }
+        }
+      }
+
+      closeSellModal();
+      alert(`✅ 已成功平倉結算 [${ticker} ${name}]！\n已實現損益：${pnl >= 0 ? '+' : ''}NT$ ${pnl.toLocaleString()} (${pct}%)`);
+    }
+
     async function handleSellHolding(ticker, name) {
       if (!confirm(`確定要登記賣出 [${ticker} ${name}] 嗎？此操作將自持倉清單中移除該標的。`)) return;
       await removeHoldingFromRemote(ticker);
