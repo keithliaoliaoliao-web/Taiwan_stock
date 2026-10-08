@@ -249,8 +249,9 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-slate-600 font-semibold mb-1">股票代號</label>
-            <input type="text" id="reg-ticker" required placeholder="例如：2330.TW"
+            <input type="text" id="reg-ticker" list="ticker-suggestions" oninput="handleTickerInputChange()" required placeholder="輸入代號如 2330，自動帶入名稱與價格"
               class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500">
+            <datalist id="ticker-suggestions"></datalist>
           </div>
           <div>
             <label class="block text-slate-600 font-semibold mb-1">股票名稱</label>
@@ -432,6 +433,12 @@
       renderSignals(data.signals || []);
       renderForming(data.forming || []);
       renderUniverse(data.universe || []);
+
+      // 填充手動新增代號建議選單
+      const datalist = document.getElementById('ticker-suggestions');
+      if (datalist && data.universe) {
+        datalist.innerHTML = data.universe.map(u => `<option value="${u.ticker}">${u.name} (最新價 $${u.close})</option>`).join('');
+      }
     }
 
     /**
@@ -928,6 +935,45 @@
     /**
      * 手動新增持股彈窗
      */
+    /**
+     * 手動輸入股票代號時自動帶入名稱、最新收盤價與預設停損停利
+     */
+    function handleTickerInputChange() {
+      if (!globalScanData || !globalScanData.universe) return;
+      let val = document.getElementById('reg-ticker').value.trim().toUpperCase();
+      if (!val) return;
+
+      // 支援純數字或後綴匹配 (e.g. 2330 or 2330.TW)
+      let matched = globalScanData.universe.find(u => u.ticker === val || u.ticker.replace('.TW', '') === val);
+      if (!matched && val.length >= 4) {
+        matched = globalScanData.universe.find(u => u.ticker.startsWith(val));
+      }
+
+      if (matched) {
+        document.getElementById('reg-name').value = matched.name;
+        document.getElementById('reg-entry-price').value = matched.close;
+
+        // 檢查是否在今日訊號中
+        const sig = (globalScanData.signals || []).find(s => s.ticker === matched.ticker);
+        if (sig) {
+          document.getElementById('reg-stop-loss').value = sig.stop_loss;
+          document.getElementById('reg-target-price').value = sig.target_price;
+          document.getElementById('reg-grade').value = sig.grade;
+        } else {
+          // 若不在今日訊號中，預設停損為收盤價 -5%，目標價為 2:1 風酬比
+          const stopPrice = Math.round(matched.close * 0.95 * 100) / 100;
+          const risk = matched.close - stopPrice;
+          const targetPrice = Math.round((matched.close + risk * 2) * 100) / 100;
+
+          document.getElementById('reg-stop-loss').value = stopPrice;
+          document.getElementById('reg-target-price').value = targetPrice;
+          document.getElementById('reg-grade').value = '手動';
+        }
+
+        calculateTotalAmount();
+      }
+    }
+
     function openManualRegisterModal() {
       document.getElementById('reg-modal-title').innerText = "手動新增個人持股";
       document.getElementById('reg-ticker').value = "";
