@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,69 +9,84 @@
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            brand: { 500: '#10b981', 600: '#059669' }
+            brand: { 500: '#2563eb', 600: '#1d4ed8' }
           }
         }
       }
     }
   </script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white">
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
 
   <!-- 頂部導覽列 -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
+  <header class="border-b border-slate-200 bg-white/90 sticky top-0 z-30 shadow-sm backdrop-blur">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="h-8 w-2 bg-emerald-500 rounded-full"></div>
-        <h1 class="text-xl font-bold tracking-tight text-white">台股價格行為選股系統</h1>
-        <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Strategy Freeze v1</span>
+        <div class="h-8 w-2 bg-blue-600 rounded-full"></div>
+        <h1 class="text-xl font-bold tracking-tight text-slate-900">台股價格行為選股系統</h1>
+        <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-medium">Strategy Freeze v1</span>
       </div>
       <div class="flex items-center space-x-4">
-        <div id="market-status-badge" class="text-xs px-3 py-1 rounded-full font-medium flex items-center space-x-1.5 bg-slate-800 text-slate-400 border border-slate-700">
-          <span class="h-2 w-2 rounded-full bg-slate-500"></span>
+        <div id="market-status-badge" class="text-xs px-3 py-1 rounded-full font-medium flex items-center space-x-1.5 bg-slate-100 text-slate-500 border border-slate-200">
+          <span class="h-2 w-2 rounded-full bg-slate-400"></span>
           <span>連線中...</span>
         </div>
-        <div id="last-update" class="text-xs text-slate-400 hidden sm:block">更新時間: --</div>
-        <button onclick="openGhModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+        <div id="last-update" class="text-xs text-slate-500 hidden sm:block">更新時間: --</div>
+        <button onclick="openGhModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm transition">
           GitHub 設定
         </button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-x-0 space-y-8">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
     <!-- 預算設定區塊 -->
-    <section class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+    <section class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 class="text-base font-semibold text-white">本月可用預算管理</h2>
-          <p class="text-xs text-slate-400 mt-0.5">預算僅保存在本機瀏覽器工作階段 (sessionStorage)，關閉頁面後自動清除</p>
+          <h2 class="text-base font-bold text-slate-900">本月可用預算管理</h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            輸入本月總投資預算，系統將依純比例自動計算 A 級（50%）與 B 級（33%）之建議進場股數與損益（無固定金額上限）。
+          </p>
         </div>
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <div class="relative flex-1 sm:w-48">
-            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-sm">NT$</span>
-            <input type="number" id="budget-input" placeholder="輸入金額" class="w-full pl-11 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-sm font-bold">NT$</span>
+            <input type="number" id="budget-input" placeholder="輸入金額" class="w-full pl-11 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition">
           </div>
-          <button onclick="applyBudget()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition">
+          <button onclick="applyBudget()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
             套用
           </button>
+          <button onclick="resetBudget()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition border border-slate-200">
+            重設
+          </button>
         </div>
+      </div>
+      <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-3 text-xs">
+        <span class="px-3 py-1 rounded-md bg-slate-50 text-slate-700 border border-slate-200 font-medium">
+          當前套用預算：<span id="budget-display" class="text-blue-600 font-bold">尚未輸入</span>
+        </span>
+        <span class="px-3 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+          A 級投入配比：50%（依預算純比例無上限）
+        </span>
+        <span class="px-3 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+          B 級投入配比：33%（依預算純比例無上限）
+        </span>
       </div>
     </section>
 
     <!-- 個人持股監控 -->
     <section>
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
           <span>個人持股監控</span>
-          <span id="holdings-count" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">0</span>
+          <span id="holdings-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full border border-slate-200 font-semibold">0</span>
         </h2>
-        <button onclick="openManualHoldingModal()" class="text-xs px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg flex items-center gap-1.5 transition font-medium shadow-sm">
+        <button onclick="openManualHoldingModal()" class="text-xs px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg flex items-center gap-1.5 transition font-medium shadow-sm">
           <span>+ 手動新增持股</span>
         </button>
       </div>
@@ -80,12 +95,12 @@
       </div>
     </section>
 
-    <!-- 明日進場候選清單 -->
+    <!-- 明日進場候選名單 -->
     <section>
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
           <span>明日進場候選名單 (H2 突破訊號)</span>
-          <span id="signals-count" class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full">0</span>
+          <span id="signals-count" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold">0</span>
         </h2>
       </div>
       <div id="signals-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -96,12 +111,12 @@
     <!-- 醞釀中名單 -->
     <section>
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
           <span>打底醞釀中名單 (Setup Forming)</span>
-          <span id="forming-count" class="text-xs bg-amber-950 text-amber-400 border border-amber-800 px-2 py-0.5 rounded-full">0</span>
+          <span id="forming-count" class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full font-bold">0</span>
         </h2>
       </div>
-      <div id="forming-container" class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div id="forming-container" class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <!-- 醞釀中表格 -->
       </div>
     </section>
@@ -109,21 +124,21 @@
     <!-- 觀察池全覽 -->
     <section>
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
           <span>核心觀察池全覽</span>
-          <span id="universe-count" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">0</span>
+          <span id="universe-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full border border-slate-200 font-semibold">0</span>
         </h2>
         <div class="flex items-center gap-2">
-          <label for="sector-filter" class="text-xs text-slate-400">產業篩選:</label>
-          <select id="sector-filter" onchange="renderUniverse()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500">
+          <label for="sector-filter" class="text-xs text-slate-500 font-medium">產業篩選:</label>
+          <select id="sector-filter" onchange="renderUniverse()" class="bg-white border border-slate-300 text-slate-700 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 shadow-sm">
             <option value="ALL">全部產業</option>
           </select>
         </div>
       </div>
-      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-950 text-slate-400 uppercase border-b border-slate-800">
+            <thead class="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 font-semibold">
               <tr>
                 <th class="px-4 py-3">代號</th>
                 <th class="px-4 py-3">名稱</th>
@@ -134,123 +149,139 @@
                 <th class="px-4 py-3 text-center">訊號</th>
               </tr>
             </thead>
-            <tbody id="universe-tbody" class="divide-y divide-slate-800">
+            <tbody id="universe-tbody" class="divide-y divide-slate-100 bg-white">
               <!-- 觀察池列動態渲染 -->
             </tbody>
           </table>
         </div>
       </div>
     </section>
+
   </main>
 
-  <!-- K 線圖彈窗 -->
-  <div id="chart-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+  <!-- K線走勢圖彈窗 -->
+  <div id="chart-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-4xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
         <div>
-          <h3 id="modal-title" class="text-lg font-bold text-white">股票名稱 (代號)</h3>
-          <p id="modal-subtitle" class="text-xs text-slate-400 mt-0.5">綠虛線: 進場價 | 紅虛線: 停損價 | 藍虛線: 目標價</p>
+          <h3 id="modal-title" class="text-lg font-bold text-slate-900">股票名稱 (代號)</h3>
+          <p id="modal-subtitle" class="text-xs text-slate-500 mt-0.5">綠虛線: 進場價 | 紅虛線: 停損價 | 藍虛線: 目標價</p>
         </div>
-        <button onclick="closeChartModal()" class="text-slate-400 hover:text-white text-xl px-2 py-1">&times;</button>
+        <button onclick="closeChartModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-light">&times;</button>
       </div>
-      <div id="chart-container" class="w-full h-96 bg-slate-950 rounded-xl overflow-hidden"></div>
+      <div id="chart-container" class="w-full h-96 bg-white border border-slate-100 rounded-xl overflow-hidden">
+        <!-- Lightweight Charts 畫布 -->
+      </div>
     </div>
   </div>
 
-  <!-- 持股登記彈窗 -->
-  <div id="entry-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
-        <h3 class="text-base font-bold text-white">納入我的持股登記</h3>
-        <button onclick="closeEntryModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+  <!-- 訊號登記進場彈窗 -->
+  <div id="entry-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+        <h3 class="text-base font-bold text-slate-900">納入我的持股登記</h3>
+        <button onclick="closeEntryModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-light">&times;</button>
       </div>
       <div class="space-y-4 text-xs">
         <div>
-          <label class="block text-slate-400 mb-1">標的代號 / 名稱</label>
-          <input type="text" id="reg-ticker-name" readonly class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-300">
+          <label class="block text-slate-700 mb-1 font-medium">標的代號 / 名稱</label>
+          <input type="text" id="reg-ticker-name" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 font-medium">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-400 mb-1">買進價格 (元)</label>
-            <input type="number" step="0.01" id="reg-entry-price" oninput="calculateRegAmount()" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+            <label class="block text-slate-700 mb-1 font-medium">買進價格 (元)</label>
+            <input type="number" step="0.01" id="reg-entry-price" oninput="calculateRegAmount()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-slate-400 mb-1">買進股數 (股)</label>
-            <input type="number" id="reg-shares" oninput="calculateRegAmount()" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+            <label class="block text-slate-700 mb-1 font-medium">買進股數 (股)</label>
+            <input type="number" id="reg-shares" oninput="calculateRegAmount()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
           </div>
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">預估投入總金額 (元)</label>
-          <input type="text" id="reg-total-amount" readonly class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-emerald-400 font-bold">
+          <label class="block text-slate-700 mb-1 font-medium">預估投入總金額 (元)</label>
+          <input type="text" id="reg-total-amount" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-blue-600 font-bold">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-400 mb-1">停損價格 (元)</label>
-            <input type="number" step="0.01" id="reg-stop-loss" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-red-400">
+            <label class="block text-slate-700 mb-1 font-medium">停損價格 (元)</label>
+            <input type="number" step="0.01" id="reg-stop-loss" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-red-600 font-medium">
           </div>
           <div>
-            <label class="block text-slate-400 mb-1">目標價格 (元)</label>
-            <input type="number" step="0.01" id="reg-target-price" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-blue-400">
+            <label class="block text-slate-700 mb-1 font-medium">目標價格 (元)</label>
+            <input type="number" step="0.01" id="reg-target-price" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-blue-600 font-medium">
           </div>
         </div>
         <div class="pt-2">
-          <button id="btn-confirm-reg" onclick="submitRegistration()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-sm transition">
-            確認並透過 GitHub 登記
+          <button id="btn-confirm-reg" onclick="submitRegistration()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition shadow-sm">
+            確認登記寫入
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 手動新增持股彈窗 -->
-  <div id="manual-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
-        <h3 class="text-base font-bold text-white">手動新增個人持股</h3>
-        <button onclick="closeManualHoldingModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+  <!-- 手動新增持股彈窗 (白底風格) -->
+  <div id="manual-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">手動新增個人持股</h3>
+          <p class="text-xs text-slate-500 mt-0.5">登記買進紀錄，系統將儲存於本機並同步至 holdings.json</p>
+        </div>
+        <button onclick="closeManualHoldingModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-light">&times;</button>
       </div>
       <div class="space-y-4 text-xs">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-400 mb-1">股票代號 (例: 2330)</label>
-            <input type="text" id="manual-ticker" placeholder="2330.TW" onchange="autoFillStockName()" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+            <label class="block text-slate-700 mb-1 font-medium">股票代號 (例: 2330)</label>
+            <input type="text" id="manual-ticker" placeholder="2330.TW" onchange="autoFillStockName()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-slate-400 mb-1">股票名稱</label>
-            <input type="text" id="manual-name" placeholder="台積電" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+            <label class="block text-slate-700 mb-1 font-medium">股票名稱</label>
+            <input type="text" id="manual-name" placeholder="台積電" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-400 mb-1">買進價格 (元)</label>
-            <input type="number" step="0.01" id="manual-entry-price" oninput="calculateManualAmount()" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+            <label class="block text-slate-700 mb-1 font-medium">訊號等級</label>
+            <select id="manual-grade" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
+              <option value="自選/手動">自選/手動</option>
+              <option value="A">A 級訊號</option>
+              <option value="B">B 級訊號</option>
+            </select>
           </div>
           <div>
-            <label class="block text-slate-400 mb-1">買進股數 (股)</label>
-            <input type="number" id="manual-shares" oninput="calculateManualAmount()" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+            <label class="block text-slate-700 mb-1 font-medium">買進日期</label>
+            <input type="date" id="manual-entry-date" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
           </div>
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1">預估投入金額 (元)</label>
-          <input type="text" id="manual-total-amount" readonly class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-emerald-400 font-bold">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-slate-400 mb-1">停損價格 (元)</label>
-            <input type="number" step="0.01" id="manual-stop-loss" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-red-400">
+            <label class="block text-slate-700 mb-1 font-medium">買進價格 (元)</label>
+            <input type="number" step="0.01" id="manual-entry-price" oninput="calculateManualAmount()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
           </div>
           <div>
-            <label class="block text-slate-400 mb-1">目標價格 (元)</label>
-            <input type="number" step="0.01" id="manual-target-price" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-blue-400">
+            <label class="block text-slate-700 mb-1 font-medium">買進股數 (Shares)</label>
+            <input type="number" id="manual-shares" oninput="calculateManualAmount()" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
           </div>
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">買進日期</label>
-          <input type="date" id="manual-entry-date" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+          <label class="block text-slate-700 mb-1 font-medium">預計投入金額 (元)</label>
+          <input type="text" id="manual-total-amount" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-blue-600 font-bold">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 mb-1 font-medium">停損價格 (元)</label>
+            <input type="number" step="0.01" id="manual-stop-loss" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-red-600 font-medium">
+          </div>
+          <div>
+            <label class="block text-slate-700 mb-1 font-medium">停利目標 (元)</label>
+            <input type="number" step="0.01" id="manual-target-price" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-blue-600 font-medium">
+          </div>
         </div>
         <div class="pt-2">
-          <button id="btn-confirm-manual" onclick="submitManualHolding()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-sm transition">
-            確認儲存持股
+          <button id="btn-confirm-manual" onclick="submitManualHolding()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition shadow-sm">
+            確認登記寫入
           </button>
         </div>
       </div>
@@ -258,24 +289,33 @@
   </div>
 
   <!-- GitHub 設定彈窗 -->
-  <div id="gh-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
-        <h3 class="text-base font-bold text-white">GitHub 授權設定</h3>
-        <button onclick="closeGhModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+  <div id="gh-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">GitHub API 授權設定</h3>
+          <p class="text-xs text-slate-500 mt-0.5">設定 GitHub Personal Access Token (需具備 repo 權限)</p>
+        </div>
+        <button onclick="closeGhModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-light">&times;</button>
       </div>
       <div class="space-y-4 text-xs">
         <div>
-          <label class="block text-slate-400 mb-1">Repository (格式: 擁有者/專案名)</label>
-          <input type="text" id="gh-repo" placeholder="username/my-stock-repo" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+          <label class="block text-slate-700 mb-1 font-medium">儲存庫路徑 (Repository)</label>
+          <input type="text" id="gh-repo" placeholder="keithliaoliaoliao-web/Taiwan_stock" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
+          <p class="text-[11px] text-slate-400 mt-1">格式：擁有者/專案名 (例如：keithliaoliaoliao-web/Taiwan_stock)</p>
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">Personal Access Token (需具備 repo 寫入權限)</label>
-          <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white">
+          <label class="block text-slate-700 mb-1 font-medium">Personal Access Token (PAT)</label>
+          <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:bg-white focus:border-blue-500">
         </div>
-        <button onclick="saveGhSettings()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition">
-          儲存設定
-        </button>
+        <div class="flex items-center gap-2 pt-2">
+          <button onclick="saveGhSettings()" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition shadow-sm">
+            儲存設定
+          </button>
+          <button onclick="closeGhModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition border border-slate-200">
+            取消
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -286,38 +326,53 @@
     let chartInstance = null;
     let selectedSignal = null;
 
-    const GRADE_A_CAP = 15000.0;
-    const GRADE_B_CAP = 10000.0;
-
     // 頁面初始化
     document.addEventListener("DOMContentLoaded", () => {
       const savedBudget = sessionStorage.getItem("monthly_budget");
       if (savedBudget) {
         document.getElementById("budget-input").value = savedBudget;
+        updateBudgetDisplay(parseFloat(savedBudget));
+      } else {
+        updateBudgetDisplay(0);
       }
       fetchData();
     });
 
-    // 取得 scan_result.json
-    function fetchData() {
-      fetch('scan_result.json')
-        .then(res => {
-          if (!res.ok) throw new Error("無法讀取 scan_result.json");
-          return res.json();
-        })
-        .then(data => {
-          globalData = data;
-          renderDashboard(data);
-        })
-        .catch(err => {
-          console.error(err);
-          document.getElementById("market-status-badge").innerHTML = `
-            <span class="h-2 w-2 rounded-full bg-red-500"></span>
-            <span>資料載入失敗</span>
-          `;
-        });
-    }
+    // 取得 scan_result.json (多路徑自動備援)
+    async function fetchData() {
+      const candidatePaths = [
+        'public/scan_result.json',
+        'scan_result.json',
+        './public/scan_result.json',
+        './scan_result.json',
+        '../public/scan_result.json'
+      ];
+      let loadedData = null;
+      let usedPath = '';
 
+      for (const p of candidatePaths) {
+        try {
+          const res = await fetch(`${p}?t=${Date.now()}`);
+          if (res.ok) {
+            loadedData = await res.json();
+            usedPath = p;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      if (loadedData) {
+        console.log(`成功載入資料來源: ${usedPath}`);
+        globalData = loadedData;
+        renderDashboard(loadedData);
+      } else {
+        console.error("無法自任何預期路徑載入 scan_result.json");
+        document.getElementById("market-status-badge").innerHTML = `
+          <span class="h-2 w-2 rounded-full bg-red-500"></span>
+          <span>資料載入失敗</span>
+        `;
+      }
+    }
 
     const HOLDINGS_STORAGE_KEY = "tw_stock_custom_holdings";
 
@@ -366,7 +421,7 @@
       return {
         ticker: h.ticker,
         name: h.name || h.ticker,
-        grade: h.grade || "MANUAL",
+        grade: h.grade || "自選/手動",
         entry_date: h.entry_date,
         entry_price: entryPrice,
         shares: shares,
@@ -389,7 +444,7 @@
         });
       }
 
-      // 1. 先置入伺服器端經 scanner.py 計算過之持倉
+      // 1. 先置入伺服器端持倉
       if (Array.isArray(serverHoldings)) {
         serverHoldings.forEach(s => {
           const key = `${s.ticker}_${s.entry_date}`;
@@ -397,7 +452,7 @@
         });
       }
 
-      // 2. 合併本機 localStorage 之持倉（若伺服器已有則保留伺服器計算，否則依 Universe 現價動態重算）
+      // 2. 合併本機 localStorage 之持倉
       if (Array.isArray(localHoldings)) {
         localHoldings.forEach(l => {
           const key = `${l.ticker}_${l.entry_date}`;
@@ -412,20 +467,20 @@
       return Array.from(map.values());
     }
 
-    // 渲染儀表板
+    // 渲染儀表板 (白底風格)
     function renderDashboard(data) {
       // 1. 頁首大盤與時間
       document.getElementById("last-update").innerText = `更新時間: ${data.scan_date} ${data.scan_time}`;
       const badge = document.getElementById("market-status-badge");
       if (data.market_status.bullish) {
-        badge.className = "text-xs px-3 py-1 rounded-full font-medium flex items-center space-x-1.5 bg-emerald-950 text-emerald-400 border border-emerald-800";
-        badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span><span>多頭市場 (指數站上 EMA)</span>`;
+        badge.className = "text-xs px-3 py-1 rounded-full font-medium flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200";
+        badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span><span>多頭市場 (指數站上 EMA)</span>`;
       } else {
-        badge.className = "text-xs px-3 py-1 rounded-full font-medium flex items-center space-x-1.5 bg-amber-950 text-amber-400 border border-amber-800";
-        badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-400"></span><span>防禦警戒 (指數低於 EMA)</span>`;
+        badge.className = "text-xs px-3 py-1 rounded-full font-medium flex items-center space-x-1.5 bg-amber-50 text-amber-700 border border-amber-200";
+        badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-500"></span><span>防禦警戒 (指數低於 EMA)</span>`;
       }
 
-      // 2. 渲染持股監控（合併伺服器 scan_result.json 與瀏覽器 localStorage 持股）
+      // 2. 渲染持股監控
       const mergedHoldings = mergeHoldingsList(data.holdings_status, getStoredHoldings(), data.universe);
       globalData.holdings_status = mergedHoldings;
       renderHoldings(mergedHoldings);
@@ -446,22 +501,45 @@
       const val = parseFloat(document.getElementById("budget-input").value);
       if (val && val > 0) {
         sessionStorage.setItem("monthly_budget", val);
+        updateBudgetDisplay(val);
       } else {
         sessionStorage.removeItem("monthly_budget");
+        updateBudgetDisplay(0);
       }
-      if (globalData) {
+      if (globalData && globalData.signals) {
         renderSignals(globalData.signals);
       }
     }
 
-    // 渲染個人持股卡片
+    // 預算重設
+    function resetBudget() {
+      sessionStorage.removeItem("monthly_budget");
+      document.getElementById("budget-input").value = "";
+      updateBudgetDisplay(0);
+      if (globalData && globalData.signals) {
+        renderSignals(globalData.signals);
+      }
+    }
+
+    function updateBudgetDisplay(val) {
+      const disp = document.getElementById("budget-display");
+      if (disp) {
+        if (val && val > 0) {
+          disp.innerText = `NT$ ${val.toLocaleString()}`;
+        } else {
+          disp.innerText = "尚未輸入";
+        }
+      }
+    }
+
+    // 渲染個人持股卡片 (白底風格)
     function renderHoldings(holdings) {
       const container = document.getElementById("holdings-container");
       document.getElementById("holdings-count").innerText = holdings ? holdings.length : 0;
 
       if (!holdings || holdings.length === 0) {
         container.innerHTML = `
-          <div class="col-span-full py-8 text-center text-slate-500 bg-slate-900 border border-slate-800/80 rounded-xl text-sm">
+          <div class="col-span-full py-8 text-center text-slate-400 bg-white border border-dashed border-slate-300 rounded-xl text-sm">
             尚未登記任何持股，請於買進後透過登記功能新增
           </div>
         `;
@@ -469,206 +547,237 @@
       }
 
       container.innerHTML = holdings.map((h, idx) => {
-        let borderClass = "border-slate-800 bg-slate-900";
-        let badgeClass = "bg-slate-800 text-slate-300";
+        let borderClass = "border-slate-200 bg-white";
+        let badgeClass = "bg-slate-100 text-slate-700 border border-slate-200";
 
         if (h.status === "STOP_LOSS") {
-          borderClass = "border-red-500/80 bg-red-950/20";
-          badgeClass = "bg-red-500/20 text-red-400 border border-red-500/30";
+          borderClass = "border-red-300 bg-red-50/50";
+          badgeClass = "bg-red-100 text-red-700 border border-red-200 font-semibold";
         } else if (h.status === "TAKE_PROFIT") {
-          borderClass = "border-emerald-500/80 bg-emerald-950/20";
-          badgeClass = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+          borderClass = "border-emerald-300 bg-emerald-50/50";
+          badgeClass = "bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold";
         } else if (h.status === "NEAR_STOP") {
-          borderClass = "border-amber-500/80 bg-amber-950/20";
-          badgeClass = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+          borderClass = "border-amber-300 bg-amber-50/50";
+          badgeClass = "bg-amber-100 text-amber-700 border border-amber-200 font-semibold";
         }
 
-        const pnlColor = h.unrealized_pnl >= 0 ? "text-emerald-400" : "text-red-400";
+        const pnlColor = h.unrealized_pnl >= 0 ? "text-emerald-600" : "text-red-600";
         const pnlSign = h.unrealized_pnl >= 0 ? "+" : "";
 
         return `
-          <div class="border ${borderClass} rounded-xl p-5 flex flex-col justify-between transition shadow-sm">
+          <div class="border ${borderClass} rounded-xl p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition">
             <div>
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center space-x-2">
-                  <span class="font-bold text-white">${h.name}</span>
-                  <span class="text-xs text-slate-400">${h.ticker}</span>
+                  <span class="font-bold text-slate-900 text-base">${h.name}</span>
+                  <span class="text-xs text-slate-500">${h.ticker}</span>
                 </div>
-                <span class="text-xs px-2 py-0.5 rounded font-medium ${badgeClass}">${h.status}</span>
+                <span class="text-xs px-2.5 py-0.5 rounded font-medium ${badgeClass}">${h.status}</span>
               </div>
-              <p class="text-xs text-slate-400 mb-4">${h.action_desc}</p>
-              <div class="grid grid-cols-2 gap-2 text-xs py-2 border-y border-slate-800 mb-3">
-                <div><span class="text-slate-500">買進:</span> NT$${h.entry_price} (${h.shares}股)</div>
-                <div><span class="text-slate-500">現價:</span> NT$${h.current_close}</div>
-                <div><span class="text-slate-500">停損:</span> NT$${h.stop_loss}</div>
-                <div><span class="text-slate-500">目標:</span> NT$${h.target_price}</div>
-              </div>
-              <div class="flex justify-between items-center text-xs mb-4">
-                <span class="text-slate-400">未實現損益:</span>
-                <span class="font-bold ${pnlColor}">${pnlSign}NT$${h.unrealized_pnl.toLocaleString()} (${pnlSign}${h.unrealized_pct}%)</span>
+              <p class="text-xs text-slate-500 mb-3">${h.action_desc}</p>
+              <div class="grid grid-cols-2 gap-2 text-xs py-2.5 px-3 bg-slate-50 border border-slate-100 rounded-lg mb-3 text-slate-600">
+                <div><span class="text-slate-400">買進:</span> NT$${h.entry_price} (${h.shares}股)</div>
+                <div><span class="text-slate-400">現價:</span> NT$${h.current_close}</div>
+                <div><span class="text-slate-400">停損:</span> NT$${h.stop_loss}</div>
+                <div><span class="text-slate-400">目標:</span> NT$${h.target_price}</div>
               </div>
             </div>
-            <div class="flex gap-2 pt-2 border-t border-slate-800">
-              <button onclick="removeHolding(${idx}, '登記賣出')" class="flex-1 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium">登記賣出</button>
-              <button onclick="removeHolding(${idx}, '刪除')" class="px-3 py-1.5 text-xs bg-red-950/40 hover:bg-red-900/50 text-red-400 border border-red-900/50 rounded-lg transition">刪除</button>
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+              <div class="text-xs">
+                <span class="text-slate-400">未實現損益:</span>
+                <span class="font-bold ${pnlColor} ml-1">${pnlSign}NT$${h.unrealized_pnl.toLocaleString()} (${pnlSign}${h.unrealized_pct}%)</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="removeHolding(${idx}, '平倉')" class="text-xs px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition font-medium">平倉</button>
+                <button onclick="removeHolding(${idx}, '刪除')" class="text-xs px-2 py-1 text-slate-400 hover:text-red-600 transition">&times;</button>
+              </div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // 渲染明日進場訊號卡片
+    // 渲染明日進場候選名單 (白底風格)
     function renderSignals(signals) {
       const container = document.getElementById("signals-container");
       document.getElementById("signals-count").innerText = signals ? signals.length : 0;
 
       if (!signals || signals.length === 0) {
         container.innerHTML = `
-          <div class="col-span-full py-8 text-center text-slate-500 bg-slate-900 border border-slate-800/80 rounded-xl text-sm">
-            今日無符合條件之標的
+          <div class="col-span-full py-8 text-center text-slate-400 bg-white border border-dashed border-slate-300 rounded-xl text-sm">
+            當前無符合 H2 突破標準之候選標的，維持防禦並耐心等待
           </div>
         `;
         return;
       }
 
-      const budget = parseFloat(sessionStorage.getItem("monthly_budget"));
+      const budget = parseFloat(sessionStorage.getItem("monthly_budget")) || 0;
 
       container.innerHTML = signals.map((s, idx) => {
-        let sharesText = "請先輸入本月預算";
-        let maxLossText = "--";
-        let maxProfitText = "--";
+        const isGradeA = s.grade === "A";
+        const gradeBadge = isGradeA
+          ? `<span class="text-xs px-2.5 py-0.5 rounded font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">A 級</span>`
+          : `<span class="text-xs px-2.5 py-0.5 rounded font-bold bg-blue-50 text-blue-700 border border-blue-200">B 級</span>`;
 
-        if (budget && budget > 0) {
-          const cap = s.grade === "A" ? Math.min(budget * 0.50, GRADE_A_CAP) : Math.min(budget * 0.33, GRADE_B_CAP);
-          const shares = Math.floor(cap / s.trigger_price);
-          if (shares > 0) {
-            sharesText = `${shares} 股 (約 NT$${Math.round(shares * s.trigger_price).toLocaleString()})`;
-            const maxLoss = Math.round((s.trigger_price - s.stop_loss) * shares);
-            const maxProfit = Math.round((s.target_price - s.trigger_price) * shares);
-            maxLossText = `-NT$${maxLoss.toLocaleString()}`;
-            maxProfitText = `+NT$${maxProfit.toLocaleString()}`;
-          } else {
-            sharesText = "預算不足以建立基本部位";
+        let shares = s.suggested_shares || 1000;
+        let budgetContext = "";
+
+        if (budget > 0) {
+          const ratio = isGradeA ? 0.50 : 0.33;
+          const targetCap = budget * ratio;
+          const trPrice = s.trigger_price || s.close;
+          if (trPrice > 0) {
+            shares = Math.floor(targetCap / trPrice);
           }
+          const loss = Math.round((s.trigger_price - s.stop_loss) * shares);
+          const profit = Math.round((s.target_price - s.trigger_price) * shares);
+
+          budgetContext = `
+            <div class="space-y-1 text-xs py-2.5 px-3 bg-slate-50 border border-slate-100 rounded-lg text-slate-600 mb-4">
+              <div class="flex justify-between"><span class="text-slate-400">建議部位:</span><span class="font-bold text-slate-900">${shares.toLocaleString()} 股 (約 NT$${Math.round(shares * s.trigger_price).toLocaleString()})</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">最大潛在虧損:</span><span class="text-red-600 font-semibold">-NT$${loss.toLocaleString()}</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">預期獲利目標:</span><span class="text-emerald-600 font-semibold">+NT$${profit.toLocaleString()}</span></div>
+            </div>
+          `;
+        } else {
+          budgetContext = `
+            <div class="space-y-1 text-xs py-2.5 px-3 bg-slate-50 border border-slate-100 rounded-lg text-slate-600 mb-4">
+              <div class="flex justify-between"><span class="text-slate-400">建議部位:</span><span class="text-slate-500">請先輸入本月預算</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">最大潛在虧損:</span><span class="text-slate-400">--</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">預期獲利目標:</span><span class="text-slate-400">--</span></div>
+            </div>
+          `;
         }
 
-        const gradeBadge = s.grade === "A" 
-          ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">A 級</span>`
-          : `<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">B 級</span>`;
-
         return `
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between transition hover:border-slate-700 shadow-sm">
+          <div class="border border-slate-200 bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <div>
-                  <span class="text-base font-bold text-white">${s.name}</span>
-                  <span class="text-xs text-slate-400 ml-1.5">${s.ticker} · ${s.sector}</span>
+                <div class="flex items-center space-x-2">
+                  <span class="font-bold text-slate-900 text-base">${s.name}</span>
+                  <span class="text-xs text-slate-500">${s.ticker} · ${s.sector}</span>
                 </div>
                 ${gradeBadge}
               </div>
-              <div class="grid grid-cols-2 gap-2 text-xs py-3 border-y border-slate-800 mb-3 bg-slate-950/40 rounded-lg px-3">
-                <div><span class="text-slate-500">觸發進場價:</span> <span class="font-semibold text-emerald-400">NT$${s.trigger_price}</span></div>
-                <div><span class="text-slate-500">初始停損價:</span> <span class="font-semibold text-red-400">NT$${s.stop_loss}</span></div>
-                <div><span class="text-slate-500">目標獲利價:</span> <span class="font-semibold text-blue-400">NT$${s.target_price}</span></div>
-                <div><span class="text-slate-500">風酬比 / 風險%:</span> <span>1:${s.net_rr} (${s.risk_pct}%)</span></div>
+
+              <div class="grid grid-cols-2 gap-2 text-xs py-2.5 px-3 bg-slate-50 border border-slate-100 rounded-lg mb-3">
+                <div><span class="text-slate-400">觸發進場價:</span> <span class="font-bold text-emerald-700">NT$${s.trigger_price}</span></div>
+                <div><span class="text-slate-400">初始停損價:</span> <span class="font-bold text-red-600">NT$${s.stop_loss}</span></div>
+                <div><span class="text-slate-400">目標獲利價:</span> <span class="font-bold text-blue-700">NT$${s.target_price}</span></div>
+                <div><span class="text-slate-400">風酬比:</span> <span class="text-slate-700">1:2 (${s.risk_pct}%)</span></div>
               </div>
-              <div class="text-xs space-y-1.5 mb-4 px-1">
-                <div class="flex justify-between"><span class="text-slate-400">建議部位:</span> <span class="text-slate-200 font-medium">${sharesText}</span></div>
-                <div class="flex justify-between"><span class="text-slate-400">最大潛在虧損:</span> <span class="text-red-400 font-medium">${maxLossText}</span></div>
-                <div class="flex justify-between"><span class="text-slate-400">預期獲利目標:</span> <span class="text-emerald-400 font-medium">${maxProfitText}</span></div>
-              </div>
+
+              ${budgetContext}
             </div>
-            <div class="flex gap-2 pt-2 border-t border-slate-800">
-              <button onclick="openChartModal(${idx})" class="flex-1 py-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition font-medium">查看 K 線</button>
-              <button onclick="openEntryModal(${idx})" class="flex-1 py-2 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition font-medium">納入我的持股</button>
+
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+              <button onclick="openChartModal(${idx})" class="py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition">
+                查看 K 線
+              </button>
+              <button onclick="openEntryModal(${idx})" class="py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition shadow-sm">
+                納入我的持股
+              </button>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // 渲染醞釀中名單
+    // 渲染打底醞釀中名單 (白底風格)
     function renderForming(forming) {
       const container = document.getElementById("forming-container");
       document.getElementById("forming-count").innerText = forming ? forming.length : 0;
 
       if (!forming || forming.length === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs">目前無處於打底醞釀階段之標的</div>`;
+        container.innerHTML = `
+          <div class="py-8 text-center text-slate-400 text-sm">
+            目前無回測 20 EMA 醞釀中標的
+          </div>
+        `;
         return;
       }
 
       container.innerHTML = `
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-slate-950 text-slate-400 uppercase border-b border-slate-800">
+            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold">
               <tr>
-                <th class="px-4 py-2.5">代號</th>
-                <th class="px-4 py-2.5">名稱</th>
-                <th class="px-4 py-2.5">產業</th>
-                <th class="px-4 py-2.5 text-right">當前收盤</th>
-                <th class="px-4 py-2.5 text-right">20 EMA</th>
-                <th class="px-4 py-2.5">狀態說明</th>
+                <th class="px-4 py-3">代號</th>
+                <th class="px-4 py-3">名稱</th>
+                <th class="px-4 py-3">產業</th>
+                <th class="px-4 py-3 text-right">今日收盤</th>
+                <th class="px-4 py-3 text-right">20 EMA</th>
+                <th class="px-4 py-3 text-center">均線乖離</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800">
-              ${forming.map(f => `
-                <tr class="hover:bg-slate-800/40">
-                  <td class="px-4 py-2.5 font-mono">${f.ticker}</td>
-                  <td class="px-4 py-2.5 font-medium text-white">${f.name}</td>
-                  <td class="px-4 py-2.5 text-slate-400">${f.sector}</td>
-                  <td class="px-4 py-2.5 text-right font-medium">NT$${f.close}</td>
-                  <td class="px-4 py-2.5 text-right text-slate-400">NT$${f.ema20}</td>
-                  <td class="px-4 py-2.5 text-amber-400">已確立 H1 且回測 20 EMA 支撐區，等待訊號棒突破</td>
-                </tr>
-              `).join('')}
+            <tbody class="divide-y divide-slate-100 bg-white">
+              ${forming.map(f => {
+                const diff = (((f.close - f.ema20) / f.ema20) * 100).toFixed(2);
+                const diffColor = diff >= 0 ? "text-emerald-600" : "text-red-600";
+                return `
+                  <tr class="hover:bg-slate-50 transition">
+                    <td class="px-4 py-3 font-medium text-slate-900">${f.ticker}</td>
+                    <td class="px-4 py-3 text-slate-800 font-medium">${f.name}</td>
+                    <td class="px-4 py-3 text-slate-500">${f.sector}</td>
+                    <td class="px-4 py-3 text-right font-medium text-slate-900">NT$${f.close}</td>
+                    <td class="px-4 py-3 text-right text-slate-500">NT$${f.ema20}</td>
+                    <td class="px-4 py-3 text-center font-bold ${diffColor}">${diff > 0 ? "+" : ""}${diff}%</td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
       `;
     }
 
-    // 觀察池產業下拉選單設定
+    // 產業篩選與觀察池渲染
+    let currentSector = "ALL";
+
     function setupSectorFilter(universe) {
-      if (!universe) return;
-      const sectors = Array.from(new Set(universe.map(u => u.sector).filter(Boolean)));
       const select = document.getElementById("sector-filter");
-      select.innerHTML = '<option value="ALL">全部產業</option>' + sectors.map(s => `<option value="${s}">${s}</option>`).join('');
+      if (!universe) return;
+      const sectors = Array.from(new Set(universe.map(u => u.sector))).filter(Boolean);
+      select.innerHTML = `<option value="ALL">全部產業 (${universe.length})</option>` +
+        sectors.map(s => `<option value="${s}">${s}</option>`).join('');
     }
 
-    // 渲染觀察池表格
     function renderUniverse() {
-      if (!globalData || !globalData.universe) return;
-      const selected = document.getElementById("sector-filter").value;
-      const filtered = selected === "ALL" 
-        ? globalData.universe 
-        : globalData.universe.filter(u => u.sector === selected);
-
-      document.getElementById("universe-count").innerText = filtered.length;
       const tbody = document.getElementById("universe-tbody");
+      const sector = document.getElementById("sector-filter").value;
+      currentSector = sector;
 
-      tbody.innerHTML = filtered.map(u => {
-        const trendBadge = u.trend_up 
-          ? `<span class="text-emerald-400">▲ 多頭 (Above EMA)</span>`
-          : `<span class="text-slate-500">▼ 空頭 (Below EMA)</span>`;
-        const sigBadge = u.has_signal 
-          ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400">${u.grade} 級買訊</span>`
-          : `<span class="text-slate-600">-</span>`;
+      if (!globalData || !globalData.universe) return;
+      let list = globalData.universe;
+      if (sector !== "ALL") {
+        list = list.filter(u => u.sector === sector);
+      }
+      document.getElementById("universe-count").innerText = list.length;
+
+      tbody.innerHTML = list.map(u => {
+        const trendBadge = u.trend_up
+          ? `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">多頭</span>`
+          : `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">整理/空頭</span>`;
+
+        const sigBadge = u.has_signal
+          ? `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">${u.grade} 級買訊</span>`
+          : `<span class="text-slate-300">-</span>`;
 
         return `
-          <tr class="hover:bg-slate-800/40 transition">
-            <td class="px-4 py-3 font-mono">${u.ticker}</td>
-            <td class="px-4 py-3 font-semibold text-white">${u.name}</td>
-            <td class="px-4 py-3 text-slate-400">${u.sector}</td>
-            <td class="px-4 py-3 text-right font-medium">NT$${u.close}</td>
-            <td class="px-4 py-3 text-right text-slate-400">NT$${u.ema20}</td>
-            <td class="px-4 py-3 text-center text-xs">${trendBadge}</td>
-            <td class="px-4 py-3 text-center text-xs">${sigBadge}</td>
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-medium text-slate-900">${u.ticker}</td>
+            <td class="px-4 py-3 text-slate-800 font-medium">${u.name}</td>
+            <td class="px-4 py-3 text-slate-500">${u.sector}</td>
+            <td class="px-4 py-3 text-right font-medium text-slate-900">NT$${u.close}</td>
+            <td class="px-4 py-3 text-right text-slate-500">NT$${u.ema20}</td>
+            <td class="px-4 py-3 text-center">${trendBadge}</td>
+            <td class="px-4 py-3 text-center">${sigBadge}</td>
           </tr>
         `;
       }).join('');
     }
 
-    // 打開 Lightweight Charts 彈窗
+    // 打開 Lightweight Charts 彈窗 (白底明亮風格)
     function openChartModal(signalIndex) {
       const s = globalData.signals[signalIndex];
       document.getElementById("modal-title").innerText = `${s.name} (${s.ticker}) · ${s.grade} 級訊號`;
@@ -680,13 +789,13 @@
       chartInstance = LightweightCharts.createChart(chartElem, {
         width: chartElem.clientWidth,
         height: 384,
-        layout: { background: { color: '#020617' }, textColor: '#94a3b8' },
+        layout: { background: { color: '#ffffff' }, textColor: '#475569' },
         grid: {
-          vertLines: { color: '#1e293b' },
-          horzLines: { color: '#1e293b' }
+          vertLines: { color: '#f1f5f9' },
+          horzLines: { color: '#f1f5f9' }
         },
-        timeScale: { borderColor: '#334155' },
-        rightPriceScale: { borderColor: '#334155' }
+        timeScale: { borderColor: '#e2e8f0' },
+        rightPriceScale: { borderColor: '#e2e8f0' }
       });
 
       const candleSeries = chartInstance.addCandlestickSeries({
@@ -694,27 +803,46 @@
         borderUpColor: '#ef4444', borderDownColor: '#22c55e',
         wickUpColor: '#ef4444', wickDownColor: '#22c55e',
       });
-      candleSeries.setData(s.candles);
 
-      const emaSeries = chartInstance.addLineSeries({
-        color: '#f59e0b',
-        lineWidth: 2,
-        title: 'EMA 20'
-      });
-      emaSeries.setData(s.ema);
-
-      // 進場、停損與目標價輔助水平線
-      candleSeries.createPriceLine({ price: s.trigger_price, color: '#10b981', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '觸發進場' });
-      candleSeries.createPriceLine({ price: s.stop_loss, color: '#ef4444', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '停損點' });
-      candleSeries.createPriceLine({ price: s.target_price, color: '#3b82f6', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '獲利目標' });
-
-      // 訊號棒標記
-      if (s.candles.length > 0) {
-        const lastBar = s.candles[s.candles.length - 1];
-        candleSeries.setMarkers([
-          { time: lastBar.time, position: 'belowBar', color: '#10b981', shape: 'arrowUp', text: `H2 買訊 (${s.grade}級)` }
-        ]);
+      if (s.candles && s.candles.length > 0) {
+        candleSeries.setData(s.candles);
       }
+
+      if (s.ema && s.ema.length > 0) {
+        const emaSeries = chartInstance.addLineSeries({
+          color: '#3b82f6',
+          lineWidth: 2,
+        });
+        emaSeries.setData(s.ema);
+      }
+
+      // 標註進場、停損、目標線
+      candleSeries.createPriceLine({
+        price: s.trigger_price,
+        color: '#10b981',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: '進場點',
+      });
+
+      candleSeries.createPriceLine({
+        price: s.stop_loss,
+        color: '#ef4444',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: '停損點',
+      });
+
+      candleSeries.createPriceLine({
+        price: s.target_price,
+        color: '#3b82f6',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: '目標價',
+      });
     }
 
     function closeChartModal() {
@@ -730,11 +858,12 @@
       selectedSignal = globalData.signals[signalIndex];
       const s = selectedSignal;
       const budget = parseFloat(sessionStorage.getItem("monthly_budget")) || 0;
-      let initialShares = 10;
+      let initialShares = 1000;
 
       if (budget > 0) {
-        const cap = s.grade === "A" ? Math.min(budget * 0.50, GRADE_A_CAP) : Math.min(budget * 0.33, GRADE_B_CAP);
-        const calcShares = Math.floor(cap / s.trigger_price);
+        const ratio = s.grade === "A" ? 0.50 : 0.33;
+        const targetCap = budget * ratio;
+        const calcShares = Math.floor(targetCap / s.trigger_price);
         if (calcShares > 0) initialShares = calcShares;
       }
 
@@ -758,7 +887,6 @@
       const shares = parseInt(document.getElementById("reg-shares").value) || 0;
       document.getElementById("reg-total-amount").value = `NT$ ${(price * shares).toLocaleString()}`;
     }
-
 
     function openManualHoldingModal() {
       document.getElementById("manual-ticker").value = "";
@@ -811,6 +939,7 @@
       if (!ticker.includes(".")) ticker = ticker + ".TW";
 
       const name = document.getElementById("manual-name").value.trim() || ticker;
+      const grade = document.getElementById("manual-grade") ? document.getElementById("manual-grade").value : "自選/手動";
       const entryPrice = parseFloat(document.getElementById("manual-entry-price").value);
       const shares = parseInt(document.getElementById("manual-shares").value);
       const stopLoss = parseFloat(document.getElementById("manual-stop-loss").value) || 0;
@@ -825,7 +954,7 @@
       const rawRecord = {
         ticker: ticker,
         name: name,
-        grade: "MANUAL",
+        grade: grade,
         entry_date: entryDate,
         entry_price: entryPrice,
         shares: shares,
@@ -833,7 +962,7 @@
         target_price: targetPrice
       };
 
-      // 1. 存入本機 localStorage (重新整理永不消失)
+      // 1. 存入本機 localStorage
       const currentStored = getStoredHoldings();
       currentStored.push(rawRecord);
       saveStoredHoldings(currentStored);
@@ -850,7 +979,7 @@
       renderHoldings(globalData.holdings_status);
       closeManualHoldingModal();
 
-      // 3. 若已設定 GitHub，非同步同步至 holdings.json
+      // 3. 背景非同步同步至 GitHub
       const repo = localStorage.getItem("gh_repo");
       const token = localStorage.getItem("gh_token");
       if (repo && token) {
@@ -858,7 +987,7 @@
           const exportList = globalData.holdings_status.map(h => ({
             ticker: h.ticker,
             name: h.name,
-            grade: h.grade || "MANUAL",
+            grade: h.grade || "自選/手動",
             entry_date: h.entry_date,
             entry_price: h.entry_price,
             shares: h.shares,
@@ -868,164 +997,153 @@
           await updateGithubFile(repo, token, "holdings.json", JSON.stringify(exportList, null, 2), `feat: 手動新增持股 ${ticker}`);
           alert(`已成功儲存至本機並同步至雲端 GitHub holdings.json！`);
         } catch (e) {
-          alert(`已儲存至本機！(同步至雲端 GitHub 時失敗: ${e.message})`);
+          console.warn("同步至 GitHub 失敗:", e);
+          alert(`已成功儲存至本機！重新整理網頁將完整保留。\n(提示: 雲端 GitHub 同步未完成: ${e.message}，請檢查右上角 GitHub 設定)`);
         }
       } else {
         alert(`已成功儲存至本機！重新整理網頁將完整保留。(如需雲端同步，可於右上角設定 GitHub)`);
       }
     }
 
-    // 透過 GitHub API 新增持股登記至 holdings.json
     async function submitRegistration() {
-      const repo = localStorage.getItem("gh_repo");
-      const token = localStorage.getItem("gh_token");
-
-      if (!repo || !token) {
-        alert("請先於右上角 [GitHub 設定] 輸入 Repository 與 Access Token");
-        openGhModal();
-        return;
-      }
-
       const s = selectedSignal;
+      if (!s) return;
       const entryPrice = parseFloat(document.getElementById("reg-entry-price").value);
       const shares = parseInt(document.getElementById("reg-shares").value);
-      const stopLoss = parseFloat(document.getElementById("reg-stop-loss").value);
-      const targetPrice = parseFloat(document.getElementById("reg-target-price").value);
+      const stopLoss = parseFloat(document.getElementById("reg-stop-loss").value) || 0;
+      const targetPrice = parseFloat(document.getElementById("reg-target-price").value) || 0;
 
       if (!entryPrice || !shares || shares <= 0) {
         alert("請輸入正確的進場價格與買進股數");
         return;
       }
 
-      const btn = document.getElementById("btn-confirm-reg");
-      btn.disabled = true;
-      btn.innerText = "寫入 GitHub 中...";
+      const newRecord = {
+        ticker: s.ticker,
+        name: s.name,
+        grade: s.grade || "A",
+        entry_date: new Date().toISOString().split('T')[0],
+        entry_price: entryPrice,
+        shares: shares,
+        stop_loss: stopLoss,
+        target_price: targetPrice
+      };
 
-      try {
-        const newRecord = {
-          ticker: s.ticker,
-          name: s.name,
-          grade: s.grade,
-          entry_date: new Date().toISOString().split('T')[0],
-          entry_price: entryPrice,
-          shares: shares,
-          stop_loss: stopLoss,
-          target_price: targetPrice
-        };
+      // 1. 儲存於本機 localStorage
+      const currentStored = getStoredHoldings();
+      currentStored.push(newRecord);
+      saveStoredHoldings(currentStored);
 
-        // 1. 儲存於本機 localStorage (保證重新整理不消失)
-        const currentStored = getStoredHoldings();
-        currentStored.push(newRecord);
-        saveStoredHoldings(currentStored);
+      // 2. 即時更新記憶體與畫面
+      const evalItem = evaluateHoldingItem(newRecord, s.close || entryPrice);
+      if (!globalData.holdings_status) globalData.holdings_status = [];
+      globalData.holdings_status.push(evalItem);
+      renderHoldings(globalData.holdings_status);
+      closeEntryModal();
 
-        // 2. 即時更新記憶體與畫面
-        const evalItem = evaluateHoldingItem(newRecord, s.close || entryPrice);
-        if (!globalData.holdings_status) globalData.holdings_status = [];
-        globalData.holdings_status.push(evalItem);
-        renderHoldings(globalData.holdings_status);
-
-        // 3. 雲端同步
-        const existingHoldings = globalData.holdings_status.map(h => ({
-          ticker: h.ticker,
-          name: h.name,
-          grade: h.grade,
-          entry_date: h.entry_date,
-          entry_price: h.entry_price,
-          shares: h.shares,
-          stop_loss: h.stop_loss,
-          target_price: h.target_price
-        }));
-
-        const contentStr = JSON.stringify(existingHoldings, null, 2);
-        const repo = localStorage.getItem("gh_repo");
-        const token = localStorage.getItem("gh_token");
-        if (repo && token) {
-          try {
-            await updateGithubFile(repo, token, "holdings.json", contentStr, `feat: 買進建立持股 ${s.ticker} (${shares}股)`);
-            alert(`已成功將 ${s.ticker} 儲存至本機並同步至 GitHub holdings.json！`);
-          } catch (e) {
-            alert(`已儲存至本機！(同步至 GitHub 失敗: ${e.message})`);
-          }
-        } else {
-          alert(`已成功將 ${s.ticker} 儲存至本機！重新整理網頁將完整保留。(如需雲端同步，可於右上角設定 GitHub)`);
+      // 3. 背景非同步同步至 GitHub
+      const repo = localStorage.getItem("gh_repo");
+      const token = localStorage.getItem("gh_token");
+      if (repo && token) {
+        try {
+          const existingHoldings = globalData.holdings_status.map(h => ({
+            ticker: h.ticker,
+            name: h.name,
+            grade: h.grade || "A",
+            entry_date: h.entry_date,
+            entry_price: h.entry_price,
+            shares: h.shares,
+            stop_loss: h.stop_loss,
+            target_price: h.target_price
+          }));
+          const contentStr = JSON.stringify(existingHoldings, null, 2);
+          await updateGithubFile(repo, token, "holdings.json", contentStr, `feat: 買進建立持股 ${s.ticker} (${shares}股)`);
+          alert(`已成功將 ${s.ticker} 登記至本機持股，並同步至 GitHub holdings.json！`);
+        } catch (e) {
+          console.warn("同步至 GitHub 失敗:", e);
+          alert(`已成功將 ${s.ticker} 登記至本機！重新整理不會遺失。\n(提示: 雲端 GitHub 同步失敗: ${e.message}，請檢查右上角 GitHub 設定)`);
         }
-        closeEntryModal();
-      } catch (err) {
-        alert("寫入失敗: " + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "確認並透過 GitHub 登記";
+      } else {
+        alert(`已成功將 ${s.ticker} 登記至本機持股！重新整理頁面仍會保留。(如需雲端同步，可至右上角設定 GitHub)`);
       }
     }
 
-    // 透過 GitHub API 刪除或平倉持股
     async function removeHolding(index, actionName) {
-      const repo = localStorage.getItem("gh_repo");
-      const token = localStorage.getItem("gh_token");
-
-      if (!repo || !token) {
-        alert("請先完成 GitHub 授權設定");
-        openGhModal();
-        return;
-      }
-
+      if (!globalData || !globalData.holdings_status || !globalData.holdings_status[index]) return;
       const target = globalData.holdings_status[index];
       if (!confirm(`確定要${actionName}「${target.ticker} ${target.name}」嗎？`)) return;
 
-      try {
-        const updated = globalData.holdings_status.filter((_, i) => i !== index).map(h => ({
-          ticker: h.ticker,
-          name: h.name,
-          grade: h.grade,
-          entry_date: h.entry_date,
-          entry_price: h.entry_price,
-          shares: h.shares,
-          stop_loss: h.stop_loss,
-          target_price: h.target_price
-        }));
+      // 1. 從本機 localStorage 立即移除
+      const stored = getStoredHoldings().filter(h => !(h.ticker === target.ticker && h.entry_date === target.entry_date));
+      saveStoredHoldings(stored);
 
-        // 1. 從本機 localStorage 移除
-        const stored = getStoredHoldings().filter(h => !(h.ticker === target.ticker && h.entry_date === target.entry_date));
-        saveStoredHoldings(stored);
+      // 2. 從畫面中立即移除
+      globalData.holdings_status.splice(index, 1);
+      renderHoldings(globalData.holdings_status);
 
-        // 2. 從記憶體中移除並重繪
-        globalData.holdings_status.splice(index, 1);
-        renderHoldings(globalData.holdings_status);
-
-        // 3. 若有設定 GitHub 則同步
-        const repo = localStorage.getItem("gh_repo");
-        const token = localStorage.getItem("gh_token");
-        if (repo && token) {
-          try {
-            const contentStr = JSON.stringify(updated, null, 2);
-            await updateGithubFile(repo, token, "holdings.json", contentStr, `chore: ${actionName}持股 ${target.ticker}`);
-          } catch(e) {
-            console.error("同步至 GitHub 失敗", e);
-          }
+      // 3. 背景非同步同步至 GitHub
+      const repo = localStorage.getItem("gh_repo");
+      const token = localStorage.getItem("gh_token");
+      if (repo && token) {
+        try {
+          const updated = globalData.holdings_status.map(h => ({
+            ticker: h.ticker,
+            name: h.name,
+            grade: h.grade || "自選/手動",
+            entry_date: h.entry_date,
+            entry_price: h.entry_price,
+            shares: h.shares,
+            stop_loss: h.stop_loss,
+            target_price: h.target_price
+          }));
+          const contentStr = JSON.stringify(updated, null, 2);
+          await updateGithubFile(repo, token, "holdings.json", contentStr, `chore: ${actionName}持股 ${target.ticker}`);
+          alert(`已成功${actionName}「${target.ticker} ${target.name}」，並已同步至雲端 GitHub！`);
+          return;
+        } catch(e) {
+          console.warn("同步至 GitHub 失敗:", e);
+          alert(`已自本機成功${actionName}「${target.ticker} ${target.name}」！\n(提示: 雲端 GitHub 同步未完成: ${e.message})`);
+          return;
         }
-        alert(`已成功更新持股資料庫！`);
-      } catch (err) {
-        alert("更新失敗: " + err.message);
       }
+      alert(`已成功自本機${actionName}「${target.ticker} ${target.name}」！`);
     }
 
-    // GitHub API 核心寫入函式 (Base64 UTF-8)
+    function cleanRepoString(input) {
+      if (!input) return "";
+      let r = input.trim();
+      r = r.replace(/^https?:\/\/github\.com\//i, "");
+      r = r.replace(/\.git$/i, "");
+      r = r.replace(/^\/+|\/+$/g, "");
+      return r;
+    }
+
     async function updateGithubFile(repo, token, path, content, message) {
-      const getUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
-      const getRes = await fetch(getUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
+      if (!repo || !token) return false;
+      const cleanR = cleanRepoString(repo);
+      const cleanT = token.trim();
+      if (!cleanR || !cleanT) return false;
+
+      const baseApiUrl = `https://api.github.com/repos/${cleanR}/contents/${path}`;
+      const authHeader = (cleanT.startsWith("Bearer ") || cleanT.startsWith("token ")) ? cleanT : `token ${cleanT}`;
+      const headers = {
+        'Authorization': authHeader,
+        'Accept': 'application/vnd.github.v3+json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      };
 
       let sha = "";
-      if (getRes.ok) {
-        const fileInfo = await getRes.json();
-        sha = fileInfo.sha;
+      try {
+        const getRes = await fetch(`${baseApiUrl}?t=${Date.now()}`, { headers });
+        if (getRes.ok) {
+          const fileInfo = await getRes.json();
+          sha = fileInfo.sha;
+        }
+      } catch (e) {
+        console.warn("取得檔案 SHA 失敗:", e);
       }
 
-      // 支援中文字元的 UTF-8 Base64 編碼
       const utf8Bytes = new TextEncoder().encode(content);
       let binaryStr = "";
       for (let i = 0; i < utf8Bytes.length; i++) {
@@ -1033,12 +1151,11 @@
       }
       const base64Content = window.btoa(binaryStr);
 
-      const putRes = await fetch(getUrl, {
+      let putRes = await fetch(baseApiUrl, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
+          ...headers,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           message: message,
@@ -1047,13 +1164,38 @@
         })
       });
 
-      if (!putRes.ok) {
-        const errJson = await putRes.json();
-        throw new Error(errJson.message || "GitHub API 回傳異常");
+      if (putRes.status === 409) {
+        console.warn("偵測到 SHA 衝突 (409 Conflict)，重新抓取最新 SHA 並自動重試...");
+        try {
+          const retryGetRes = await fetch(`${baseApiUrl}?t=${Date.now()}`, { headers });
+          if (retryGetRes.ok) {
+            const retryInfo = await retryGetRes.json();
+            const freshSha = retryInfo.sha;
+            putRes = await fetch(baseApiUrl, {
+              method: 'PUT',
+              headers: {
+                ...headers,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                message: message,
+                content: base64Content,
+                sha: freshSha
+              })
+            });
+          }
+        } catch (retryErr) {
+          console.warn("自動重試失敗:", retryErr);
+        }
       }
+
+      if (!putRes.ok) {
+        const errJson = await putRes.json().catch(() => ({}));
+        throw new Error(errJson.message || `HTTP ${putRes.status}`);
+      }
+      return await putRes.json().catch(() => ({}));
     }
 
-    // GitHub 彈窗控制
     function openGhModal() {
       document.getElementById("gh-repo").value = localStorage.getItem("gh_repo") || "";
       document.getElementById("gh-token").value = localStorage.getItem("gh_token") || "";
@@ -1065,11 +1207,13 @@
     }
 
     function saveGhSettings() {
-      const repo = document.getElementById("gh-repo").value.trim();
-      const token = document.getElementById("gh-token").value.trim();
+      const rawRepo = document.getElementById("gh-repo").value;
+      const rawToken = document.getElementById("gh-token").value;
+      const repo = cleanRepoString(rawRepo);
+      const token = rawToken.trim();
       localStorage.setItem("gh_repo", repo);
       localStorage.setItem("gh_token", token);
-      alert("GitHub 設定已成功儲存至本機！");
+      alert(`GitHub 設定已儲存！\n儲存庫: ${repo || '(未設定)'}`);
       closeGhModal();
     }
   </script>
