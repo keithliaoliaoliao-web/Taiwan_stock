@@ -46,14 +46,19 @@ def fetch_market_index(ticker: str = config.BENCHMARK_TICKER) -> Dict[str, Any]:
 def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     計算價格行為引擎所需的技術指標 (EMA20, ATR14, 成交金額, 成交均量)
+    同時相容 EMA20 與 EMA_20 欄位名稱
     """
     if df.empty or len(df) < 5:
         return df
         
     df = df.copy()
     
-    df["EMA20"] = df["Close"].ewm(span=config.EMA_PERIOD, adjust=False).mean()
+    # 計算 20EMA (雙向設定 EMA20 與 EMA_20)
+    ema_series = df["Close"].ewm(span=config.EMA_PERIOD, adjust=False).mean()
+    df["EMA20"] = ema_series
+    df["EMA_20"] = ema_series
     
+    # 計算 14ATR (True Range)
     high = df["High"]
     low = df["Low"]
     close_prev = df["Close"].shift(1)
@@ -64,9 +69,14 @@ def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
     df["TR"] = tr
-    df["ATR14"] = tr.rolling(window=config.ATR_PERIOD).mean()
+    atr_series = tr.rolling(window=config.ATR_PERIOD).mean()
+    df["ATR14"] = atr_series
+    df["ATR"] = atr_series
     
+    # 計算成交金額 (以 Close * Volume 估算，台股 Volume 為股數)
     df["Turnover"] = df["Close"] * df["Volume"]
+    
+    # 計算 20日成交均量
     df["Volume_MA20"] = df["Volume"].rolling(window=config.VOLUME_MA_PERIOD).mean()
     
     return df
@@ -104,6 +114,7 @@ def fetch_stock_daily_bars(ticker: str, lookback_days: int = config.DATA_LOOKBAC
 def format_chart_series(df: pd.DataFrame, bars_count: int = 60) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     將 DataFrame 格式化為 Lightweight Charts 可直接消費的 K 線與 EMA 陣列
+    支援 EMA_20 與 EMA20 欄位讀取
     """
     candles: List[Dict[str, Any]] = []
     ema_points: List[Dict[str, Any]] = []
@@ -127,10 +138,12 @@ def format_chart_series(df: pd.DataFrame, bars_count: int = 60) -> Tuple[List[Di
             "close": close_val
         })
         
-        if "EMA20" in row and not pd.isna(row["EMA20"]):
+        # 兼容 EMA_20 與 EMA20
+        ema_val = row.get("EMA_20") if "EMA_20" in row else row.get("EMA20")
+        if ema_val is not None and not pd.isna(ema_val):
             ema_points.append({
                 "time": date_str,
-                "value": float(round(row["EMA20"], 2))
+                "value": float(round(ema_val, 2))
             })
             
     return candles, ema_points

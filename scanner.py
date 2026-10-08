@@ -27,7 +27,7 @@ import universe_updater
 import data_fetcher
 import portfolio_tracker
 
-# 嘗試載入使用者的價格行為引擎
+# 嘗試載入使用者的價格行為引擎 (Al Brooks 模型)
 try:
     from price_action_engine import PriceActionEngine
 except ImportError:
@@ -179,6 +179,8 @@ def run_scan() -> None:
 
                     if "Always_In" in last_setup_row:
                         trend_up = bool(last_setup_row.get("Always_In") == "LONG")
+                    if "EMA_20" in last_setup_row and not pd_isna(last_setup_row["EMA_20"]):
+                        last_ema20 = float(round(last_setup_row["EMA_20"], 2))
             elif isinstance(setup_result, dict):
                 grade = setup_result.get("grade")
                 status = setup_result.get("status")
@@ -212,7 +214,8 @@ def run_scan() -> None:
 
         # 若觸發進場訊號，補齊關鍵價位
         if has_signal:
-            candles, ema_series = data_fetcher.format_chart_series(df, bars_count=60)
+            chart_df = setup_result if isinstance(setup_result, pd.DataFrame) and not setup_result.empty else df
+            candles, ema_series = data_fetcher.format_chart_series(chart_df, bars_count=60)
             
             if trigger_price is None:
                 trigger_price = last_close
