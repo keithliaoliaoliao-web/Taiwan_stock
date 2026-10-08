@@ -650,23 +650,28 @@
                 <div>${gradeBadge}</div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2 text-center text-xs mb-3">
-                <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                  <span class="text-slate-400 text-[10px] block">觸發進場</span>
+              <!-- 關鍵價位 (4 欄：當前市價、觸發進場、停損防守、停利目標) -->
+              <div class="grid grid-cols-4 gap-1.5 text-center text-xs mb-3">
+                <div class="bg-slate-100/80 p-2 rounded-xl border border-slate-200">
+                  <span class="text-slate-500 text-[10px] block font-medium">當前市價</span>
+                  <span class="font-bold text-slate-900 text-sm">$${sig.close}</span>
+                </div>
+                <div class="bg-emerald-50/70 p-2 rounded-xl border border-emerald-200">
+                  <span class="text-emerald-700 text-[10px] block font-medium">觸發進場</span>
                   <span class="font-bold text-emerald-600 text-sm">$${sig.trigger_price}</span>
                 </div>
-                <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                  <span class="text-slate-400 text-[10px] block">停損防守</span>
+                <div class="bg-rose-50/70 p-2 rounded-xl border border-rose-200">
+                  <span class="text-rose-700 text-[10px] block font-medium">停損防守</span>
                   <span class="font-bold text-rose-600 text-sm">$${sig.stop_loss}</span>
                 </div>
-                <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
-                  <span class="text-slate-400 text-[10px] block">停利目標</span>
+                <div class="bg-blue-50/70 p-2 rounded-xl border border-blue-200">
+                  <span class="text-blue-700 text-[10px] block font-medium">停利目標</span>
                   <span class="font-bold text-blue-600 text-sm">$${sig.target_price}</span>
                 </div>
               </div>
 
               <div class="flex items-center justify-between text-xs text-slate-600 px-1 py-1.5 bg-slate-50/60 rounded-lg mb-3">
-                <span>風險幅度：<strong class="text-slate-800">${sig.risk_pct}%</strong></span>
+                <span>風險幅度：<strong class="text-slate-800">${Number(sig.risk_pct).toFixed(2)}%</strong></span>
                 <span>風酬比 (R:R)：<strong class="text-indigo-600">${sig.net_rr}R</strong></span>
               </div>
 
