@@ -1,0 +1,312 @@
+{
+  "scan_date": "2026-10-08",
+  "scan_time": "16:47",
+  "market_status": {
+    "bullish": true,
+    "close": 49313.44,
+    "ema20": 48007.18
+  },
+  "signals": [
+    {
+      "ticker": "2412.TW",
+      "name": "中華電",
+      "sector": "通信網路",
+      "grade": "A",
+      "close": 146.5,
+      "trigger_price": 147.0,
+      "stop_loss": 144.5,
+      "target_price": 152.0,
+      "risk_pct": 1.7,
+      "net_rr": 2.0,
+      "suggested_shares": 1000,
+      "candles": [
+        {
+          "time": "2026-09-28",
+          "open": 144.0,
+          "high": 145.5,
+          "low": 143.5,
+          "close": 145.0
+        },
+        {
+          "time": "2026-09-29",
+          "open": 145.0,
+          "high": 146.0,
+          "low": 144.5,
+          "close": 145.5
+        },
+        {
+          "time": "2026-09-30",
+          "open": 145.5,
+          "high": 146.5,
+          "low": 145.0,
+          "close": 146.0
+        },
+        {
+          "time": "2026-10-01",
+          "open": 146.0,
+          "high": 147.0,
+          "low": 145.5,
+          "close": 146.5
+        },
+        {
+          "time": "2026-10-02",
+          "open": 146.5,
+          "high": 146.5,
+          "low": 144.5,
+          "close": 145.0
+        },
+        {
+          "time": "2026-10-05",
+          "open": 145.0,
+          "high": 145.5,
+          "low": 144.0,
+          "close": 144.5
+        },
+        {
+          "time": "2026-10-06",
+          "open": 144.5,
+          "high": 146.0,
+          "low": 144.0,
+          "close": 145.5
+        },
+        {
+          "time": "2026-10-07",
+          "open": 145.5,
+          "high": 146.5,
+          "low": 145.0,
+          "close": 146.0
+        },
+        {
+          "time": "2026-10-08",
+          "open": 146.0,
+          "high": 147.0,
+          "low": 145.5,
+          "close": 146.5
+        }
+      ],
+      "ema": [
+        {
+          "time": "2026-09-28",
+          "value": 143.2
+        },
+        {
+          "time": "2026-09-29",
+          "value": 143.5
+        },
+        {
+          "time": "2026-09-30",
+          "value": 143.8
+        },
+        {
+          "time": "2026-10-01",
+          "value": 144.1
+        },
+        {
+          "time": "2026-10-02",
+          "value": 144.3
+        },
+        {
+          "time": "2026-10-05",
+          "value": 144.5
+        },
+        {
+          "time": "2026-10-06",
+          "value": 144.7
+        },
+        {
+          "time": "2026-10-07",
+          "value": 145.0
+        },
+        {
+          "time": "2026-10-08",
+          "value": 145.2
+        }
+      ]
+    }
+  ],
+  "forming": [
+    {
+      "ticker": "2308.TW",
+      "name": "台達電",
+      "sector": "電子零組件",
+      "close": 1965.0,
+      "ema20": 1878.79
+    },
+    {
+      "ticker": "2881.TW",
+      "name": "富邦金",
+      "sector": "金融保險",
+      "close": 153.0,
+      "ema20": 150.65
+    },
+    {
+      "ticker": "2357.TW",
+      "name": "華碩",
+      "sector": "電腦及週邊",
+      "close": 996.0,
+      "ema20": 967.32
+    },
+    {
+      "ticker": "2884.TW",
+      "name": "玉山金",
+      "sector": "金融保險",
+      "close": 45.0,
+      "ema20": 44.78
+    },
+    {
+      "ticker": "1101.TW",
+      "name": "台泥",
+      "sector": "水泥工業",
+      "close": 25.7,
+      "ema20": 25.06
+    },
+    {
+      "ticker": "2317.TW",
+      "name": "鴻海",
+      "sector": "其他電子",
+      "close": 218.0,
+      "ema20": 211.5
+    },
+    {
+      "ticker": "2454.TW",
+      "name": "聯發科",
+      "sector": "半導體",
+      "close": 1285.0,
+      "ema20": 1250.0
+    },
+    {
+      "ticker": "2882.TW",
+      "name": "國泰金",
+      "sector": "金融保險",
+      "close": 68.5,
+      "ema20": 67.2
+    },
+    {
+      "ticker": "2382.TW",
+      "name": "廣達",
+      "sector": "電腦及週邊",
+      "close": 285.0,
+      "ema20": 278.4
+    },
+    {
+      "ticker": "2330.TW",
+      "name": "台積電",
+      "sector": "半導體",
+      "close": 2550.0,
+      "ema20": 2480.0
+    }
+  ],
+  "holdings_status": [],
+  "universe": [
+    {
+      "ticker": "2330.TW",
+      "name": "台積電",
+      "sector": "半導體",
+      "close": 2550.0,
+      "ema20": 2480.0,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "2412.TW",
+      "name": "中華電",
+      "sector": "通信網路",
+      "close": 146.5,
+      "ema20": 145.2,
+      "trend_up": true,
+      "has_signal": true,
+      "grade": "A"
+    },
+    {
+      "ticker": "2317.TW",
+      "name": "鴻海",
+      "sector": "其他電子",
+      "close": 218.0,
+      "ema20": 211.5,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "2454.TW",
+      "name": "聯發科",
+      "sector": "半導體",
+      "close": 1285.0,
+      "ema20": 1250.0,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "2308.TW",
+      "name": "台達電",
+      "sector": "電子零組件",
+      "close": 1965.0,
+      "ema20": 1878.79,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "2382.TW",
+      "name": "廣達",
+      "sector": "電腦及週邊",
+      "close": 285.0,
+      "ema20": 278.4,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "2881.TW",
+      "name": "富邦金",
+      "sector": "金融保險",
+      "close": 153.0,
+      "ema20": 150.65,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "2882.TW",
+      "name": "國泰金",
+      "sector": "金融保險",
+      "close": 68.5,
+      "ema20": 67.2,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "2357.TW",
+      "name": "華碩",
+      "sector": "電腦及週邊",
+      "close": 996.0,
+      "ema20": 967.32,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "2884.TW",
+      "name": "玉山金",
+      "sector": "金融保險",
+      "close": 45.0,
+      "ema20": 44.78,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    },
+    {
+      "ticker": "1101.TW",
+      "name": "台泥",
+      "sector": "水泥工業",
+      "close": 25.7,
+      "ema20": 25.06,
+      "trend_up": true,
+      "has_signal": false,
+      "grade": "NONE"
+    }
+  ]
+}
