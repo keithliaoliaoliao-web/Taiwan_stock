@@ -491,14 +491,10 @@
       renderForming(data.forming || []);
       renderUniverse(data.universe || []);
 
-      // 填充手動新增代號建議選單 (以 150 檔觀察池為即時比對來源，支援純數字代號與 .TW 後綴)
+      // 填充手動新增代號建議選單 (以 150 檔觀察池為即時比對來源，每檔單一乾淨選項，杜絕重複)
       const datalist = document.getElementById('ticker-suggestions');
       if (datalist && data.universe) {
-        datalist.innerHTML = data.universe.map(u => {
-          const rawCode = u.ticker.replace('.TW', '');
-          return `<option value="${u.ticker}">${rawCode} ${u.name} (最新價 $${u.close})</option>
-                  <option value="${rawCode}">${u.name} (${u.ticker}) (最新價 $${u.close})</option>`;
-        }).join('');
+        datalist.innerHTML = data.universe.map(u => `<option value="${u.ticker}">${u.name} (最新價 $${u.close})</option>`).join('');
       }
     }
 
@@ -1102,9 +1098,9 @@
       const statusBox = document.getElementById('github-api-status');
       const submitBtn = document.getElementById('btn-submit-registration');
 
-      const repo = localStorage.getItem('gh_repo');
-      const token = localStorage.getItem('gh_token');
-      const branch = localStorage.getItem('gh_branch') || 'main';
+      let repo = (localStorage.getItem('gh_repo') || '').trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/$/, '');
+      const token = (localStorage.getItem('gh_token') || '').trim();
+      const branch = (localStorage.getItem('gh_branch') || '').trim() || 'main';
 
       let tickerInput = document.getElementById('reg-ticker').value.trim().toUpperCase();
       if (!tickerInput.includes('.')) {
@@ -1186,9 +1182,8 @@
         const getUrl = `https://api.github.com/repos/${repo}/contents/holdings.json?ref=${branch}&t=${Date.now()}`;
         const getRes = await fetch(getUrl, {
           headers: {
-            "Authorization": `Bearer ${token}`,
-            "Accept": "application/vnd.github.v3+json",
-            "Cache-Control": "no-cache"
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json"
           }
         });
 
@@ -1241,16 +1236,17 @@
      * 8. GitHub API 更新檔案核心函式
      */
     async function updateGithubFile(repo, token, path, content, message) {
-      const branch = localStorage.getItem('gh_branch') || 'main';
+      const cleanRepo = repo.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/$/, '');
+      const cleanToken = token.trim();
+      const branch = (localStorage.getItem('gh_branch') || '').trim() || 'main';
       
       async function attemptPut(retryCount = 0) {
-        const getUrl = `https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}&t=${Date.now()}`;
+        const getUrl = `https://api.github.com/repos/${cleanRepo}/contents/${path}?ref=${branch}&t=${Date.now()}`;
         let sha = null;
         const getRes = await fetch(getUrl, {
           headers: {
-            "Authorization": `Bearer ${token}`,
-            "Accept": "application/vnd.github.v3+json",
-            "Cache-Control": "no-cache"
+            "Authorization": `token ${cleanToken}`,
+            "Accept": "application/vnd.github.v3+json"
           }
         });
         if (getRes.status === 200) {
@@ -1258,7 +1254,7 @@
           sha = fileData.sha;
         }
 
-        const putUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
+        const putUrl = `https://api.github.com/repos/${cleanRepo}/contents/${path}`;
         const base64Content = btoa(unescape(encodeURIComponent(content)));
 
         const bodyPayload = {
@@ -1273,7 +1269,7 @@
         const putRes = await fetch(putUrl, {
           method: "PUT",
           headers: {
-            "Authorization": `Bearer ${token}`,
+            "Authorization": `token ${cleanToken}`,
             "Accept": "application/vnd.github.v3+json",
             "Content-Type": "application/json"
           },
@@ -1320,9 +1316,9 @@
         renderHoldings(globalScanData.holdings_status);
       }
 
-      const repo = localStorage.getItem('gh_repo');
-      const token = localStorage.getItem('gh_token');
-      const branch = localStorage.getItem('gh_branch') || 'main';
+      let repo = (localStorage.getItem('gh_repo') || '').trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/$/, '');
+      const token = (localStorage.getItem('gh_token') || '').trim();
+      const branch = (localStorage.getItem('gh_branch') || '').trim() || 'main';
 
       if (!repo || !token) {
         alert(`已自本機移除 ${ticker}。若需同步至 GitHub，請點擊上方「GitHub 連線」設定 Token。`);
@@ -1333,9 +1329,8 @@
         const getUrl = `https://api.github.com/repos/${repo}/contents/holdings.json?ref=${branch}&t=${Date.now()}`;
         const getRes = await fetch(getUrl, {
           headers: {
-            "Authorization": `Bearer ${token}`,
-            "Accept": "application/vnd.github.v3+json",
-            "Cache-Control": "no-cache"
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json"
           }
         });
 
@@ -1369,7 +1364,7 @@
     }
 
     function saveGithubSettings() {
-      const repo = document.getElementById('gh-repo').value.trim();
+      let repo = document.getElementById('gh-repo').value.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/$/, '');
       const token = document.getElementById('gh-token').value.trim();
       const branch = document.getElementById('gh-branch').value.trim() || 'main';
 
