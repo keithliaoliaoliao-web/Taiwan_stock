@@ -977,10 +977,15 @@
       container.innerHTML = `
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           ${forming.map(f => `
-            <div class="bg-slate-50 rounded-xl p-3 border border-slate-200/80 text-xs hover:border-slate-300 transition">
-              <div class="font-bold text-slate-900">${f.ticker}</div>
-              <div class="text-slate-600 font-medium">${f.name}</div>
-              <div class="text-[10px] text-slate-400 mt-1">${f.sector}</div>
+            <div onclick="openChartModal('${f.ticker}')" class="bg-slate-50 hover:bg-white rounded-xl p-3 border border-slate-200/80 text-xs hover:border-blue-400 hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+              <div>
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-slate-900 group-hover:text-blue-600 transition">${f.ticker}</span>
+                  <span class="text-[10px] text-slate-400 group-hover:text-blue-500 font-medium">📈 看圖</span>
+                </div>
+                <div class="text-slate-700 font-semibold mt-0.5">${f.name}</div>
+                <div class="text-[10px] text-slate-400">${f.sector}</div>
+              </div>
               <div class="mt-2 pt-2 border-t border-slate-200 flex justify-between items-center text-[11px]">
                 <span class="text-slate-500">收盤: $${f.close}</span>
                 <span class="text-blue-600 font-semibold">EMA: ${f.ema20}</span>
