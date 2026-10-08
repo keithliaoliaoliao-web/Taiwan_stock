@@ -1,119 +1,90 @@
-# -*- coding: utf-8 -*-
 """
-持倉追蹤與損益評估模組 (portfolio_tracker.py)
-
-讀取 holdings.json，追蹤個人持股狀態，以「股數」(shares) 為計算基準。
-計算未實現損益與持有天數，並根據台股交易與風控規則判定狀態：
-- STOP_LOSS：當前收盤 <= 停損價
-- TAKE_PROFIT：當前收盤 >= 目標價
-- NEAR_STOP：當前收盤距停損價 < 5%
-- TIME_EXIT：持有天數 > MAX_HOLDING_DAYS (預設15天)
-- HOLD：正常持有中
+portfolio_tracker.py
+個人持股監控與狀態評估模組
 """
 
-import os
-import json
 from datetime import datetime
-from typing import List, Dict, Any, Optional
-import pytz
-
+import json
+import os
+from typing import Any, Dict, List
 import config
 
+HOLDINGS_FILE = "holdings.json"
 
-def load_holdings(filepath: str = "holdings.json") -> List[Dict[str, Any]]:
-    """
-    從 JSON 檔案載入持倉清單
-    """
+
+def load_holdings(filepath: str = HOLDINGS_FILE) -> List[Dict[str, Any]]:
+    """讀取 holdings.json"""
     if not os.path.exists(filepath):
         return []
     try:
-        with open(filepath, mode="r", encoding="utf-8") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
                 return data
-            return []
     except Exception as e:
-        print(f"[警告] 讀取持倉檔 {filepath} 失敗: {e}，回傳空清單")
-        return []
+        print(f"[警告] 讀取 {filepath} 失敗: {e}")
+    return []
 
 
-def save_holdings(holdings: List[Dict[str, Any]], filepath: str = "holdings.json") -> bool:
+def evaluate_holdings(current_prices: Dict[str, float], holdings_filepath: str = HOLDINGS_FILE) -> List[Dict[str, Any]]:
     """
-    將持倉清單寫回 JSON 檔案
+    計算每檔持股的未實現損益與監控狀態
+    計算公式：
+      未實現損益 = (當前收盤 - 買進價) * 股數
+    狀態判斷順序：
+      1. STOP_LOSS: 當前收盤 <= 停損價
+      2. TAKE_PROFIT: 當前收盤 >= 目標價
+      3. NEAR_STOP: 當前收盤距停損價 < 5%
+      4. TIME_EXIT: 持有天數 > MAX_HOLDING_DAYS
+      5. HOLD: 正常持有
     """
-    try:
-        with open(filepath, mode="w", encoding="utf-8") as f:
-            json.dump(holdings, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception as e:
-        print(f"[錯誤] 儲存持倉至 {filepath} 失敗: {e}")
-        return False
+    holdings = load_holdings(holdings_filepath)
+    evaluated = []
+    today = datetime.now().date()
 
-
-def evaluate_holdings(
-    current_prices: Dict[str, float],
-    holdings_path: str = "holdings.json",
-    current_date_str: Optional[str] = None
-) -> List[Dict[str, Any]]:
-    """
-    評估所有持倉的最新狀態與損益
-    """
-    holdings = load_holdings(holdings_path)
-    if not holdings:
-        return []
-        
-    tz = pytz.timezone(config.TIMEZONE)
-    if current_date_str:
-        try:
-            today_dt = datetime.strptime(current_date_str, "%Y-%m-%d")
-        except ValueError:
-            today_dt = datetime.now(tz)
-    else:
-        today_dt = datetime.now(tz)
-        
-    evaluated_list: List[Dict[str, Any]] = []
-    
     for item in holdings:
-        ticker = item.get("ticker", "").strip()
-        name = item.get("name", ticker).strip()
-        grade = item.get("grade", "B").strip()
+        ticker = item.get("ticker", "")
+        name = item.get("name", ticker)
+        grade = item.get("grade", "B")
         entry_price = float(item.get("entry_price", 0.0))
-        entry_date_str = item.get("entry_date", today_dt.strftime("%Y-%m-%d")).strip()
+        entry_date_str = item.get("entry_date", str(today))
         shares = int(item.get("shares", 0))
         stop_loss = float(item.get("stop_loss", 0.0))
         target_price = float(item.get("target_price", 0.0))
-        
-        current_close = float(current_prices.get(ticker, entry_price))
-        
-        unrealized_pnl = round((current_close - entry_price) * shares, 2)
-        unrealized_pct = round(((current_close - entry_price) / entry_price) * 100, 2) if entry_price > 0 else 0.0
-        
+
+        # 計算持有日曆天數
         try:
-            entry_dt = datetime.strptime(entry_date_str, "%Y-%m-%d")
-            holding_days = max(0, (today_dt.date() - entry_dt.date()).days)
+            entry_date = datetime.strptime(entry_date_str, "%Y-%m-%d").date()
+            holding_days = (today - entry_date).days
         except Exception:
             holding_days = 0
-            
+
+        current_close = float(current_prices.get(ticker, entry_price))
+        unrealized_pnl = round((current_close - entry_price) * shares, 2)
+        unrealized_pct = (
+            round(((current_close - entry_price) / entry_price) * 100.0, 2)
+            if entry_price > 0
+            else 0.0
+        )
+
         status = "HOLD"
         action_desc = "正常持有，距停損尚有空間"
-        
-        if stop_loss > 0 and current_close <= stop_loss:
+        dist_to_stop = (current_close - stop_loss) / current_close if current_close > 0 else 1.0
+
+        if current_close <= stop_loss and stop_loss > 0:
             status = "STOP_LOSS"
-            action_desc = "跌破停損價，觸發停損出場"
-        elif target_price > 0 and current_close >= target_price:
+            action_desc = f"已跌破停損價 {stop_loss}，建議立即停損出場"
+        elif current_close >= target_price and target_price > 0:
             status = "TAKE_PROFIT"
-            action_desc = "已達目標價，建議獲利了結"
-        elif stop_loss > 0 and ((current_close - stop_loss) / stop_loss < 0.05):
+            action_desc = f"已達成目標價 {target_price}，建議停利出場"
+        elif dist_to_stop < 0.05 and stop_loss > 0:
             status = "NEAR_STOP"
-            action_desc = "距離停損小於 5%，請密切注意防守"
+            action_desc = f"接近停損價（距停損僅 {dist_to_stop * 100:.1f}%），請高度戒備"
         elif holding_days > config.MAX_HOLDING_DAYS:
             status = "TIME_EXIT"
-            action_desc = f"持倉已達 {holding_days} 天，超過 {config.MAX_HOLDING_DAYS} 天上限，建議時間停損"
-        else:
-            status = "HOLD"
-            action_desc = "正常持有，距停損尚有空間"
-            
-        record = {
+            action_desc = f"持有 {holding_days} 天超過上限（{config.MAX_HOLDING_DAYS}天），建議時間出場"
+
+        evaluated.append({
             "ticker": ticker,
             "name": name,
             "grade": grade,
@@ -126,8 +97,7 @@ def evaluate_holdings(
             "unrealized_pnl": unrealized_pnl,
             "unrealized_pct": unrealized_pct,
             "status": status,
-            "action_desc": action_desc
-        }
-        evaluated_list.append(record)
-        
-    return evaluated_list
+            "action_desc": action_desc,
+        })
+
+    return evaluated
