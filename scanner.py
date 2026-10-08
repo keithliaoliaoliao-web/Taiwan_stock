@@ -115,16 +115,14 @@ def run_scan() -> None:
         current_prices[ticker] = last_close
 
         turnover = float(last_row.get("Turnover", 0.0))
-        if last_close < config.MIN_PRICE or last_close > config.MAX_PRICE:
-            continue
-        if turnover < config.MIN_DAILY_TURNOVER:
-            continue
+        # 篩選門檻：僅符合價格與流動性門檻之標的方可產生買進訊號，其餘仍保留於觀察池總表
+        meets_signal_filter = (config.MIN_PRICE <= last_close <= config.MAX_PRICE) and (turnover >= config.MIN_DAILY_TURNOVER)
 
         trend_up = last_close > last_ema20
 
-        # 呼叫價格行為引擎
+        # 呼叫價格行為引擎 (僅針對符合流動性門檻之標的)
         setup_result = None
-        if engine_instance is not None and hasattr(engine_instance, "analyze_setups"):
+        if meets_signal_filter and engine_instance is not None and hasattr(engine_instance, "analyze_setups"):
             try:
                 func = getattr(engine_instance, "analyze_setups")
                 sig = inspect.signature(func)
