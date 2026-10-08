@@ -51,7 +51,7 @@
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
 
     <!-- ========================================== -->
-    <!-- 2. 本月可用預算輸入區 -->
+    <!-- 2. 本月可用預算輸入區 (選項 A：純比例無金額上限) -->
     <!-- ========================================== -->
     <section class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-6 text-white shadow-lg">
       <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -60,14 +60,14 @@
             <span>💰</span> 本月動態投資預算控管
           </h2>
           <p class="text-xs text-blue-200 mt-1">
-            輸入本月總投資預算，系統將自動計算 A 級（50%，上限 15,000 元）與 B 級（33%，上限 10,000 元）建議進場股數與損益。
+            輸入本月總投資預算，系統將依純比例自動計算 A 級（50%）與 B 級（33%）之建議進場股數與損益（無固定金額上限）。
           </p>
         </div>
 
         <div class="flex items-center gap-2 w-full md:w-auto">
           <div class="relative flex-1 md:w-64">
             <span class="absolute left-3 top-2.5 text-slate-400 text-sm font-semibold">NT$</span>
-            <input type="number" id="monthly-budget-input" min="1000" step="1000" placeholder="例如：30000"
+            <input type="number" id="monthly-budget-input" min="1000" step="1000" placeholder="例如：100000"
               class="w-full pl-12 pr-4 py-2 bg-white text-slate-900 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-inner">
           </div>
           <button onclick="applyBudget()" class="px-5 py-2 bg-blue-500 hover:bg-blue-400 text-white text-sm font-semibold rounded-xl shadow-md transition active:scale-95">
@@ -79,25 +79,33 @@
         </div>
       </div>
 
-      <!-- 當前預算狀態摘要 -->
+      <!-- 當前預算狀態摘要 (純比例) -->
       <div id="budget-summary-banner" class="mt-4 pt-4 border-t border-blue-800/60 flex flex-wrap gap-4 text-xs text-blue-100">
         <div>當前套用預算：<span id="current-budget-display" class="font-bold text-yellow-300">尚未輸入</span></div>
-        <div>A 級投入上限：<span class="font-semibold text-white">NT$ 15,000</span> (50%)</div>
-        <div>B 級投入上限：<span class="font-semibold text-white">NT$ 10,000</span> (33%)</div>
+        <div>A 級投入配比：<span class="font-semibold text-white">50%</span>（依預算純比例無上限）</div>
+        <div>B 級投入配比：<span class="font-semibold text-white">33%</span>（依預算純比例無上限）</div>
       </div>
     </section>
 
     <!-- ========================================== -->
-    <!-- 3. 個人持股即時監控 -->
+    <!-- 3. 個人持股即時監控 (含手動新增按鈕) -->
     <!-- ========================================== -->
     <section>
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div class="flex items-center gap-2">
           <span class="text-xl">💼</span>
           <h2 class="text-lg font-bold text-slate-900">個人持股即時監控</h2>
           <span id="holdings-count-badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">0 檔</span>
         </div>
-        <p class="text-xs text-slate-500">單位：股數 (Shares) | 支援停損/停利/時間出場自動警示</p>
+        
+        <div class="flex items-center gap-3">
+          <!-- 手動新增持股按鈕 -->
+          <button onclick="openManualRegisterModal()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5 active:scale-95">
+            <span class="text-sm">➕</span>
+            <span>手動新增持股</span>
+          </button>
+          <p class="hidden sm:block text-xs text-slate-500">單位：股數 | 自動停損/停利/時間警示</p>
+        </div>
       </div>
 
       <!-- 持股卡片網格 -->
@@ -116,7 +124,7 @@
           <h2 class="text-lg font-bold text-slate-900">明日進場候選清單</h2>
           <span id="signals-count-badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">0 檔</span>
         </div>
-        <div class="text-xs text-slate-500">價格行為回後買上漲結構 | 觸發價即突破價</div>
+        <div class="text-xs text-slate-500">Al Brooks 價格行為回後買上漲結構 | 觸發價即突破價</div>
       </div>
 
       <!-- 訊號卡片網格 -->
@@ -193,7 +201,7 @@
   <!-- 7. K線圖彈窗 (Lightweight Charts Modal) -->
   <!-- ========================================== -->
   <div id="chart-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200 animate-fadeIn">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200">
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <div>
           <h3 id="modal-chart-title" class="text-base font-bold text-slate-900">個股技術圖表</h3>
@@ -223,13 +231,13 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- 8. 持股登記彈窗 (Registration Modal) -->
+  <!-- 8. 持股登記彈窗 (支援自動帶入與手動自訂) -->
   <!-- ========================================== -->
   <div id="register-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <div>
-          <h3 class="text-base font-bold text-slate-900">納入個人持股登記</h3>
+          <h3 id="reg-modal-title" class="text-base font-bold text-slate-900">納入個人持股登記</h3>
           <p class="text-xs text-slate-500">登記買進紀錄，系統將透過 GitHub API 寫入 holdings.json</p>
         </div>
         <button onclick="closeRegisterModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
@@ -241,18 +249,24 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-slate-600 font-semibold mb-1">股票代號</label>
-            <input type="text" id="reg-ticker" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg font-bold text-slate-800">
+            <input type="text" id="reg-ticker" required placeholder="例如：2330.TW"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
             <label class="block text-slate-600 font-semibold mb-1">股票名稱</label>
-            <input type="text" id="reg-name" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg font-bold text-slate-800">
+            <input type="text" id="reg-name" required placeholder="例如：台積電"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500">
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-slate-600 font-semibold mb-1">訊號等級</label>
-            <input type="text" id="reg-grade" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg font-bold text-slate-800">
+            <select id="reg-grade" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500">
+              <option value="A">A 級訊號</option>
+              <option value="B">B 級訊號</option>
+              <option value="手動">自選/手動</option>
+            </select>
           </div>
           <div>
             <label class="block text-slate-600 font-semibold mb-1">買進日期</label>
@@ -262,7 +276,7 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-slate-600 font-semibold mb-1">預計買進價格 (元)</label>
+            <label class="block text-slate-600 font-semibold mb-1">買進價格 (元)</label>
             <input type="number" step="0.01" id="reg-entry-price" oninput="calculateTotalAmount()" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-900">
           </div>
           <div>
@@ -313,12 +327,12 @@
 
       <div class="p-6 space-y-4 text-xs">
         <p class="text-slate-500 leading-relaxed">
-          設定 GitHub Personal Access Token (需具備 repo 寫入權限)，即可在點擊「納入持股」或「登記賣出」時，直接自動更新遠端儲存庫中的 <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">holdings.json</code>。
+          設定 GitHub Personal Access Token (需具備 repo 寫入權限)，即可在點擊「納入持股」或「手動新增」時，直接自動更新遠端儲存庫中的 <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">holdings.json</code>。
         </p>
 
         <div>
           <label class="block text-slate-700 font-semibold mb-1">儲存庫名稱 (Repository)</label>
-          <input type="text" id="gh-repo" placeholder="例如：your-username/tw-stock-scanner" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-blue-500">
+          <input type="text" id="gh-repo" placeholder="例如：your-username/Taiwan_stock" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-blue-500">
         </div>
 
         <div>
@@ -346,34 +360,35 @@
   <!-- 核心 JavaScript 邏輯 (完全獨立，純前端) -->
   <!-- ========================================== -->
   <script>
-    // 全域狀態儲存
     let globalScanData = null;
     let currentChart = null;
 
-    // 常數設定
-    const GRADE_A_CAP = 15000.0; // A 級預算上限
-    const GRADE_B_CAP = 10000.0; // B 級預算上限
-
-    // 頁面載入時初始化
     document.addEventListener('DOMContentLoaded', () => {
-      // 讀取 sessionStorage 中的預算
       const savedBudget = sessionStorage.getItem('monthly_budget');
       if (savedBudget) {
         document.getElementById('monthly-budget-input').value = savedBudget;
         updateBudgetDisplay(Number(savedBudget));
       }
 
-      // 載入掃描結果 JSON
       fetchScanResult();
     });
 
     /**
-     * 讀取 public/scan_result.json 資料
+     * 讀取 scan_result.json 資料（自動適應根目錄與 public/ 目錄）
      */
     function fetchScanResult() {
-      fetch('scan_result.json')
+      const isPublicDir = window.location.pathname.endsWith('/public/') || window.location.pathname.includes('/public/index');
+      const primaryPath = isPublicDir ? 'scan_result.json' : 'public/scan_result.json';
+      const fallbackPath = isPublicDir ? 'public/scan_result.json' : 'scan_result.json';
+
+      fetch(primaryPath)
         .then(res => {
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          if (!res.ok) {
+            return fetch(fallbackPath).then(r => {
+              if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+              return r.json();
+            });
+          }
           return res.json();
         })
         .then(data => {
@@ -399,12 +414,10 @@
     function renderDashboard(data) {
       if (!data) return;
 
-      // 1. 頁首資訊
       const scanDate = data.scan_date || '';
       const scanTime = data.scan_time || '';
       document.getElementById('header-update-time').innerText = `最後掃描時間：${scanDate} ${scanTime}`;
 
-      // 大盤徽章
       const ms = data.market_status || {};
       const badge = document.getElementById('market-status-badge');
       if (ms.bullish) {
@@ -415,16 +428,9 @@
         badge.innerHTML = `⚠️ <span>大盤空頭/震盪警戒 (收盤: ${ms.close || 0} / 20EMA: ${ms.ema20 || 0})</span>`;
       }
 
-      // 2. 渲染持股
       renderHoldings(data.holdings_status || []);
-
-      // 3. 渲染明日訊號
       renderSignals(data.signals || []);
-
-      // 4. 渲染醞釀中名單
       renderForming(data.forming || []);
-
-      // 5. 渲染觀察池總表
       renderUniverse(data.universe || []);
     }
 
@@ -480,20 +486,19 @@
         grid.innerHTML = `
           <div class="col-span-full bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-400">
             <span class="text-3xl block mb-2">📥</span>
-            <p class="text-sm font-medium">尚未登記任何持股，請於買進後透過登記功能新增</p>
-            <p class="text-xs text-slate-400 mt-1">選取下方「明日進場候選清單」標的，點擊「納入我的持股」即可開始追蹤。</p>
+            <p class="text-sm font-medium">尚未登記任何持股</p>
+            <p class="text-xs text-slate-400 mt-1">請點擊右上角「➕ 手動新增持股」，或由下方明日訊號清單中點擊「納入我的持股」開始追蹤。</p>
           </div>
         `;
         return;
       }
 
-      grid.innerHTML = holdings.map((h, idx) => {
+      grid.innerHTML = holdings.map(h => {
         const isStopLoss = h.status === 'STOP_LOSS';
         const isTakeProfit = h.status === 'TAKE_PROFIT';
         const isNearStop = h.status === 'NEAR_STOP';
         const isTimeExit = h.status === 'TIME_EXIT';
 
-        // 卡片警示外框樣式
         let cardBg = "bg-white border-slate-200 text-slate-800";
         if (isStopLoss) {
           cardBg = "bg-rose-50/90 border-rose-500 text-rose-950 ring-2 ring-rose-400";
@@ -503,13 +508,11 @@
           cardBg = "bg-amber-50/80 border-amber-400 text-amber-950";
         }
 
-        // 損益字體色彩 (正綠負紅)
         const pnl = Number(h.unrealized_pnl) || 0;
         const pct = Number(h.unrealized_pct) || 0;
         const pnlColor = pnl >= 0 ? "text-emerald-600 font-bold" : "text-rose-600 font-bold";
         const sign = pnl >= 0 ? "+" : "";
 
-        // 狀態標籤
         let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">HOLD</span>`;
         if (isStopLoss) statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white animate-pulse">STOP LOSS</span>`;
         if (isTakeProfit) statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white animate-pulse">TAKE PROFIT</span>`;
@@ -531,7 +534,6 @@
                 <div>${statusBadge}</div>
               </div>
 
-              <!-- 核心價格比對 -->
               <div class="grid grid-cols-2 gap-2 text-xs mb-3">
                 <div class="bg-white/60 rounded-lg p-2 border border-slate-200/50">
                   <span class="text-slate-500 text-[10px]">買進成本</span>
@@ -551,7 +553,6 @@
                 </div>
               </div>
 
-              <!-- 損益與指引 -->
               <div class="bg-white/80 rounded-xl p-3 border border-slate-200/60 mb-3">
                 <div class="flex justify-between items-center text-xs">
                   <span class="text-slate-500">未實現損益：</span>
@@ -563,7 +564,6 @@
               </div>
             </div>
 
-            <!-- 操作按鈕 -->
             <div class="flex items-center gap-2 pt-2 border-t border-slate-200/50">
               <button onclick="handleSellHolding('${h.ticker}', '${h.name}')" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition">
                 登記賣出
@@ -578,7 +578,7 @@
     }
 
     /**
-     * 3. 明日進場候選清單渲染
+     * 3. 明日進場候選清單渲染 (純比例計算無金額上限)
      */
     function renderSignals(signals) {
       const grid = document.getElementById('signals-grid');
@@ -604,16 +604,15 @@
           ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">A 級訊號</span>`
           : `<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">B 級訊號</span>`;
 
-        // 預算與股數計算
         let sharesText = `<span class="text-amber-600 font-semibold">請先輸入本月預算</span>`;
         let maxLossText = `<span class="text-slate-400">-</span>`;
         let maxProfitText = `<span class="text-slate-400">-</span>`;
         let calculatedShares = 0;
 
+        // 【選項 A：純比例無金額上限】
         if (budget && budget > 0) {
           const allocPct = isGradeA ? 0.50 : 0.33;
-          const cap = isGradeA ? GRADE_A_CAP : GRADE_B_CAP;
-          const targetAmount = Math.min(budget * allocPct, cap);
+          const targetAmount = budget * allocPct; // 直接依比例計算，無金額上限
           calculatedShares = Math.floor(targetAmount / sig.trigger_price);
 
           if (calculatedShares > 0) {
@@ -644,7 +643,6 @@
                 <div>${gradeBadge}</div>
               </div>
 
-              <!-- 關鍵價位 -->
               <div class="grid grid-cols-3 gap-2 text-center text-xs mb-3">
                 <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
                   <span class="text-slate-400 text-[10px] block">觸發進場</span>
@@ -660,13 +658,11 @@
                 </div>
               </div>
 
-              <!-- 風險與風酬比 -->
               <div class="flex items-center justify-between text-xs text-slate-600 px-1 py-1.5 bg-slate-50/60 rounded-lg mb-3">
                 <span>風險幅度：<strong class="text-slate-800">${sig.risk_pct}%</strong></span>
                 <span>風酬比 (R:R)：<strong class="text-indigo-600">${sig.net_rr}R</strong></span>
               </div>
 
-              <!-- 動態預算試算 -->
               <div class="bg-blue-50/50 rounded-xl p-3 border border-blue-100/60 mb-4 text-xs space-y-1.5">
                 <div class="flex justify-between items-center">
                   <span class="text-slate-500">建議買進股數：</span>
@@ -683,7 +679,6 @@
               </div>
             </div>
 
-            <!-- 操作按鈕 -->
             <div class="flex items-center gap-2">
               <button onclick="openChartModal('${sig.ticker}')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1">
                 <span>📈</span> 檢視K線
@@ -737,7 +732,6 @@
       const badge = document.getElementById('universe-count-badge');
       badge.innerText = `${universe.length} 檔`;
 
-      // 填充產業別下拉選單
       const sectorSelect = document.getElementById('sector-filter');
       const sectors = Array.from(new Set(universe.map(u => u.sector).filter(Boolean))).sort();
       sectorSelect.innerHTML = `<option value="ALL">全部產業 (${universe.length})</option>` +
@@ -794,7 +788,7 @@
     }
 
     /**
-     * 6. K線圖彈窗邏輯 (Lightweight Charts)
+     * 6. K線圖彈窗邏輯
      */
     function openChartModal(ticker) {
       if (!globalScanData || !globalScanData.signals) return;
@@ -807,7 +801,6 @@
       const modal = document.getElementById('chart-modal');
       modal.classList.remove('hidden');
 
-      // 初始化或重建圖表
       const container = document.getElementById('tv-chart-container');
       container.innerHTML = '';
 
@@ -835,7 +828,6 @@
         }
       });
 
-      // K 線系列 (台股紅漲綠跌)
       const candleSeries = currentChart.addCandlestickSeries({
         upColor: '#ef4444',
         downColor: '#22c55e',
@@ -846,7 +838,6 @@
       });
       candleSeries.setData(signal.candles || []);
 
-      // 20EMA 線
       if (signal.ema && signal.ema.length > 0) {
         const emaSeries = currentChart.addLineSeries({
           color: '#3b82f6',
@@ -856,7 +847,6 @@
         emaSeries.setData(signal.ema);
       }
 
-      // 關鍵價位虛線
       candleSeries.createPriceLine({
         price: signal.trigger_price,
         color: '#10b981',
@@ -884,7 +874,6 @@
         title: '目標停利'
       });
 
-      // 訊號標記向上箭頭
       if (signal.candles && signal.candles.length > 0) {
         const lastCandle = signal.candles[signal.candles.length - 1];
         candleSeries.setMarkers([
@@ -910,16 +899,19 @@
     }
 
     /**
-     * 7. 持股登記彈窗邏輯
+     * 7. 持股登記彈窗邏輯 (支援訊號自動帶入 & 手動新增)
      */
     function openRegisterModal(ticker, suggestedShares) {
       if (!globalScanData || !globalScanData.signals) return;
       const sig = globalScanData.signals.find(s => s.ticker === ticker);
       if (!sig) return;
 
+      document.getElementById('reg-modal-title').innerText = "納入個人持股登記";
       document.getElementById('reg-ticker').value = sig.ticker;
+      document.getElementById('reg-ticker').readOnly = true;
       document.getElementById('reg-name').value = sig.name;
-      document.getElementById('reg-grade').value = `${sig.grade} 級`;
+      document.getElementById('reg-name').readOnly = true;
+      document.getElementById('reg-grade').value = sig.grade;
       
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('reg-entry-date').value = today;
@@ -927,6 +919,29 @@
       document.getElementById('reg-shares').value = suggestedShares > 0 ? suggestedShares : 100;
       document.getElementById('reg-stop-loss').value = sig.stop_loss;
       document.getElementById('reg-target-price').value = sig.target_price;
+
+      calculateTotalAmount();
+      document.getElementById('github-api-status').classList.add('hidden');
+      document.getElementById('register-modal').classList.remove('hidden');
+    }
+
+    /**
+     * 手動新增持股彈窗
+     */
+    function openManualRegisterModal() {
+      document.getElementById('reg-modal-title').innerText = "手動新增個人持股";
+      document.getElementById('reg-ticker').value = "";
+      document.getElementById('reg-ticker').readOnly = false;
+      document.getElementById('reg-name').value = "";
+      document.getElementById('reg-name').readOnly = false;
+      document.getElementById('reg-grade').value = "A";
+      
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('reg-entry-date').value = today;
+      document.getElementById('reg-entry-price').value = "";
+      document.getElementById('reg-shares').value = "100";
+      document.getElementById('reg-stop-loss').value = "";
+      document.getElementById('reg-target-price').value = "";
 
       calculateTotalAmount();
       document.getElementById('github-api-status').classList.add('hidden');
@@ -956,10 +971,15 @@
       const token = localStorage.getItem('gh_token');
       const branch = localStorage.getItem('gh_branch') || 'main';
 
+      let tickerInput = document.getElementById('reg-ticker').value.trim().toUpperCase();
+      if (!tickerInput.includes('.')) {
+        tickerInput = `${tickerInput}.TW`;
+      }
+
       const newHolding = {
-        ticker: document.getElementById('reg-ticker').value,
-        name: document.getElementById('reg-name').value,
-        grade: document.getElementById('reg-grade').value.replace('級', '').trim(),
+        ticker: tickerInput,
+        name: document.getElementById('reg-name').value.trim(),
+        grade: document.getElementById('reg-grade').value,
         entry_date: document.getElementById('reg-entry-date').value,
         entry_price: Number(document.getElementById('reg-entry-price').value),
         shares: Number(document.getElementById('reg-shares').value),
@@ -969,7 +989,7 @@
 
       if (!repo || !token) {
         statusBox.className = "text-xs py-2 px-3 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 block";
-        statusBox.innerHTML = `⚠️ 尚未設定 GitHub Token，無法直接寫入遠端 holdings.json。<br><button type="button" onclick="openGithubModal()" class="underline font-bold text-amber-900 mt-1">點此立即設定 GitHub</button> 或 <button type="button" onclick="downloadUpdatedHoldings([newHolding])" class="underline font-bold text-amber-900">下載更新後的 holdings.json</button>`;
+        statusBox.innerHTML = `⚠️ 尚未設定 GitHub Token，無法直接寫入遠端 holdings.json。<br><button type="button" onclick="openGithubModal()" class="underline font-bold text-amber-900 mt-1">點此立即設定 GitHub</button>`;
         return;
       }
 
@@ -978,7 +998,6 @@
       submitBtn.disabled = true;
 
       try {
-        // 1. 先讀取現有 holdings.json 內容與 sha
         const getUrl = `https://api.github.com/repos/${repo}/contents/holdings.json?ref=${branch}`;
         const getRes = await fetch(getUrl, {
           headers: {
@@ -993,7 +1012,6 @@
         if (getRes.status === 200) {
           const fileData = await getRes.json();
           fileSha = fileData.sha;
-          // 解碼 Base64
           const rawContent = decodeURIComponent(escape(atob(fileData.content)));
           currentHoldings = JSON.parse(rawContent);
         } else if (getRes.status === 404) {
@@ -1002,7 +1020,6 @@
           throw new Error(`讀取 holdings.json 失敗 (HTTP ${getRes.status})`);
         }
 
-        // 2. 加入新持股 (若重複代號則更新)
         const existIdx = currentHoldings.findIndex(h => h.ticker === newHolding.ticker);
         if (existIdx >= 0) {
           currentHoldings[existIdx] = newHolding;
@@ -1010,14 +1027,12 @@
           currentHoldings.push(newHolding);
         }
 
-        // 3. 呼叫 updateGithubFile 寫入
         const updatedJsonStr = JSON.stringify(currentHoldings, null, 2);
         await updateGithubFile(repo, token, "holdings.json", updatedJsonStr, `feat: add holding ${newHolding.ticker} ${newHolding.name}`);
 
         statusBox.className = "text-xs py-2 px-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 block";
         statusBox.innerText = `✅ 成功登記並寫入 GitHub holdings.json！`;
 
-        // 即時更新本機儀表板持股狀態
         if (globalScanData) {
           const currentClose = newHolding.entry_price;
           const statusItem = {
@@ -1051,13 +1066,12 @@
     }
 
     /**
-     * 8. GitHub API 更新檔案核心函式 (依規格需求實作)
+     * 8. GitHub API 更新檔案核心函式
      */
     async function updateGithubFile(repo, token, path, content, message) {
       const branch = localStorage.getItem('gh_branch') || 'main';
       const getUrl = `https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`;
 
-      // 1. GET 取得現有 sha
       let sha = null;
       const getRes = await fetch(getUrl, {
         headers: {
@@ -1070,7 +1084,6 @@
         sha = fileData.sha;
       }
 
-      // 2. PUT 寫入新內容 (支援中文之 Base64 編碼)
       const putUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
       const base64Content = btoa(unescape(encodeURIComponent(content)));
 
@@ -1139,14 +1152,12 @@
         const rawContent = decodeURIComponent(escape(atob(fileData.content)));
         let holdings = JSON.parse(rawContent);
 
-        // 過濾移除
         holdings = holdings.filter(h => h.ticker !== ticker);
         const updatedJsonStr = JSON.stringify(holdings, null, 2);
 
         await updateGithubFile(repo, token, "holdings.json", updatedJsonStr, `chore: remove holding ${ticker}`);
         alert(`已成功將 ${ticker} 自 holdings.json 移除！`);
 
-        // 更新本機狀態
         if (globalScanData && globalScanData.holdings_status) {
           globalScanData.holdings_status = globalScanData.holdings_status.filter(h => h.ticker !== ticker);
           renderHoldings(globalScanData.holdings_status);
