@@ -201,9 +201,6 @@ def run_scanner():
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(clean_payload, f, ensure_ascii=False, indent=2)
 
-    with open("scan_result.json", "w", encoding="utf-8") as f:
-        json.dump(clean_payload, f, ensure_ascii=False, indent=2)
-
     # 8. 終端機摘要
     print()
     print("=" * 50)
