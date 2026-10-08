@@ -850,7 +850,7 @@
       renderHoldings(globalData.holdings_status);
       closeManualHoldingModal();
 
-      // 3. 若已設定 GitHub，非同步同步至 holdings.json
+      // 3. 若已設定 GitHub，非同步嘗試同步至 holdings.json
       const repo = localStorage.getItem("gh_repo");
       const token = localStorage.getItem("gh_token");
       if (repo && token) {
@@ -868,161 +868,143 @@
           await updateGithubFile(repo, token, "holdings.json", JSON.stringify(exportList, null, 2), `feat: 手動新增持股 ${ticker}`);
           alert(`已成功儲存至本機並同步至雲端 GitHub holdings.json！`);
         } catch (e) {
-          alert(`已儲存至本機！(同步至雲端 GitHub 時失敗: ${e.message})`);
+          console.warn("同步至 GitHub 失敗:", e);
+          alert(`已成功儲存至本機！重新整理網頁完整保留。\n(提示: 雲端 GitHub 同步未完成: ${e.message}，請檢查右上角 GitHub 設定)`);
         }
       } else {
         alert(`已成功儲存至本機！重新整理網頁將完整保留。(如需雲端同步，可於右上角設定 GitHub)`);
       }
     }
 
-    // 透過 GitHub API 新增持股登記至 holdings.json
+    // 訊號卡片之持股登記 (優先寫入本機 localStorage，背景同步 GitHub)
     async function submitRegistration() {
-      const repo = localStorage.getItem("gh_repo");
-      const token = localStorage.getItem("gh_token");
-
-      if (!repo || !token) {
-        alert("請先於右上角 [GitHub 設定] 輸入 Repository 與 Access Token");
-        openGhModal();
-        return;
-      }
-
       const s = selectedSignal;
+      if (!s) return;
       const entryPrice = parseFloat(document.getElementById("reg-entry-price").value);
       const shares = parseInt(document.getElementById("reg-shares").value);
-      const stopLoss = parseFloat(document.getElementById("reg-stop-loss").value);
-      const targetPrice = parseFloat(document.getElementById("reg-target-price").value);
+      const stopLoss = parseFloat(document.getElementById("reg-stop-loss").value) || 0;
+      const targetPrice = parseFloat(document.getElementById("reg-target-price").value) || 0;
 
       if (!entryPrice || !shares || shares <= 0) {
         alert("請輸入正確的進場價格與買進股數");
         return;
       }
 
-      const btn = document.getElementById("btn-confirm-reg");
-      btn.disabled = true;
-      btn.innerText = "寫入 GitHub 中...";
+      const newRecord = {
+        ticker: s.ticker,
+        name: s.name,
+        grade: s.grade || "A",
+        entry_date: new Date().toISOString().split('T')[0],
+        entry_price: entryPrice,
+        shares: shares,
+        stop_loss: stopLoss,
+        target_price: targetPrice
+      };
 
-      try {
-        const newRecord = {
-          ticker: s.ticker,
-          name: s.name,
-          grade: s.grade,
-          entry_date: new Date().toISOString().split('T')[0],
-          entry_price: entryPrice,
-          shares: shares,
-          stop_loss: stopLoss,
-          target_price: targetPrice
-        };
+      // 1. 儲存於本機 localStorage (第一優先，保證重新整理不消失)
+      const currentStored = getStoredHoldings();
+      currentStored.push(newRecord);
+      saveStoredHoldings(currentStored);
 
-        // 1. 儲存於本機 localStorage (保證重新整理不消失)
-        const currentStored = getStoredHoldings();
-        currentStored.push(newRecord);
-        saveStoredHoldings(currentStored);
+      // 2. 即時更新記憶體與畫面
+      const evalItem = evaluateHoldingItem(newRecord, s.close || entryPrice);
+      if (!globalData.holdings_status) globalData.holdings_status = [];
+      globalData.holdings_status.push(evalItem);
+      renderHoldings(globalData.holdings_status);
+      closeEntryModal();
 
-        // 2. 即時更新記憶體與畫面
-        const evalItem = evaluateHoldingItem(newRecord, s.close || entryPrice);
-        if (!globalData.holdings_status) globalData.holdings_status = [];
-        globalData.holdings_status.push(evalItem);
-        renderHoldings(globalData.holdings_status);
-
-        // 3. 雲端同步
-        const existingHoldings = globalData.holdings_status.map(h => ({
-          ticker: h.ticker,
-          name: h.name,
-          grade: h.grade,
-          entry_date: h.entry_date,
-          entry_price: h.entry_price,
-          shares: h.shares,
-          stop_loss: h.stop_loss,
-          target_price: h.target_price
-        }));
-
-        const contentStr = JSON.stringify(existingHoldings, null, 2);
-        const repo = localStorage.getItem("gh_repo");
-        const token = localStorage.getItem("gh_token");
-        if (repo && token) {
-          try {
-            await updateGithubFile(repo, token, "holdings.json", contentStr, `feat: 買進建立持股 ${s.ticker} (${shares}股)`);
-            alert(`已成功將 ${s.ticker} 儲存至本機並同步至 GitHub holdings.json！`);
-          } catch (e) {
-            alert(`已儲存至本機！(同步至 GitHub 失敗: ${e.message})`);
-          }
-        } else {
-          alert(`已成功將 ${s.ticker} 儲存至本機！重新整理網頁將完整保留。(如需雲端同步，可於右上角設定 GitHub)`);
+      // 3. 背景非同步同步至 GitHub (若失敗絕不影響本機儲存)
+      const repo = localStorage.getItem("gh_repo");
+      const token = localStorage.getItem("gh_token");
+      if (repo && token) {
+        try {
+          const existingHoldings = globalData.holdings_status.map(h => ({
+            ticker: h.ticker,
+            name: h.name,
+            grade: h.grade || "A",
+            entry_date: h.entry_date,
+            entry_price: h.entry_price,
+            shares: h.shares,
+            stop_loss: h.stop_loss,
+            target_price: h.target_price
+          }));
+          const contentStr = JSON.stringify(existingHoldings, null, 2);
+          await updateGithubFile(repo, token, "holdings.json", contentStr, `feat: 買進建立持股 ${s.ticker} (${shares}股)`);
+          alert(`已成功將 ${s.ticker} 登記至本機持股，並同步至 GitHub holdings.json！`);
+        } catch (e) {
+          console.warn("同步至 GitHub 失敗:", e);
+          alert(`已成功將 ${s.ticker} 登記至本機！重新整理不會遺失。\n(提示: 雲端 GitHub 同步未完成: ${e.message}，請檢查右上角 GitHub 設定)`);
         }
-        closeEntryModal();
-      } catch (err) {
-        alert("寫入失敗: " + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "確認並透過 GitHub 登記";
+      } else {
+        alert(`已成功將 ${s.ticker} 登記至本機持股！重新整理頁面仍會保留。(如需雲端同步，可至右上角設定 GitHub)`);
       }
     }
 
-    // 透過 GitHub API 刪除或平倉持股
+    // 刪除或平倉持股 (優先保證本機成功，背景嘗試雲端同步)
     async function removeHolding(index, actionName) {
-      const repo = localStorage.getItem("gh_repo");
-      const token = localStorage.getItem("gh_token");
-
-      if (!repo || !token) {
-        alert("請先完成 GitHub 授權設定");
-        openGhModal();
-        return;
-      }
-
+      if (!globalData || !globalData.holdings_status || !globalData.holdings_status[index]) return;
       const target = globalData.holdings_status[index];
       if (!confirm(`確定要${actionName}「${target.ticker} ${target.name}」嗎？`)) return;
 
-      try {
-        const updated = globalData.holdings_status.filter((_, i) => i !== index).map(h => ({
-          ticker: h.ticker,
-          name: h.name,
-          grade: h.grade,
-          entry_date: h.entry_date,
-          entry_price: h.entry_price,
-          shares: h.shares,
-          stop_loss: h.stop_loss,
-          target_price: h.target_price
-        }));
+      // 1. 從本機 localStorage 立即移除 (永不失敗)
+      const stored = getStoredHoldings().filter(h => !(h.ticker === target.ticker && h.entry_date === target.entry_date));
+      saveStoredHoldings(stored);
 
-        // 1. 從本機 localStorage 移除
-        const stored = getStoredHoldings().filter(h => !(h.ticker === target.ticker && h.entry_date === target.entry_date));
-        saveStoredHoldings(stored);
+      // 2. 從記憶體與畫面中立即移除
+      globalData.holdings_status.splice(index, 1);
+      renderHoldings(globalData.holdings_status);
 
-        // 2. 從記憶體中移除並重繪
-        globalData.holdings_status.splice(index, 1);
-        renderHoldings(globalData.holdings_status);
-
-        // 3. 若有設定 GitHub 則同步
-        const repo = localStorage.getItem("gh_repo");
-        const token = localStorage.getItem("gh_token");
-        if (repo && token) {
-          try {
-            const contentStr = JSON.stringify(updated, null, 2);
-            await updateGithubFile(repo, token, "holdings.json", contentStr, `chore: ${actionName}持股 ${target.ticker}`);
-          } catch(e) {
-            console.error("同步至 GitHub 失敗", e);
-          }
+      // 3. 背景非同步同步至 GitHub (若未設定或連線失敗，絕不阻擋本機刪除)
+      const repo = localStorage.getItem("gh_repo");
+      const token = localStorage.getItem("gh_token");
+      if (repo && token) {
+        try {
+          const updated = globalData.holdings_status.map(h => ({
+            ticker: h.ticker,
+            name: h.name,
+            grade: h.grade || "MANUAL",
+            entry_date: h.entry_date,
+            entry_price: h.entry_price,
+            shares: h.shares,
+            stop_loss: h.stop_loss,
+            target_price: h.target_price
+          }));
+          const contentStr = JSON.stringify(updated, null, 2);
+          await updateGithubFile(repo, token, "holdings.json", contentStr, `chore: ${actionName}持股 ${target.ticker}`);
+          alert(`已成功${actionName}「${target.ticker} ${target.name}」，並已同步至雲端 GitHub！`);
+          return;
+        } catch(e) {
+          console.warn("同步至 GitHub 失敗:", e);
+          alert(`已自本機成功${actionName}「${target.ticker} ${target.name}」！\n(提示: 雲端 GitHub 同步未完成: ${e.message})`);
+          return;
         }
-        alert(`已成功更新持股資料庫！`);
-      } catch (err) {
-        alert("更新失敗: " + err.message);
       }
+      alert(`已成功自本機${actionName}「${target.ticker} ${target.name}」！`);
     }
 
-    // GitHub API 核心寫入函式 (Base64 UTF-8)
+    // GitHub API 核心寫入函式 (Base64 UTF-8) - 容錯與自動清洗格式
     async function updateGithubFile(repo, token, path, content, message) {
-      const getUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
-      const getRes = await fetch(getUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
+      if (!repo || !token) return false;
+      const cleanR = cleanRepoString(repo);
+      const cleanT = token.trim();
+      if (!cleanR || !cleanT) return false;
+
+      const getUrl = `https://api.github.com/repos/${cleanR}/contents/${path}`;
+      const authHeader = (cleanT.startsWith("Bearer ") || cleanT.startsWith("token ")) ? cleanT : `token ${cleanT}`;
+      const headers = {
+        'Authorization': authHeader,
+        'Accept': 'application/vnd.github.v3+json'
+      };
 
       let sha = "";
-      if (getRes.ok) {
-        const fileInfo = await getRes.json();
-        sha = fileInfo.sha;
+      try {
+        const getRes = await fetch(getUrl, { headers });
+        if (getRes.ok) {
+          const fileInfo = await getRes.json();
+          sha = fileInfo.sha;
+        }
+      } catch (e) {
+        console.warn("取得檔案 SHA 略過:", e);
       }
 
       // 支援中文字元的 UTF-8 Base64 編碼
@@ -1036,9 +1018,8 @@
       const putRes = await fetch(getUrl, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
+          ...headers,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           message: message,
@@ -1048,9 +1029,10 @@
       });
 
       if (!putRes.ok) {
-        const errJson = await putRes.json();
-        throw new Error(errJson.message || "GitHub API 回傳異常");
+        const errJson = await putRes.json().catch(() => ({}));
+        throw new Error(errJson.message || `HTTP ${putRes.status}`);
       }
+      return await putRes.json().catch(() => ({}));
     }
 
     // GitHub 彈窗控制
@@ -1064,12 +1046,23 @@
       document.getElementById("gh-modal").classList.add("hidden");
     }
 
+    function cleanRepoString(input) {
+      if (!input) return "";
+      let r = input.trim();
+      r = r.replace(/^https?:\/\/github\.com\//i, "");
+      r = r.replace(/\.git$/i, "");
+      r = r.replace(/^\/+|\/+$/g, "");
+      return r;
+    }
+
     function saveGhSettings() {
-      const repo = document.getElementById("gh-repo").value.trim();
-      const token = document.getElementById("gh-token").value.trim();
+      const rawRepo = document.getElementById("gh-repo").value;
+      const rawToken = document.getElementById("gh-token").value;
+      const repo = cleanRepoString(rawRepo);
+      const token = rawToken.trim();
       localStorage.setItem("gh_repo", repo);
       localStorage.setItem("gh_token", token);
-      alert("GitHub 設定已成功儲存至本機！");
+      alert(`GitHub 設定已儲存！\n儲存庫: ${repo || '(未設定)'}`);
       closeGhModal();
     }
   </script>
