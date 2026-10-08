@@ -202,14 +202,23 @@
   <!-- ========================================== -->
   <div id="chart-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200">
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50">
         <div>
           <h3 id="modal-chart-title" class="text-base font-bold text-slate-900">個股技術圖表</h3>
           <p id="modal-chart-subtitle" class="text-xs text-slate-500">日線圖 + 20EMA + 關鍵進場停損區間</p>
         </div>
-        <button onclick="closeChartModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
-          ✕
-        </button>
+        <div class="flex items-center gap-3">
+          <!-- 時間區間切換按鈕群 -->
+          <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs text-xs font-semibold">
+            <button type="button" id="btn-range-1m" onclick="setChartRange(20, '1m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1個月</button>
+            <button type="button" id="btn-range-3m" onclick="setChartRange(60, '3m')" class="px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition">3個月</button>
+            <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">6個月</button>
+            <button type="button" id="btn-range-all" onclick="setChartRange(0, 'all')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">全部</button>
+          </div>
+          <button onclick="closeChartModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+            ✕
+          </button>
+        </div>
       </div>
 
       <!-- 圖表畫布容器 -->
@@ -363,6 +372,7 @@
   <script>
     let globalScanData = null;
     let currentChart = null;
+    let currentSignalCandlesCount = 0;
 
     document.addEventListener('DOMContentLoaded', () => {
       const savedBudget = sessionStorage.getItem('monthly_budget');
@@ -979,7 +989,38 @@
         ]);
       }
 
-      currentChart.timeScale().fitContent();
+      const candles = signal.candles || [];
+      currentSignalCandlesCount = candles.length;
+
+      // 預設呈現 3 個月 (約 60 根 K 棒) 視野
+      setChartRange(60, '3m');
+    }
+
+    function setChartRange(bars, rangeKey) {
+      const buttons = ['1m', '3m', '6m', 'all'];
+      buttons.forEach(k => {
+        const btn = document.getElementById('btn-range-' + k);
+        if (btn) {
+          if (k === rangeKey) {
+            btn.className = "px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition";
+          } else {
+            btn.className = "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition";
+          }
+        }
+      });
+
+      if (!currentChart || currentSignalCandlesCount === 0) return;
+
+      if (bars <= 0 || bars >= currentSignalCandlesCount) {
+        currentChart.timeScale().fitContent();
+      } else {
+        const fromIdx = Math.max(0, currentSignalCandlesCount - bars);
+        const toIdx = currentSignalCandlesCount - 1;
+        currentChart.timeScale().setVisibleLogicalRange({
+          from: fromIdx,
+          to: toIdx
+        });
+      }
     }
 
     function closeChartModal() {
