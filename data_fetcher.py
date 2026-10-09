@@ -48,105 +48,122 @@ def _clean_symbol(ticker: str) -> str:
 
 def fetch_history_yahoo_chart_api(ticker: str, range_str: str = "6mo") -> pd.DataFrame:
     """
-    透過 Yahoo Finance 官方輕量 Chart API 抓取歷史日線
-    比 yfinance 套件更不易被封鎖且速度極快
+    透過 Yahoo Finance 官方輕量 Chart API 抓取歷史日線。
+    自動適配上市 (.TW) 與上櫃 (.TWO)，互為備援重試。
     """
-    symbol = format_ticker_symbol(ticker)
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={range_str}"
+    clean_sym = _clean_symbol(ticker)
+    if ticker.startswith("^"):
+        candidates = [ticker]
+    elif ticker.endswith(".TWO"):
+        candidates = [f"{clean_sym}.TWO", f"{clean_sym}.TW"]
+    else:
+        # 先試 .TW，若 404 (上櫃股) 自動切換 .TWO
+        candidates = [f"{clean_sym}.TW", f"{clean_sym}.TWO"]
     
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=10)
-        if resp.status_code != 200:
-            return pd.DataFrame()
-            
-        data = resp.json()
-        result = data.get("chart", {}).get("result")
-        if not result or len(result) == 0:
-            return pd.DataFrame()
-            
-        chart_data = result[0]
-        timestamps = chart_data.get("timestamp", [])
-        quote = chart_data.get("indicators", {}).get("quote", [{}])[0]
-        
-        opens = quote.get("open", [])
-        highs = quote.get("high", [])
-        lows = quote.get("low", [])
-        closes = quote.get("close", [])
-        volumes = quote.get("volume", [])
-        
-        rows = []
-        for i in range(len(timestamps)):
-            ts = timestamps[i]
-            o = opens[i] if i < len(opens) else None
-            h = highs[i] if i < len(highs) else None
-            l = lows[i] if i < len(lows) else None
-            c = closes[i] if i < len(closes) else None
-            v = volumes[i] if i < len(volumes) else 0
-            
-            if None in (o, h, l, c) or pd.isna(o) or pd.isna(h) or pd.isna(l) or pd.isna(c):
+    for symbol in candidates:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={range_str}"
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=10)
+            if resp.status_code != 200:
                 continue
                 
-            dt_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
-            rows.append({
-                "Date": dt_str,
-                "Open": float(o),
-                "High": float(h),
-                "Low": float(l),
-                "Close": float(c),
-                "Volume": int(v or 0)
-            })
+            data = resp.json()
+            result = data.get("chart", {}).get("result")
+            if not result or len(result) == 0:
+                continue
+                
+            chart_data = result[0]
+            timestamps = chart_data.get("timestamp", [])
+            quote = chart_data.get("indicators", {}).get("quote", [{}])[0]
             
-        if not rows:
-            return pd.DataFrame()
+            opens = quote.get("open", [])
+            highs = quote.get("high", [])
+            lows = quote.get("low", [])
+            closes = quote.get("close", [])
+            volumes = quote.get("volume", [])
             
-        df = pd.DataFrame(rows).drop_duplicates(subset=["Date"]).sort_values("Date").reset_index(drop=True)
-        return df
-    except Exception as e:
-        logger.debug(f"Yahoo Chart API 抓取 {ticker} 失敗: {e}")
-        return pd.DataFrame()
+            rows = []
+            for i in range(len(timestamps)):
+                ts = timestamps[i]
+                o = opens[i] if i < len(opens) else None
+                h = highs[i] if i < len(highs) else None
+                l = lows[i] if i < len(lows) else None
+                c = closes[i] if i < len(closes) else None
+                v = volumes[i] if i < len(volumes) else 0
+                
+                if None in (o, h, l, c) or pd.isna(o) or pd.isna(h) or pd.isna(l) or pd.isna(c):
+                    continue
+                    
+                dt_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+                rows.append({
+                    "Date": dt_str,
+                    "Open": float(o),
+                    "High": float(h),
+                    "Low": float(l),
+                    "Close": float(c),
+                    "Volume": int(v or 0)
+                })
+                
+            if len(rows) >= config.EMA_PERIOD:
+                df = pd.DataFrame(rows).drop_duplicates(subset=["Date"]).sort_values("Date").reset_index(drop=True)
+                return df
+        except Exception:
+            continue
+            
+    return pd.DataFrame()
 
 
 def fetch_history_yfinance_fallback(ticker: str, lookback_days: int = config.DATA_LOOKBACK_DAYS) -> pd.DataFrame:
     """
-    備援：透過標準 yfinance 抓取日線
+    備援：透過標準 yfinance 抓取日線，支援 .TW 與 .TWO 雙市場自動切換
     """
     if yf is None:
         return pd.DataFrame()
         
-    try:
-        symbol = format_ticker_symbol(ticker)
-        stock = yf.Ticker(symbol)
-        fetch_days = max(lookback_days + 60, 180)
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=fetch_days)
+    clean_sym = _clean_symbol(ticker)
+    if ticker.startswith("^"):
+        candidates = [ticker]
+    elif ticker.endswith(".TWO"):
+        candidates = [f"{clean_sym}.TWO", f"{clean_sym}.TW"]
+    else:
+        candidates = [f"{clean_sym}.TW", f"{clean_sym}.TWO"]
         
-        df = stock.history(
-            start=start_date.strftime("%Y-%m-%d"),
-            end=(end_date + timedelta(days=1)).strftime("%Y-%m-%d"),
-            interval="1d",
-            auto_adjust=False,
-        )
-        
-        if df.empty:
-            return pd.DataFrame()
+    for symbol in candidates:
+        try:
+            stock = yf.Ticker(symbol)
+            fetch_days = max(lookback_days + 60, 180)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=fetch_days)
             
-        df = df.reset_index()
-        if "Date" in df.columns:
-            df["Date"] = pd.to_datetime(df["Date"]).dt.tz_localize(None).dt.strftime("%Y-%m-%d")
-        elif "Datetime" in df.columns:
-            df["Date"] = pd.to_datetime(df["Datetime"]).dt.tz_localize(None).dt.strftime("%Y-%m-%d")
+            df = stock.history(
+                start=start_date.strftime("%Y-%m-%d"),
+                end=(end_date + timedelta(days=1)).strftime("%Y-%m-%d"),
+                interval="1d",
+                auto_adjust=False,
+            )
             
-        required_cols = ["Open", "High", "Low", "Close", "Volume"]
-        for col in required_cols:
-            if col not in df.columns:
-                return pd.DataFrame()
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+            if df.empty or len(df) < config.EMA_PERIOD:
+                continue
+                
+            df = df.reset_index()
+            if "Date" in df.columns:
+                df["Date"] = pd.to_datetime(df["Date"]).dt.tz_localize(None).dt.strftime("%Y-%m-%d")
+            elif "Datetime" in df.columns:
+                df["Date"] = pd.to_datetime(df["Datetime"]).dt.tz_localize(None).dt.strftime("%Y-%m-%d")
+                
+            required_cols = ["Open", "High", "Low", "Close", "Volume"]
+            for col in required_cols:
+                if col not in df.columns:
+                    return pd.DataFrame()
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+                
+            df = df.dropna(subset=["Open", "High", "Low", "Close"]).sort_values("Date").reset_index(drop=True)
+            if len(df) >= config.EMA_PERIOD:
+                return df
+        except Exception:
+            continue
             
-        df = df.dropna(subset=["Open", "High", "Low", "Close"]).sort_values("Date").reset_index(drop=True)
-        return df
-    except Exception as e:
-        logger.debug(f"yfinance 備援抓取 {ticker} 失敗: {e}")
-        return pd.DataFrame()
+    return pd.DataFrame()
 
 
 def fetch_history(ticker: str, lookback_days: int = config.DATA_LOOKBACK_DAYS) -> pd.DataFrame:
