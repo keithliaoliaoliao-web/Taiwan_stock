@@ -8,7 +8,7 @@ import os
 
 # 資料與市場設定
 WATCHLIST_FILE = "watchlist.csv"
-DATA_LOOKBACK_DAYS = 365
+DATA_LOOKBACK_DAYS = 120
 TIMEZONE = "Asia/Taipei"
 BENCHMARK_TICKER = "^TWII"
 

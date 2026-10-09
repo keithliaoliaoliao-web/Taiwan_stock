@@ -115,7 +115,7 @@ def run_scanner():
         })
 
         # 整理最近 60 根 K 線與 EMA 供前端 Lightweight Charts 渲染
-        recent_bars = analyzed_df.tail(250)
+        recent_bars = analyzed_df.tail(60)
         candles = []
         ema_series = []
         for _, b in recent_bars.iterrows():
@@ -165,8 +165,6 @@ def run_scanner():
                 "sector": sector,
                 "close": round(close_price, 2),
                 "ema20": round(ema20, 2),
-                "candles": candles,
-                "ema": ema_series,
             })
 
     # 5. 評估現有持倉 (若持倉中有不在觀察池之標的，補抓最新行情)
