@@ -28,6 +28,19 @@ HEADERS = {
 }
 
 
+def format_ticker_symbol(ticker: str) -> str:
+    """
+    格式化台股代號：
+    大盤指數 (如 ^TWII) 保持原樣；已有後綴保持原樣；純代號補上 .TW
+    """
+    t = str(ticker).strip()
+    if t.startswith("^"):
+        return t
+    if t.endswith(".TW") or t.endswith(".TWO"):
+        return t
+    return f"{t}.TW"
+
+
 def _clean_symbol(ticker: str) -> str:
     """去除 .TW 後綴取得純代號 (例如 2330.TW -> 2330)"""
     return ticker.replace(".TW", "").replace(".TWO", "").strip()
@@ -38,7 +51,7 @@ def fetch_history_yahoo_chart_api(ticker: str, range_str: str = "6mo") -> pd.Dat
     透過 Yahoo Finance 官方輕量 Chart API 抓取歷史日線
     比 yfinance 套件更不易被封鎖且速度極快
     """
-    symbol = ticker if ticker.endswith(".TW") or ticker.endswith(".TWO") else f"{ticker}.TW"
+    symbol = format_ticker_symbol(ticker)
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={range_str}"
     
     try:
@@ -101,7 +114,7 @@ def fetch_history_yfinance_fallback(ticker: str, lookback_days: int = config.DAT
         return pd.DataFrame()
         
     try:
-        symbol = ticker if ticker.endswith(".TW") or ticker.endswith(".TWO") else f"{ticker}.TW"
+        symbol = format_ticker_symbol(ticker)
         stock = yf.Ticker(symbol)
         fetch_days = max(lookback_days + 60, 180)
         end_date = datetime.now()
@@ -212,4 +225,3 @@ def get_market_status(benchmark_ticker: str = config.BENCHMARK_TICKER) -> dict:
         "ema20": round(latest_ema, 2),
         "bullish": is_bullish,
     }
-
