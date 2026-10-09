@@ -102,7 +102,7 @@ def run_scanner():
         grade = str(last_row.get("Signal_Grade", "NONE"))
         trend_up = bool(last_row.get("Always_In", "") == "LONG")
 
-        # 記錄觀察池總覽
+        # 記錄觀察池總覽 (注入真實 K 線供看圖)
         universe_list.append({
             "ticker": ticker,
             "name": name,
@@ -112,6 +112,9 @@ def run_scanner():
             "trend_up": trend_up,
             "has_signal": is_signal_h2,
             "grade": grade,
+            "has_real_data": True,
+            "candles": candles,
+            "ema": ema_series,
         })
 
         # 整理最近 60 根 K 線與 EMA 供前端 Lightweight Charts 渲染
@@ -165,6 +168,8 @@ def run_scanner():
                 "sector": sector,
                 "close": round(close_price, 2),
                 "ema20": round(ema20, 2),
+                "candles": candles,
+                "ema": ema_series,
             })
 
     # 5. 評估現有持倉 (若持倉中有不在觀察池之標的，補抓最新行情)
