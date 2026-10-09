@@ -679,22 +679,13 @@ class PriceActionEngine:
                 "h2_status": NOT_YET_QUANTIFIED
             }
 
-        # 計算由 signal_index 往回之連續 EMA 向上根數 [Frozen Strategy Rule]
-        up_count = 0
-        k = signal_index
-        while k >= 1:
-            e_curr = df.iloc[k].get("EMA_20")
-            e_prev = df.iloc[k - 1].get("EMA_20")
-            if pd.isna(e_curr) or pd.isna(e_prev) or float(e_curr) <= float(e_prev):
-                break
-            up_count += 1
-            k -= 1
-
-        cond1_slope = (up_count >= slope_period)
-        cond2_length = (up_count >= min_up_bars)
+        # [選項 B] 5 日 EMA 斜率為正且價格站上 20 EMA (或回測至 EMA 支撐區)
+        ema_prev_n = df.iloc[signal_index - slope_period].get("EMA_20") if signal_index >= slope_period else np.nan
+        cond1_slope = bool(ema > ema_prev_n) if (pd.notna(ema) and pd.notna(ema_prev_n)) else False
         cond3_above_ema = bool(sig["Close"] >= ema)
 
-        trend_confirmed = cond1_slope and cond2_length and cond3_above_ema
+        # 趨勢成立：EMA 5日斜率為正且收盤價高於 EMA (順勢架構)
+        trend_confirmed = cond1_slope and cond3_above_ema
 
         # 若趨勢未確認，依 Section 11 標記 TRADING_RANGE / NOT_YET_QUANTIFIED
         if not trend_confirmed:
@@ -702,14 +693,12 @@ class PriceActionEngine:
                 "reason": NOT_YET_QUANTIFIED_RANGE_CONTEXT,
                 "trend_confirmed": False,
                 "h2_status": NOT_YET_QUANTIFIED_RANGE_CONTEXT,
-                "up_count": up_count,
                 "cond1_slope": cond1_slope,
-                "cond2_length": cond2_length,
                 "cond3_above_ema": cond3_above_ema,
             }
 
         # 呼叫 H1/H2 狀態機進行結構分析 [A][B]
-        trend_start_idx = max(0, signal_index - up_count)
+        trend_start_idx = max(0, signal_index - 20)
         diag = H1H2StateMachine.evaluate(
             df=df,
             eval_idx=signal_index,

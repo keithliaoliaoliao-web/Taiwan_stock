@@ -42,8 +42,8 @@ def format_ticker_symbol(ticker: str) -> str:
 
 
 def _clean_symbol(ticker: str) -> str:
-    """去除 .TW 後綴取得純代號 (例如 2330.TW -> 2330)"""
-    return ticker.replace(".TW", "").replace(".TWO", "").strip()
+    """去除 .TW / .TWO 後綴取得純代號 (例如 3324.TWO -> 3324, 2330.TW -> 2330)"""
+    return str(ticker).split(".")[0].strip()
 
 
 def fetch_history_yahoo_chart_api(ticker: str, range_str: str = "6mo") -> pd.DataFrame:
