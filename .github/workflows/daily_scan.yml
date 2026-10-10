@@ -30,6 +30,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add public/scan_result.json watchlist.csv
+          git add public/scan_result.json scan_result.json watchlist.csv
           git diff --staged --quiet || git commit -m "chore: update scan result"
           git push
