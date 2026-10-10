@@ -79,9 +79,12 @@ def run_scanner():
         volume = float(latest_bar["Volume"])
         current_prices[ticker] = close_price
 
-        # 基礎流動性與價格門檻計算 (僅用於買進訊號防護，不剔除觀察池總表)
-        turnover = close_price * volume
-        is_liquid = turnover >= config.MIN_DAILY_TURNOVER
+        # 流動性指標：近 20 個交易日平均日成交金額 (無前視偏誤，嚴格僅計算至當日)
+        turnover_series = df["TradeValue"] if "TradeValue" in df.columns else (df["Close"] * df["Volume"])
+        ma_period = getattr(config, "TURNOVER_MA_PERIOD", 20)
+        min_turnover_ma = getattr(config, "MIN_TURNOVER_MA", 100_000_000)
+        turnover_ma20 = float(turnover_series.rolling(window=ma_period, min_periods=5).mean().iloc[-1]) if len(turnover_series) > 0 else 0.0
+        is_liquid = turnover_ma20 >= min_turnover_ma
         is_valid_price = (config.MIN_PRICE <= close_price <= config.MAX_PRICE)
 
         try:
