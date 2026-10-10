@@ -102,8 +102,8 @@ def run_scanner():
         grade = str(last_row.get("Signal_Grade", "NONE"))
         trend_up = bool(last_row.get("Always_In", "") == "LONG")
 
-        # 整理最近 60 根 K 線與 EMA 供前端 Lightweight Charts 渲染
-        recent_bars = analyzed_df.tail(60)
+        # 整理最近 120 根 K 線與 EMA 供前端 Lightweight Charts 渲染
+        recent_bars = analyzed_df.tail(120)
         candles = []
         ema_series = []
         for _, b in recent_bars.iterrows():
@@ -131,7 +131,6 @@ def run_scanner():
             "trend_up": trend_up,
             "has_signal": is_signal_h2,
             "grade": grade,
-            "has_real_data": True,
             "candles": candles,
             "ema": ema_series,
         })
@@ -160,7 +159,7 @@ def run_scanner():
             })
             print(f"  ★ [訊號發出] {ticker} {name} (等級: {grade}) | 觸發: {trigger_p}, 停損: {stop_p}")
 
-        # 醞釀中名單
+        # 醞釀中名單 (注入真實 K 線供看圖)
         elif is_forming:
             forming.append({
                 "ticker": ticker,
@@ -171,6 +170,7 @@ def run_scanner():
                 "candles": candles,
                 "ema": ema_series,
             })
+            print(f"  ● [醞釀中] {ticker} {name} | 現價: {close_price}, 20EMA: {ema20}")
 
     # 5. 評估現有持倉 (若持倉中有不在觀察池之標的，補抓最新行情)
     from portfolio_tracker import load_holdings
