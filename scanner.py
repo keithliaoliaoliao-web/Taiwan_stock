@@ -104,7 +104,7 @@ def run_scanner():
         trend_up = bool(last_row.get("Always_In", "") == "LONG")
 
         # 整理最近 120 根 K 線與 EMA 供前端 Lightweight Charts 渲染
-        recent_bars = analyzed_df.tail(120)
+        recent_bars = analyzed_df.tail(260)
         candles = []
         ema_series = []
         for _, b in recent_bars.iterrows():
@@ -122,13 +122,14 @@ def run_scanner():
                     "value": round(float(b["EMA_20"]), 2),
                 })
 
-        # 記錄觀察池總覽 (注入真實 K 線供看圖)
+        # 記錄觀察池總覽 (注入真實 1 年 K 線與 20MA 成交額供檢視)
         universe_list.append({
             "ticker": ticker,
             "name": name,
             "sector": sector,
             "close": round(close_price, 2),
             "ema20": round(ema20, 2),
+            "turnover_ma20": round(turnover_ma20 / 1e8, 2),
             "trend_up": trend_up,
             "has_signal": is_signal_h2,
             "grade": grade,

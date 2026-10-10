@@ -46,7 +46,7 @@ def _clean_symbol(ticker: str) -> str:
     return str(ticker).split(".")[0].strip()
 
 
-def fetch_history_yahoo_chart_api(ticker: str, range_str: str = "6mo") -> pd.DataFrame:
+def fetch_history_yahoo_chart_api(ticker: str, range_str: str = "1y") -> pd.DataFrame:
     """
     透過 Yahoo Finance 官方輕量 Chart API 抓取歷史日線。
     自動適配上市 (.TW) 與上櫃 (.TWO)，互為備援重試。
@@ -131,7 +131,7 @@ def fetch_history_yfinance_fallback(ticker: str, lookback_days: int = config.DAT
     for symbol in candidates:
         try:
             stock = yf.Ticker(symbol)
-            fetch_days = max(lookback_days + 60, 180)
+            fetch_days = max(lookback_days + 60, 380)
             end_date = datetime.now()
             start_date = end_date - timedelta(days=fetch_days)
             
@@ -172,7 +172,7 @@ def fetch_history(ticker: str, lookback_days: int = config.DATA_LOOKBACK_DAYS) -
     嚴格禁止生成任何假數據。
     """
     # 1. 優先直連 Yahoo Chart API (快速、穩定、不易觸發 429)
-    df = fetch_history_yahoo_chart_api(ticker, range_str="6mo")
+    df = fetch_history_yahoo_chart_api(ticker, range_str="1y")
     if not df.empty and len(df) >= config.EMA_PERIOD:
         return df
         
