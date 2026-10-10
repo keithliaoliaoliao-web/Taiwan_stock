@@ -79,12 +79,10 @@ def run_scanner():
         volume = float(latest_bar["Volume"])
         current_prices[ticker] = close_price
 
-        # 基礎流動性與價格門檻過濾
+        # 基礎流動性與價格門檻計算 (僅用於買進訊號防護，不剔除觀察池總表)
         turnover = close_price * volume
-        if not (config.MIN_PRICE <= close_price <= config.MAX_PRICE):
-            continue
-        if turnover < config.MIN_DAILY_TURNOVER:
-            continue
+        is_liquid = turnover >= config.MIN_DAILY_TURNOVER
+        is_valid_price = (config.MIN_PRICE <= close_price <= config.MAX_PRICE)
 
         try:
             analyzed_df = PriceActionEngine.analyze_setups(df)
@@ -97,7 +95,7 @@ def run_scanner():
 
         last_row = analyzed_df.iloc[-1]
         ema20 = float(last_row.get("EMA_20", 0.0))
-        is_signal_h2 = bool(last_row.get("Signal_H2", False))
+        is_signal_h2 = bool(last_row.get("Signal_H2", False)) and is_liquid and is_valid_price
         is_forming = bool(last_row.get("Setup_Forming", False))
         grade = str(last_row.get("Signal_Grade", "NONE"))
         trend_up = bool(last_row.get("Always_In", "") == "LONG")

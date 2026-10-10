@@ -1,4 +1,4 @@
-﻿ticker,name,sector,market,basket
+ticker,name,sector,market,basket
 2330.TW,台積電,半導體,TWSE,Taiwan50
 2317.TW,鴻海,其他電子,TWSE,Taiwan50
 2454.TW,聯發科,半導體,TWSE,Taiwan50
@@ -148,3 +148,4 @@
 8299.TWO,群聯,半導體,TPEx,Mid100
 6533.TW,晶心科,半導體,TWSE,Mid100
 3042.TW,晶豪科,半導體,TWSE,Mid100
+6005.TW,群益證,金融保險,TWSE,Mid100
