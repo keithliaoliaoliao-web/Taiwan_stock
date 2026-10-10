@@ -1081,7 +1081,7 @@
       document.getElementById('modal-chart-title').innerText = `${item.ticker} ${item.name} - 技術結構圖 ${isSignal ? '(突破訊號)' : '(真實日K線圖)'}`;
       document.getElementById('modal-chart-subtitle').innerText = isSignal
         ? `最新收盤: $${item.close} | 觸發進場: $${item.trigger_price} | 停損: $${item.stop_loss} | 目標: $${item.target_price}${dateRangeInfo}`
-        : `最新收盤: $${item.close} | 20EMA: $${item.ema20 || '--'}${dateRangeInfo}`;
+        : `最新收盤: $${item.close} | 20EMA: $${item.ema20 || '--'}${item.turnover_ma20 ? ' | 20日均成交: ' + item.turnover_ma20 + '億' : ''}${dateRangeInfo}`;
 
       const modal = document.getElementById('chart-modal');
       modal.classList.remove('hidden');
