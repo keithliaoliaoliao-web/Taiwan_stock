@@ -66,10 +66,35 @@
   <!-- 主內容容器 -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
 
+    <!-- 快速分類標籤列 (Quick Filter Tabs) -->
+    <div class="sticky top-16 z-20 bg-slate-50/90 backdrop-blur-md py-3 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-slate-200 mb-2">
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold">
+        <button onclick="scrollToSection('all', this)" id="tab-all" class="px-4 py-2 rounded-full bg-blue-600 text-white shadow-sm transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+          <span>🏠 全部總覽</span>
+        </button>
+        <button onclick="scrollToSection('signals', this)" id="tab-signals" class="px-4 py-2 rounded-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-xs transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+          <span>🎯 明日突破訊號</span>
+          <span id="tab-badge-signals" class="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">0 檔</span>
+        </button>
+        <button onclick="scrollToSection('forming', this)" id="tab-forming" class="px-4 py-2 rounded-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-xs transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+          <span>⏳ 醞釀中標的</span>
+          <span id="tab-badge-forming" class="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold">0 檔</span>
+        </button>
+        <button onclick="scrollToSection('holdings', this)" id="tab-holdings" class="px-4 py-2 rounded-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-xs transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+          <span>💼 個人持股</span>
+          <span id="tab-badge-holdings" class="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">0 檔</span>
+        </button>
+        <button onclick="scrollToSection('universe', this)" id="tab-universe" class="px-4 py-2 rounded-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-xs transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+          <span>📋 150檔觀察池</span>
+          <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-700 font-bold">150</span>
+        </button>
+      </div>
+    </div>
+
     <!-- ========================================== -->
     <!-- 2. 本月可用預算輸入區 (選項 A：純比例無金額上限) -->
     <!-- ========================================== -->
-    <section class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-6 text-white shadow-lg">
+    <section id="section-budget" class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-6 text-white shadow-lg">
       <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 class="text-lg font-bold flex items-center gap-2">
@@ -106,7 +131,7 @@
     <!-- ========================================== -->
     <!-- 3. 個人持股即時監控 (含手動新增按鈕) -->
     <!-- ========================================== -->
-    <section>
+    <section id="section-holdings">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div class="flex items-center gap-2">
           <span class="text-xl">💼</span>
@@ -165,7 +190,7 @@
     <!-- ========================================== -->
     <!-- 4. 明日進場候選清單 (Signals) -->
     <!-- ========================================== -->
-    <section>
+    <section id="section-signals">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2">
           <span class="text-xl">🎯</span>
@@ -184,7 +209,7 @@
     <!-- ========================================== -->
     <!-- 5. 醞釀中名單 (Forming) -->
     <!-- ========================================== -->
-    <section>
+    <section id="section-forming">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2">
           <span class="text-xl">⏳</span>
@@ -202,7 +227,7 @@
     <!-- ========================================== -->
     <!-- 6. 核心觀察池總表 (Universe) -->
     <!-- ========================================== -->
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <section id="section-universe" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
         <div class="flex items-center gap-2">
           <span class="text-xl">📋</span>
@@ -625,6 +650,25 @@
         });
     }
 
+    function scrollToSection(targetId, btn) {
+      document.querySelectorAll('.overflow-x-auto button').forEach(b => {
+        b.className = 'px-4 py-2 rounded-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-xs transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer';
+      });
+      if (btn) {
+        btn.className = 'px-4 py-2 rounded-full bg-blue-600 text-white shadow-sm transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer';
+      }
+
+      if (targetId === 'all') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      const el = document.getElementById(`section-${targetId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
     /**
      * 主儀表板渲染
      */
@@ -637,6 +681,18 @@
 
       // 初始化倒數計時（根據最後掃描時間 + 30分鐘動態計算）
       initCountdownWithScanTime(scanDate, scanTime);
+
+      // 更新頂部快速標籤的動態檔數
+      const sigBadge = document.getElementById('tab-badge-signals');
+      const formBadge = document.getElementById('tab-badge-forming');
+      const holdBadge = document.getElementById('tab-badge-holdings');
+      if (sigBadge) sigBadge.innerText = `${(data.signals || []).length} 檔`;
+      if (formBadge) formBadge.innerText = `${(data.forming || []).length} 檔`;
+      if (holdBadge) {
+        const localH = getLocalHoldings();
+        const serverH = data.holdings_status || [];
+        holdBadge.innerText = `${Math.max(localH.length, serverH.length)} 檔`;
+      }
 
       const ms = data.market_status || {};
       const badge = document.getElementById('market-status-badge');
