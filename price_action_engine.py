@@ -242,9 +242,11 @@ class PriceActionSwingEngine:
                     tentative_high = cur_h
                     tentative_high_idx = b
 
-            # Break of Structure (BOS) Check
+            # Break of Structure (BOS) Check & Reset Mechanism
             if major_low is not None and cur_c < major_low.price:
                 bos = True
+            elif major_high is not None and cur_c > major_high.price:
+                bos = False
 
             results.append(SwingStructureResult(
                 state=state,
@@ -442,6 +444,7 @@ class H1H2StateMachine:
         leg1_low: Optional[float] = None
         leg2_low: Optional[float] = None
         pullback_low: Optional[float] = None
+        leg2_bar_count = 0
 
         for b in range(peak_idx + 1, eval_idx + 1):
             cur_high = float(df["High"].iloc[b])
@@ -489,15 +492,16 @@ class H1H2StateMachine:
                     h1_high = max(h1_high, cur_high) if h1_high is not None else cur_high
                     diag.h1_high = h1_high
                     diag.audit_trail.append(f"[A] Bar {b}: H1 attempt extended higher ({cur_high})")
-                # Rule 9 [A]: Did H1 attempt stall and sellers resume (H1 Failure)?
-                elif cur_low < prev_low or cur_high < prev_high:
+                # Rule 9 [A]: Strict H1 Failure - require actual lower low (cur_low < prev_low) for seller resumption
+                elif cur_low < prev_low:
                     current_state = H1H2State.FIRST_ATTEMPT_FAILED
                     diag.h1_status = "FAILED"
                     diag.pullback_state = "LEG_2_DOWN"
                     diag.leg_state = "LEG_2_DOWN"
                     leg2_low = cur_low
+                    leg2_bar_count = 1
                     diag.audit_trail.append(
-                        f"[A] Bar {b}: H1 attempt failed; seller resumption (Low {cur_low} < prev Low {prev_low}); "
+                        f"[A] Bar {b}: H1 attempt failed; strict seller resumption (Low {cur_low} < prev Low {prev_low}); "
                         "Leg 2 down initiated"
                     )
                 else:
@@ -507,9 +511,12 @@ class H1H2StateMachine:
             # --- State 3: FIRST_ATTEMPT_FAILED (Leg 2 Down) ---
             elif current_state == H1H2State.FIRST_ATTEMPT_FAILED:
                 leg2_low = cur_low if leg2_low is None else min(leg2_low, cur_low)
+                if cur_low < prev_low:
+                    leg2_bar_count += 1
 
                 # Rule 10 [A]: Second bar whose High > previous bar High during pullback is High 2 (H2)
-                if cur_high > prev_high:
+                min_leg2_bars = int(getattr(config, "MIN_LEG2_PULLBACK_BARS", 1))
+                if cur_high > prev_high and leg2_bar_count >= min_leg2_bars:
                     current_state = H1H2State.H2_CONFIRMED
                     h2_idx = b
                     h2_high = cur_high
@@ -657,7 +664,7 @@ class PriceActionEngine:
         趨勢確立、訊號棒品質與均線距離則保留 Strategy Freeze v1 凍結邏輯。
         """
         slope_period = int(getattr(config, "TREND_EMA_SLOPE_PERIOD", 5))
-        min_up_bars = int(getattr(config, "TREND_EMA_MIN_UP_BARS", 10))
+        min_up_bars = int(getattr(config, "TREND_EMA_MIN_UP_BARS", 6))
         required_bars = max(slope_period, min_up_bars, 2)
 
         if signal_index < required_bars:
@@ -679,13 +686,29 @@ class PriceActionEngine:
                 "h2_status": NOT_YET_QUANTIFIED
             }
 
-        # [選項 B] 5 日 EMA 斜率為正且價格站上 20 EMA (或回測至 EMA 支撐區)
+        # 真正連續 EMA 向上計數 (EMA[i] > EMA[i-1] 連續 N 根)
+        consecutive_up = True
+        for k in range(min_up_bars):
+            idx1 = signal_index - k
+            idx2 = signal_index - k - 1
+            if idx2 >= 0:
+                val1 = df.iloc[idx1].get("EMA_20")
+                val2 = df.iloc[idx2].get("EMA_20")
+                if pd.isna(val1) or pd.isna(val2) or val1 <= val2:
+                    consecutive_up = False
+                    break
+            else:
+                consecutive_up = False
+                break
+
         ema_prev_n = df.iloc[signal_index - slope_period].get("EMA_20") if signal_index >= slope_period else np.nan
         cond1_slope = bool(ema > ema_prev_n) if (pd.notna(ema) and pd.notna(ema_prev_n)) else False
         cond3_above_ema = bool(sig["Close"] >= ema)
+        always_in = str(sig.get("Always_In", "LONG"))
+        always_in_long = (always_in != "SHORT")
 
-        # 趨勢成立：EMA 5日斜率為正且收盤價高於 EMA (順勢架構)
-        trend_confirmed = cond1_slope and cond3_above_ema
+        # 趨勢成立：EMA 連續向上、5日斜率為正、收盤價高於 EMA 且 Always_In 非 SHORT
+        trend_confirmed = consecutive_up and cond1_slope and cond3_above_ema and always_in_long
 
         # 若趨勢未確認，依 Section 11 標記 TRADING_RANGE / NOT_YET_QUANTIFIED
         if not trend_confirmed:
@@ -698,7 +721,8 @@ class PriceActionEngine:
             }
 
         # 呼叫 H1/H2 狀態機進行結構分析 [A][B]
-        trend_start_idx = max(0, signal_index - 20)
+        swing_lookback = int(getattr(config, "SWING_LOOKBACK_PERIOD", 20))
+        trend_start_idx = max(0, signal_index - swing_lookback)
         diag = H1H2StateMachine.evaluate(
             df=df,
             eval_idx=signal_index,
