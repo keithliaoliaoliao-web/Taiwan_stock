@@ -14,11 +14,41 @@ def is_trading_time(dt):
     return dtime(9, 0) <= t <= dtime(13, 30)
 
 def main():
-    print("=== 台股自動排程掃描器已啟動（含 Git 自動同步） ===")
+    print("=== 台股自動排程掃描器已啟動（含 13:45 盤後金牌結算與 Git 自動同步） ===")
+    last_settlement_date = None
+
     while True:
         now = datetime.now(TW_TZ)
+        today_str = now.strftime('%Y-%m-%d')
+        t = now.time()
+
+        # 1. 盤後定盤結算任務 (13:45 執行一次，確保台股收盤定盤數據與 250 根對齊)
+        if now.weekday() <= 4 and dtime(13, 45) <= t <= dtime(14, 15) and last_settlement_date != today_str:
+            print(f"\n[盤後結算] 觸發 13:45 官方定盤最終結算掃描... 當前時間: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+            try:
+                subprocess.run([sys.executable, 'scanner.py'], check=True)
+                complete_time = datetime.now(TW_TZ)
+                print(f"【盤後結算完成】：{complete_time.strftime('%H:%M:%S')} (已更新官方收盤價與 250 根對齊 K 棒)")
+                
+                # 自動同步至 GitHub
+                print("[Git] 正在執行盤後結算 Git 同步...")
+                subprocess.run(['git', 'add', 'public/scan_result.json', 'scan_result.json'], check=True)
+                commit_msg = f"Post-market settlement update: {complete_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                commit_res = subprocess.run(['git', 'commit', '-m', commit_msg], capture_output=True, text=True)
+                if commit_res.returncode == 0:
+                    push_res = subprocess.run(['git', 'push'], capture_output=True, text=True)
+                    if push_res.returncode == 0:
+                        print("[Git] 盤後結算結果 Push 至 GitHub 成功！")
+                    else:
+                        print(f"[Git] Push 失敗: {push_res.stderr.strip()}")
+                
+                last_settlement_date = today_str
+            except Exception as e:
+                print(f"[錯誤] 盤後結算執行失敗: {e}")
+
+        # 2. 盤中常規 30 分鐘排程掃描
         if is_trading_time(now):
-            print(f"\n[自動排程] 開始執行選股掃描... 當前時間: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"\n[自動排程] 開始執行盤中掃描... 當前時間: {now.strftime('%Y-%m-%d %H:%M:%S')}")
             try:
                 subprocess.run([sys.executable, 'scanner.py'], check=True)
                 complete_time = datetime.now(TW_TZ)
@@ -28,11 +58,10 @@ def main():
 
                 # 自動同步至 GitHub
                 print("[Git] 正在執行自動 Git 同步...")
-                subprocess.run(['git', 'add', 'public/scan_result.json'], check=True)
+                subprocess.run(['git', 'add', 'public/scan_result.json', 'scan_result.json'], check=True)
                 commit_msg = f"Auto-update scan results: {complete_time.strftime('%Y-%m-%d %H:%M:%S')}"
                 commit_res = subprocess.run(['git', 'commit', '-m', commit_msg], capture_output=True, text=True)
                 if commit_res.returncode == 0:
-                    print("[Git] Commit 成功")
                     push_res = subprocess.run(['git', 'push'], capture_output=True, text=True)
                     if push_res.returncode == 0:
                         print("[Git] Push 至 GitHub 成功！")
@@ -44,10 +73,9 @@ def main():
             except Exception as e:
                 print(f"[錯誤] 掃描或 Git 同步執行失敗: {e}")
             
-            # 掃描完成後暫停 30 分鐘
             time.sleep(1800)
         else:
-            print(f"[休眠] 目前非台股開盤時間 (週一～週五 09:00-13:30)。目前時間: {now.strftime('%Y-%m-%d %H:%M:%S')}。等待 5 分鐘後重新檢查...")
+            print(f"[休眠] 目前非盤中開盤時間 (或已過收盤)。當前時間: {now.strftime('%Y-%m-%d %H:%M:%S')}。等待 5 分鐘後重新檢查...")
             time.sleep(300)
 
 if __name__ == '__main__':

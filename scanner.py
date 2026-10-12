@@ -57,7 +57,10 @@ def run_scanner():
 
     # 3. 抓取大盤指數狀態
     market_status = get_market_status(config.BENCHMARK_TICKER)
-    print(f"[大盤] 加權指數: {market_status['close']}, EMA20: {market_status['ema20']}, 多頭: {market_status['bullish']}")
+    t_now = now.time()
+    is_post = (t_now >= datetime.strptime("13:30", "%H:%M").time() or now.weekday() > 4)
+    market_status["market_phase"] = "盤後定盤" if is_post else "盤中即時"
+    print(f"[大盤] 加權指數: {market_status['close']}, EMA20: {market_status['ema20']}, 多頭: {market_status['bullish']} ({market_status['market_phase']})")
 
     signals = []
     forming = []

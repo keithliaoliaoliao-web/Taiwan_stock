@@ -696,12 +696,13 @@
 
       const ms = data.market_status || {};
       const badge = document.getElementById('market-status-badge');
+      const phaseStr = ms.market_phase ? `[${ms.market_phase}]` : '';
       if (ms.bullish) {
         badge.className = "px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm";
-        badge.innerHTML = `🟢 <span>大盤多頭 (收盤: ${ms.close || 0} / 20EMA: ${ms.ema20 || 0})</span>`;
+        badge.innerHTML = `🟢 <span>大盤多頭 ${phaseStr} (收盤: ${ms.close || 0} / 20EMA: ${ms.ema20 || 0})</span>`;
       } else {
         badge.className = "px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 shadow-sm";
-        badge.innerHTML = `⚠️ <span>大盤空頭/震盪警戒 (收盤: ${ms.close || 0} / 20EMA: ${ms.ema20 || 0})</span>`;
+        badge.innerHTML = `⚠️ <span>大盤空頭/震盪警戒 ${phaseStr} (收盤: ${ms.close || 0} / 20EMA: ${ms.ema20 || 0})</span>`;
       }
 
       // 合併 scan_result.json 的 holdings_status 與 local_holdings
