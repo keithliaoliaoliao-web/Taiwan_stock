@@ -98,7 +98,12 @@ def run_scanner():
 
         last_row = analyzed_df.iloc[-1]
         ema20 = float(last_row.get("EMA_20", 0.0))
-        is_signal_h2 = bool(last_row.get("Signal_H2", False)) and is_liquid and is_valid_price
+        
+        # 嚴格過濾：台股漲停鎖死標的（當日漲幅大於 9.5% 或接近漲停）避免追高風險
+        prev_close = float(df['Close'].iloc[-2]) if len(df) > 1 else close_price
+        is_limit_up = (close_price >= prev_close * 1.095)
+
+        is_signal_h2 = bool(last_row.get("Signal_H2", False)) and is_liquid and is_valid_price and not is_limit_up
         is_forming = bool(last_row.get("Setup_Forming", False)) and is_liquid and is_valid_price
         grade = str(last_row.get("Signal_Grade", "NONE"))
         trend_up = bool(last_row.get("Always_In", "") == "LONG")
@@ -115,12 +120,17 @@ def run_scanner():
         ema_series = []
         for _, b in recent_bars.iterrows():
             d_str = str(b["Date"])
+            op = float(b["Open"])
+            cl = float(b["Close"])
+            vol = float(b["Volume"])
             candles.append({
                 "time": d_str,
-                "open": round(float(b["Open"]), 2),
+                "open": round(op, 2),
                 "high": round(float(b["High"]), 2),
                 "low": round(float(b["Low"]), 2),
-                "close": round(float(b["Close"]), 2),
+                "close": round(cl, 2),
+                "volume": round(vol, 2),
+                "color": '#ef4444' if cl >= op else '#22c55e'
             })
             if pd.notna(b.get("EMA_20")):
                 ema_series.append({

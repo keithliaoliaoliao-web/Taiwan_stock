@@ -559,7 +559,7 @@
       }
 
       fetchScanResult();
-      startCountdownTimer(1800);
+      startCountdownTimer(1800); // 初始載入預設倒數
       renderTradeHistory(getTradeHistory());
     });
 
@@ -1157,7 +1157,7 @@
 
       document.getElementById('modal-chart-title').innerText = `${item.ticker} ${item.name} - 技術結構圖 ${isSignal ? '(突破訊號)' : '(真實日K線圖)'}`;
       document.getElementById('modal-chart-subtitle').innerText = isSignal
-        ? `最新收盤: $${item.close} | 觸發進場: $${item.trigger_price} | 停損: $${item.stop_loss} | 目標: $${item.target_price}${dateRangeInfo}`
+        ? `最新收盤: $${item.close} | 觸發進場: $${item.trigger_price} | 停損: $${item.stop_loss} | 目標: $${item.target_price} | R:R 風險報酬比: 1 : ${item.net_rr || 2.0} | 風險: ${item.risk_pct || '--'}%${dateRangeInfo}`
         : `最新收盤: $${item.close} | 20EMA: $${item.ema20 || '--'}${item.turnover_ma20 ? ' | 20日均成交: ' + item.turnover_ma20 + '億' : ''}${dateRangeInfo}`;
 
       const modal = document.getElementById('chart-modal');
@@ -1172,8 +1172,8 @@
       }
 
       currentChart = LightweightCharts.createChart(container, {
-        width: container.clientWidth || 800,
-        height: 380,
+        width: container.clientWidth || 700,
+        height: 320,
         layout: {
           background: { color: '#ffffff' },
           textColor: '#475569',
@@ -1201,6 +1201,29 @@
 
       currentSignalCandlesCount = candles.length;
       candleSeries.setData(candles);
+
+      // 增加成交量柱狀圖副圖 (Volume Subplot)
+      if (candles.some(c => c.volume !== undefined)) {
+        const volumeSeries = currentChart.addHistogramSeries({
+          color: '#94a3b8',
+          priceFormat: {
+            type: 'volume',
+          },
+          priceScaleId: '',
+        });
+        volumeSeries.priceScale().applyOptions({
+          scaleMargins: {
+            top: 0.75,
+            bottom: 0,
+          },
+        });
+        const volumeData = candles.map(c => ({
+          time: c.time,
+          value: c.volume || 0,
+          color: c.color || (c.close >= c.open ? '#ef4444' : '#22c55e')
+        }));
+        volumeSeries.setData(volumeData);
+      }
 
       if (item.ema && item.ema.length > 0) {
         const emaSeries = currentChart.addLineSeries({
