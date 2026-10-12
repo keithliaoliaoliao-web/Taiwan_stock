@@ -1,0 +1,10 @@
+node_modules/
+node.exe
+__pycache__/
+*.pyc
+.cache/
+.gemini/
+*.zip
+.DS_Store
+*.log
+scan_result.json
