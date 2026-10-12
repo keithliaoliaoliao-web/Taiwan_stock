@@ -707,12 +707,16 @@ class PriceActionEngine:
             swing_res=swing_res,
         )
 
-        # 訊號棒品質門檻 [Frozen Strategy Rule - NOT modified]
+        # 訊號棒品質與過度延伸高潮檢驗 (Climactic Bar Exhaustion Check)
         bullish = bool(sig["Close"] > sig["Open"])
         body_ratio = float(sig.get("Body_Ratio", 0.0))
         close_pos = float(sig.get("Close_Pos", 0.0))
         min_body_ratio = float(getattr(config, "TREND_BAR_BODY_RATIO", 0.50)) * 100.0
         min_close_pos = float(getattr(config, "SIGNAL_BAR_MIN_CLOSE_POS", 0.65)) * 100.0
+
+        sig_range = float(sig["High"]) - float(sig["Low"])
+        max_sig_range = (2.0 * atr) if (pd.notna(atr) and atr > 0) else float("inf")
+        bar_range_met = sig_range <= max_sig_range
 
         bar_quality_met = bullish and (body_ratio >= min_body_ratio) and (close_pos >= min_close_pos)
 
@@ -774,6 +778,11 @@ class PriceActionEngine:
         if bar_count > max_pullback_bars:
             details["reason"] = "PULLBACK_BAR_COUNT_EXCEEDED"
             details["is_forming"] = False
+            return False, details
+
+        # 檢查高潮過度延伸棒 (Climactic Bar Exhaustion)
+        if not bar_range_met:
+            details["reason"] = "CLIMACTIC_BAR_EXHAUSTION"
             return False, details
 
         # 檢查訊號棒品質 [Frozen Layer]
