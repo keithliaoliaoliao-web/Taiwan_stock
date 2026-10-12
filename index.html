@@ -324,40 +324,40 @@
     </div>
   </div>
 
-  <!-- 7. K線圖彈窗 (Lightweight Charts Modal) -->
+  <!-- 7. K線圖彈窗 (Lightweight Charts Modal) - v20.1 -->
   <!-- ========================================== -->
-  <div id="chart-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-[4px] flex items-center justify-center p-4">
-    <div class="bg-white rounded-[14px] shadow-2xl w-full max-w-[850px] overflow-hidden border border-slate-200">
-      <div class="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50">
+  <div id="chart-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-[4px] flex items-center justify-center p-3">
+    <div class="bg-white rounded-[14px] shadow-2xl w-full max-w-[750px] overflow-hidden border border-slate-200">
+      <div class="px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50">
         <div>
-          <h3 id="modal-chart-title" class="text-base font-bold text-slate-900">個股技術圖表</h3>
-          <p id="modal-chart-subtitle" class="text-xs text-slate-500">日線圖 + 20EMA + 關鍵進場停損區間</p>
+          <h3 id="modal-chart-title" class="text-sm font-bold text-slate-900">個股技術圖表</h3>
+          <p id="modal-chart-subtitle" class="text-[11px] text-slate-500">日線圖 + 20EMA + 關鍵進場停損區間</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
           <!-- 時間區間切換按鈕群 -->
           <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs text-xs font-semibold">
-            <button type="button" id="btn-range-1m" onclick="setChartRange(20, '1m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1個月</button>
-            <button type="button" id="btn-range-3m" onclick="setChartRange(60, '3m')" class="px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition">3個月</button>
+            <button type="button" id="btn-range-1m" onclick="setChartRange(20, '1m')" class="px-2 py-0.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1個月</button>
+            <button type="button" id="btn-range-3m" onclick="setChartRange(60, '3m')" class="px-2 py-0.5 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition">3個月</button>
             <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">半年</button>
             <button type="button" id="btn-range-1y" onclick="setChartRange(250, '1y')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1年</button>
           </div>
-          <button onclick="closeChartModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+          <button onclick="closeChartModal()" class="w-7 h-7 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
             ✕
           </button>
         </div>
       </div>
 
       <!-- 圖表畫布容器 -->
-      <div class="p-6">
-        <div id="tv-chart-container" class="w-full h-[380px]"></div>
+      <div class="p-4">
+        <div id="tv-chart-container" class="w-full h-[320px]"></div>
         
         <!-- 圖例說明 -->
-        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
-          <div class="flex items-center gap-4">
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-blue-500 inline-block"></span> 20EMA 均線</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 border-t-2 border-dashed border-emerald-500 inline-block"></span> 觸發進場價</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 border-t-2 border-dashed border-rose-500 inline-block"></span> 停損防守價</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 border-t-2 border-dashed border-indigo-500 inline-block"></span> 停利目標價</span>
+        <div class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-600 gap-2">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-500 inline-block"></span> 20EMA 均線</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-t-2 border-dashed border-emerald-500 inline-block"></span> 觸發進場價</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-t-2 border-dashed border-rose-500 inline-block"></span> 停損防守價</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-t-2 border-dashed border-indigo-500 inline-block"></span> 停利目標價</span>
           </div>
           <div class="text-slate-400">台股慣用色：紅漲 綠跌</div>
         </div>
