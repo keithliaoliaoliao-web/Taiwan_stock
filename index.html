@@ -582,11 +582,17 @@
      * 讀取 scan_result.json 資料（自動適應根目錄與 public/ 目錄，具備多重路徑備援與抗快取）
      */
     function fetchScanResult() {
-      const isPublicDir = window.location.pathname.endsWith('/public/') || window.location.pathname.includes('/public/index');
       const ts = Date.now();
-      const paths = isPublicDir 
-        ? [`scan_result.json?t=${ts}`, `public/scan_result.json?t=${ts}`, `./scan_result.json?t=${ts}`]
-        : [`public/scan_result.json?t=${ts}`, `scan_result.json?t=${ts}`, `./public/scan_result.json?t=${ts}`, `./scan_result.json?t=${ts}`];
+      const paths = [
+        `scan_result.json?t=${ts}`,
+        `public/scan_result.json?t=${ts}`,
+        `./scan_result.json?t=${ts}`,
+        `./public/scan_result.json?t=${ts}`,
+        `/Taiwan_stock/scan_result.json?t=${ts}`,
+        `/Taiwan_stock/public/scan_result.json?t=${ts}`,
+        `../scan_result.json?t=${ts}`,
+        `../public/scan_result.json?t=${ts}`
+      ];
 
       function tryFetch(index) {
         if (index >= paths.length) {
