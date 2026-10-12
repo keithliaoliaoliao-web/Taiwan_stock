@@ -274,7 +274,7 @@
   <!-- ========================================== -->
   <!-- 登記賣出平倉結算彈窗 -->
   <!-- ========================================== -->
-  <div id="sell-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="sell-modal" onclick="if(event.target === this) closeSellModal()" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <div>
@@ -349,11 +349,16 @@
     </div>
   </div>
 
-  <!-- 7. K線圖彈窗 (Lightweight Charts Modal) - v20.1 -->
+  <!-- 7. K線圖彈窗 (Lightweight Charts Modal) - v20.2 -->
   <!-- ========================================== -->
-  <div id="chart-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-[4px] flex items-center justify-center p-3">
-    <div class="bg-white rounded-[14px] shadow-2xl w-full max-w-[750px] overflow-hidden border border-slate-200">
-      <div class="px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50">
+  <div id="chart-modal" onclick="if(event.target === this) closeChartModal()" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-[4px] flex items-center justify-center p-3">
+    <div class="bg-white rounded-[14px] shadow-2xl w-full max-w-[750px] overflow-hidden border border-slate-200 relative">
+      <!-- 固定在右上角的統一關閉按鈕 -->
+      <button onclick="closeChartModal()" class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition shadow-xs z-20 cursor-pointer" title="關閉">
+        ✕
+      </button>
+
+      <div class="px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50 pr-12">
         <div>
           <h3 id="modal-chart-title" class="text-sm font-bold text-slate-900">個股技術圖表</h3>
           <p id="modal-chart-subtitle" class="text-[11px] text-slate-500">日線圖 + 20EMA + 關鍵進場停損區間</p>
@@ -366,9 +371,6 @@
             <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">半年</button>
             <button type="button" id="btn-range-1y" onclick="setChartRange(250, '1y')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1年</button>
           </div>
-          <button onclick="closeChartModal()" class="w-7 h-7 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
-            ✕
-          </button>
         </div>
       </div>
 
@@ -479,7 +481,7 @@
   <!-- ========================================== -->
   <!-- 9. GitHub 授權設定彈窗 -->
   <!-- ========================================== -->
-  <div id="github-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="github-modal" onclick="if(event.target === this) closeGithubModal()" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <h3 class="text-base font-bold text-slate-900">GitHub API 連線設定</h3>
@@ -586,6 +588,15 @@
       fetchScanResult();
       startCountdownTimer(1800); // 初始載入預設倒數
       renderTradeHistory(getTradeHistory());
+
+      // 支援 Esc 鍵關閉所有彈窗
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeChartModal();
+          closeSellModal();
+          closeGithubModal();
+        }
+      });
     });
 
     /**

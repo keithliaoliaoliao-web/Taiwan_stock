@@ -739,7 +739,8 @@ class PriceActionEngine:
         min_close_pos = float(getattr(config, "SIGNAL_BAR_MIN_CLOSE_POS", 0.65)) * 100.0
 
         sig_range = float(sig["High"]) - float(sig["Low"])
-        max_sig_range = (2.0 * atr) if (pd.notna(atr) and atr > 0) else float("inf")
+        climax_ratio = float(getattr(config, "CLIMAX_BAR_ATR_RATIO", 2.0))
+        max_sig_range = (climax_ratio * atr) if (pd.notna(atr) and atr > 0) else float("inf")
         bar_range_met = sig_range <= max_sig_range
 
         bar_quality_met = bullish and (body_ratio >= min_body_ratio) and (close_pos >= min_close_pos)
@@ -823,9 +824,13 @@ class PriceActionEngine:
             return False, details
 
         # 訊號評級判定 (A 級 vs B 級) [Frozen Layer]
-        cond_a_body = body_ratio > 70.0
-        cond_a_bars = bar_count <= 4
-        cond_a_ema = (distance_to_ema <= 0.5 * atr) if (pd.notna(atr) and atr > 0) else True
+        grade_a_close_ratio = float(getattr(config, "GRADE_A_BAR_CLOSE_RATIO", 70.0))
+        grade_a_max_bars = int(getattr(config, "GRADE_A_MAX_PULLBACK_BARS", 4))
+        grade_a_ema_dist = float(getattr(config, "GRADE_A_EMA_DISTANCE_ATR", 0.5))
+
+        cond_a_body = body_ratio > grade_a_close_ratio
+        cond_a_bars = bar_count <= grade_a_max_bars
+        cond_a_ema = (distance_to_ema <= grade_a_ema_dist * atr) if (pd.notna(atr) and atr > 0) else True
 
         signal_grade = "A" if (cond_a_body and cond_a_bars and cond_a_ema) else "B"
         details["signal_grade"] = signal_grade
