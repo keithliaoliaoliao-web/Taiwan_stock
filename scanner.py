@@ -74,10 +74,17 @@ def run_scanner():
         sector = meta.get("sector", "其他")
 
         df = fetch_history(ticker, lookback_days=config.DATA_LOOKBACK_DAYS)
-        if df.empty or len(df) < config.EMA_PERIOD:
+        # 防禦升級 2：溫機資料不足過濾（少於 120 根有效 K 棒之新股/標的一律跳過）
+        if df.empty or len(df) < 120:
             continue
 
         latest_bar = df.iloc[-1]
+        
+        # 防禦升級 3：停牌與無交易過濾（最後一根 K 棒日期距離當前超過 6 天視為停牌或無成交）
+        latest_bar_date = pd.to_datetime(latest_bar["Date"])
+        if (now.date() - latest_bar_date.date()).days > 6:
+            continue
+
         close_price = float(latest_bar["Close"])
         volume = float(latest_bar["Volume"])
         current_prices[ticker] = close_price
@@ -112,8 +119,6 @@ def run_scanner():
         trend_up = bool(last_row.get("Always_In", "") == "LONG")
 
         # 整理最近 1 年 (約 250 根交易日) K 線與 20EMA 供前端渲染
-        # 由於抓取端已抓取 2 年 (~500 根) 充當暖機緩衝，截取後第 1 根起即具備完整有效 20EMA
-        # 若資料總數不足 250 根，則僅自 EMA_20 有效之起始棒開始截取，消除左側無均線斷頭
         valid_ema_df = analyzed_df.dropna(subset=["EMA_20"])
         recent_bars = valid_ema_df.tail(250) if len(valid_ema_df) >= 250 else valid_ema_df
         if recent_bars.empty:
@@ -141,7 +146,6 @@ def run_scanner():
                     "value": round(float(b["EMA_20"]), 2),
                 })
 
-        # 記錄觀察池總覽 (注入真實 1 年 K 線與 20MA 成交額供檢視)
         universe_list.append({
             "ticker": ticker,
             "name": name,
@@ -156,6 +160,10 @@ def run_scanner():
             "ema": ema_series,
         })
 
+        # 防禦升級 1：盤中即時預覽防護標註
+        is_intraday_preview = (datetime.strptime("09:00", "%H:%M").time() <= t_now <= datetime.strptime("13:30", "%H:%M").time() and now.weekday() <= 4)
+        status_label = "[盤中預覽] (Intraday Preview)" if is_intraday_preview else "[正式定盤]"
+
         # 訊號符合 (H2 突破)
         if is_signal_h2:
             trigger_p = float(last_row.get("Trigger_Price", close_price))
@@ -169,6 +177,7 @@ def run_scanner():
                 "name": name,
                 "sector": sector,
                 "grade": grade,
+                "status_label": status_label,
                 "close": round(close_price, 2),
                 "trigger_price": round(trigger_p, 2),
                 "stop_loss": round(stop_p, 2),
@@ -178,9 +187,9 @@ def run_scanner():
                 "candles": candles,
                 "ema": ema_series,
             })
-            print(f"  ★ [訊號發出] {ticker} {name} (等級: {grade}) | 觸發: {trigger_p}, 停損: {stop_p}")
+            print(f"  ★ [訊號發出 {status_label}] {ticker} {name} (等級: {grade}) | 觸發: {trigger_p}, 停損: {stop_p}")
 
-        # 醞釀中名單 (注入真實 K 線供看圖)
+        # 醞釀中名單
         elif is_forming:
             forming.append({
                 "ticker": ticker,
@@ -193,9 +202,17 @@ def run_scanner():
             })
             print(f"  ● [醞釀中] {ticker} {name} | 現價: {close_price}, 20EMA: {ema20}")
 
-    # 5. 評估現有持倉 (若持倉中有不在觀察池之標的，補抓最新行情)
+    # 5. 評估現有持倉與持倉上限警示
     from portfolio_tracker import load_holdings
     holdings_raw = load_holdings()
+    portfolio_warning = ""
+    if len(holdings_raw) >= 3:
+        portfolio_warning = "⚠️ 當前持倉已滿 3 檔，建議依紀律不開新倉"
+        print(f"[持倉警示] {portfolio_warning}")
+
+    # 防禦升級 4：訊號排序（A 級優先，B 級次之，同級別按 Net_RR 降冪排序）
+    signals.sort(key=lambda x: (0 if x["grade"] == "A" else 1, -x["net_rr"]))
+
     for h in holdings_raw:
         ht = h.get("ticker")
         if ht and ht not in current_prices:
@@ -217,6 +234,7 @@ def run_scanner():
         "forming": forming,
         "holdings_status": holdings_status,
         "universe": universe_list,
+        "portfolio_warning": portfolio_warning,
     }
 
     # 7. 全域清洗並寫入 public/scan_result.json
