@@ -171,8 +171,9 @@ def fetch_history(ticker: str, lookback_days: int = config.DATA_LOOKBACK_DAYS) -
     整合抓取入口：優先使用直連 Chart API，失敗自動退回 yfinance 備援。
     嚴格禁止生成任何假數據。
     """
+    range_s = "5y" if lookback_days > 400 else "2y"
     # 1. 優先直連 Yahoo Chart API (快速、穩定、不易觸發 429)
-    df = fetch_history_yahoo_chart_api(ticker, range_str="2y")
+    df = fetch_history_yahoo_chart_api(ticker, range_str=range_s)
     if not df.empty and len(df) >= config.EMA_PERIOD:
         return df
         
