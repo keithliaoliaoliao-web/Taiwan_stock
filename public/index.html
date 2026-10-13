@@ -39,7 +39,7 @@
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span>自動排程運作中</span>
+          <span id="session-status-text">🟢 盤中監控中</span>
           <span class="text-slate-300">|</span>
           <span id="countdown-timer">下次更新倒數：30:00</span>
         </div>
@@ -530,52 +530,96 @@
     let countdownTimerInterval = null;
 
     function initCountdownWithScanTime(scanDate, scanTime) {
-      let remainingSecs = 1800; // 預設 30 分鐘
       if (scanDate && scanTime) {
         try {
           const fullTimeStr = scanTime.length === 5 ? `${scanTime}:00` : scanTime;
           const scanDateTime = new Date(`${scanDate}T${fullTimeStr}`);
           if (!isNaN(scanDateTime.getTime())) {
-            const targetTimestamp = scanDateTime.getTime() + 30 * 60 * 1000; // 最後掃描時間 + 30 分鐘
+            const targetTimestamp = scanDateTime.getTime() + 30 * 60 * 1000;
             const now = Date.now();
-            remainingSecs = Math.floor((targetTimestamp - now) / 1000);
-            if (remainingSecs < 0) remainingSecs = 0;
+            let remainingSecs = Math.floor((targetTimestamp - now) / 1000);
+            if (remainingSecs > 0 && remainingSecs <= 1800) {
+              countdownSeconds = remainingSecs;
+            }
           }
         } catch (e) {
           console.error('計算倒數時間失敗:', e);
         }
       }
-      startCountdownTimer(remainingSecs);
+      startMarketSessionTimer();
     }
 
-    function startCountdownTimer(initialSecs = 1800) {
+    function startMarketSessionTimer() {
       if (countdownTimerInterval) clearInterval(countdownTimerInterval);
-      countdownSeconds = initialSecs;
-      updateCountdownDisplay();
-      countdownTimerInterval = setInterval(() => {
-        countdownSeconds--;
-        if (countdownSeconds <= 0) {
-          countdownSeconds = 1800;
-          console.log('倒數歸零，自動重新整理資料...');
-          fetchScanResult();
-        }
-        updateCountdownDisplay();
-      }, 1000);
-    }
+      
+      function tick() {
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const tw = new Date(utc + (3600000 * 8)); // 台灣時間 (UTC+8)
 
-    function updateCountdownDisplay() {
-      const mins = Math.floor(countdownSeconds / 60);
-      const secs = countdownSeconds % 60;
-      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      const el = document.getElementById('countdown-timer');
-      if (el) {
-        el.innerText = `下次更新倒數：${timeStr}`;
+        const day = tw.getDay(); // 0: 日, 6: 六
+        const h = tw.getHours();
+        const m = tw.getMinutes();
+        const s = tw.getSeconds();
+        const currentSecs = h * 3600 + m * 60 + s;
+
+        const openSecs = 9 * 3600;       // 09:00:00
+        const closeSecs = 13 * 3600 + 30 * 60; // 13:30:00
+
+        const statusEl = document.getElementById('session-status-text');
+        const timerEl = document.getElementById('countdown-timer');
+
+        // 4. 非交易日 (週六、日)
+        if (day === 0 || day === 6) {
+          if (statusEl) statusEl.innerText = "休市中";
+          if (timerEl) timerEl.innerText = "週末休市";
+          return;
+        }
+
+        // 1. 盤前時段 (09:00 前)
+        if (currentSecs < openSecs) {
+          if (statusEl) statusEl.innerText = "💤 盤前等待開盤";
+          const rem = openSecs - currentSecs;
+          const hrs = Math.floor(rem / 3600);
+          const mins = Math.floor((rem % 3600) / 60);
+          const secs = rem % 60;
+          if (timerEl) {
+            timerEl.innerText = hrs > 0 
+              ? `開盤倒數：${hrs}時${String(mins).padStart(2, '0')}分` 
+              : `開盤倒數：${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          }
+        }
+        // 2. 開盤時段 (09:00 ~ 13:30)
+        else if (currentSecs >= openSecs && currentSecs <= closeSecs) {
+          if (statusEl) statusEl.innerText = "🟢 盤中監控中";
+          if (countdownSeconds > 0) {
+            countdownSeconds--;
+          } else {
+            countdownSeconds = 1800;
+            console.log('倒數歸零，自動重新整理資料...');
+            fetchScanResult();
+          }
+          const mins = Math.floor(countdownSeconds / 60);
+          const secs = countdownSeconds % 60;
+          if (timerEl) {
+            timerEl.innerText = `下次更新倒數：${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          }
+        }
+        // 3. 收盤時段 (13:30 後)
+        else {
+          if (statusEl) statusEl.innerText = "🏁 今日已收盤定盤";
+          if (timerEl) timerEl.innerText = "已收盤定盤";
+        }
       }
+
+      tick();
+      countdownTimerInterval = setInterval(tick, 1000);
     }
 
     function manualRefresh() {
       console.log('手動立即重新整理...');
       fetchScanResult();
+      countdownSeconds = 1800;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
