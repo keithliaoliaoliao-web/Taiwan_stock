@@ -1,9 +1,9 @@
 {
   "scan_date": "2026-10-13",
-  "scan_time": "08:05",
+  "scan_time": "09:01",
   "market_status": {
-    "close": 49313.44,
-    "ema20": 48007.17,
+    "close": 49301.96,
+    "ema20": 48130.49,
     "bullish": 1,
     "market_phase": "盤中即時"
   },

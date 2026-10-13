@@ -14,7 +14,7 @@ def is_trading_time(dt):
     return dtime(9, 0) <= t <= dtime(13, 30)
 
 def main():
-    print("=== 台股自動排程掃描器已啟動（含 13:45 盤後金牌結算與 Git 自動同步） ===")
+    print("=== 台股自動排程掃描器已啟動（含 13:45 盤後金牌結算、holdings.json 同步與 Git 自動同步） ===")
     last_settlement_date = None
 
     while True:
@@ -30,10 +30,10 @@ def main():
                 complete_time = datetime.now(TW_TZ)
                 print(f"【盤後結算完成】：{complete_time.strftime('%H:%M:%S')} (已更新官方收盤價與 250 根對齊 K 棒)")
                 
-                # 自動同步至 GitHub
+                # 自動同步至 GitHub (包含 scan_result.json 與 holdings.json)
                 print("[Git] 正在執行盤後結算 Git 同步...")
-                subprocess.run(['git', 'add', 'public/scan_result.json', 'scan_result.json'], check=True)
-                commit_msg = f"Post-market settlement update: {complete_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                subprocess.run(['git', 'add', 'public/scan_result.json', 'scan_result.json', 'holdings.json'], check=True)
+                commit_msg = f"Post-market settlement & holdings sync: {complete_time.strftime('%Y-%m-%d %H:%M:%S')}"
                 commit_res = subprocess.run(['git', 'commit', '-m', commit_msg], capture_output=True, text=True)
                 if commit_res.returncode == 0:
                     push_res = subprocess.run(['git', 'push'], capture_output=True, text=True)
@@ -56,10 +56,10 @@ def main():
                 print(f"【本次掃描完成】：{complete_time.strftime('%H:%M:%S')}")
                 print(f"【下次掃描時間】：{next_time.strftime('%H:%M:%S')}")
 
-                # 自動同步至 GitHub
+                # 自動同步至 GitHub (包含 scan_result.json 與 holdings.json)
                 print("[Git] 正在執行自動 Git 同步...")
-                subprocess.run(['git', 'add', 'public/scan_result.json', 'scan_result.json'], check=True)
-                commit_msg = f"Auto-update scan results: {complete_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                subprocess.run(['git', 'add', 'public/scan_result.json', 'scan_result.json', 'holdings.json'], check=True)
+                commit_msg = f"Auto-update scan results & holdings: {complete_time.strftime('%Y-%m-%d %H:%M:%S')}"
                 commit_res = subprocess.run(['git', 'commit', '-m', commit_msg], capture_output=True, text=True)
                 if commit_res.returncode == 0:
                     push_res = subprocess.run(['git', 'push'], capture_output=True, text=True)
