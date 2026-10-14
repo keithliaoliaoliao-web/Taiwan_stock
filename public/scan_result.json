@@ -1,9 +1,9 @@
 {
   "scan_date": "2026-10-14",
-  "scan_time": "13:43",
+  "scan_time": "18:38",
   "market_status": {
-    "close": 48793.22,
-    "ema20": 48211.77,
+    "close": 48625.83,
+    "ema20": 48195.83,
     "bullish": 1,
     "market_phase": "盤後定盤"
   },
@@ -13,8 +13,8 @@
       "ticker": "3711.TW",
       "name": "日月光投控",
       "sector": "半導體",
-      "close": 750.0,
-      "ema20": 702.71,
+      "close": 747.0,
+      "ema20": 702.42,
       "candles": [
         {
           "time": "2025-10-01",
@@ -2262,8 +2262,8 @@
           "open": 755.0,
           "high": 763.0,
           "low": 742.0,
-          "close": 750.0,
-          "volume": 10557276.0,
+          "close": 747.0,
+          "volume": 12849867.0,
           "color": "#22c55e"
         }
       ],
@@ -3266,7 +3266,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 702.71
+          "value": 702.42
         }
       ]
     },
@@ -3274,8 +3274,8 @@
       "ticker": "3037.TW",
       "name": "欣興",
       "sector": "電子零組件",
-      "close": 1190.0,
-      "ema20": 1173.25,
+      "close": 1185.0,
+      "ema20": 1172.78,
       "candles": [
         {
           "time": "2025-10-01",
@@ -5523,8 +5523,8 @@
           "open": 1180.0,
           "high": 1195.0,
           "low": 1140.0,
-          "close": 1190.0,
-          "volume": 15843178.0,
+          "close": 1185.0,
+          "volume": 17256069.0,
           "color": "#ef4444"
         }
       ],
@@ -6527,7 +6527,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1173.25
+          "value": 1172.78
         }
       ]
     }
@@ -6538,10 +6538,10 @@
       "ticker": "2330.TW",
       "name": "台積電",
       "sector": "半導體",
-      "close": 2500.0,
-      "ema20": 2497.38,
-      "turnover_ma20": 503.12,
-      "trend_up": 1,
+      "close": 2490.0,
+      "ema20": 2496.43,
+      "turnover_ma20": 513.52,
+      "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
       "candles": [
@@ -8790,9 +8790,9 @@
           "time": "2026-10-14",
           "open": 2505.0,
           "high": 2535.0,
-          "low": 2500.0,
-          "close": 2500.0,
-          "volume": 16282826.0,
+          "low": 2490.0,
+          "close": 2490.0,
+          "volume": 24699844.0,
           "color": "#22c55e"
         }
       ],
@@ -9795,7 +9795,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 2497.38
+          "value": 2496.43
         }
       ]
     },
@@ -9805,7 +9805,7 @@
       "sector": "其他電子",
       "close": 243.0,
       "ema20": 249.3,
-      "turnover_ma20": 86.78,
+      "turnover_ma20": 87.54,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -12057,7 +12057,7 @@
           "high": 246.0,
           "low": 241.0,
           "close": 243.0,
-          "volume": 27613526.0,
+          "volume": 33880570.0,
           "color": "#ef4444"
         }
       ],
@@ -13068,9 +13068,9 @@
       "ticker": "2454.TW",
       "name": "聯發科",
       "sector": "半導體",
-      "close": 4510.0,
-      "ema20": 4728.65,
-      "turnover_ma20": 334.98,
+      "close": 4475.0,
+      "ema20": 4725.32,
+      "turnover_ma20": 337.43,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -15321,8 +15321,8 @@
           "open": 4525.0,
           "high": 4600.0,
           "low": 4475.0,
-          "close": 4510.0,
-          "volume": 6580582.0,
+          "close": 4475.0,
+          "volume": 7726671.0,
           "color": "#22c55e"
         }
       ],
@@ -16325,7 +16325,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 4728.65
+          "value": 4725.32
         }
       ]
     },
@@ -16333,9 +16333,9 @@
       "ticker": "2308.TW",
       "name": "台達電",
       "sector": "電子零組件",
-      "close": 1795.0,
-      "ema20": 1863.54,
-      "turnover_ma20": 195.52,
+      "close": 1785.0,
+      "ema20": 1862.59,
+      "turnover_ma20": 196.99,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -18586,9 +18586,9 @@
           "open": 1790.0,
           "high": 1820.0,
           "low": 1775.0,
-          "close": 1795.0,
-          "volume": 7985545.0,
-          "color": "#ef4444"
+          "close": 1785.0,
+          "volume": 9678701.0,
+          "color": "#22c55e"
         }
       ],
       "ema": [
@@ -19590,7 +19590,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1863.54
+          "value": 1862.59
         }
       ]
     },
@@ -19600,7 +19600,7 @@
       "sector": "電腦及週邊",
       "close": 323.0,
       "ema20": 331.58,
-      "turnover_ma20": 38.64,
+      "turnover_ma20": 38.94,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -21852,7 +21852,7 @@
           "high": 326.5,
           "low": 322.0,
           "close": 323.0,
-          "volume": 10155789.0,
+          "volume": 12017550.0,
           "color": "#22c55e"
         }
       ],
@@ -22863,9 +22863,9 @@
       "ticker": "2881.TW",
       "name": "富邦金",
       "sector": "金融保險",
-      "close": 159.0,
-      "ema20": 152.86,
-      "turnover_ma20": 24.09,
+      "close": 160.5,
+      "ema20": 153.01,
+      "turnover_ma20": 24.67,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -25114,10 +25114,10 @@
         {
           "time": "2026-10-14",
           "open": 158.5,
-          "high": 160.0,
+          "high": 160.5,
           "low": 155.5,
-          "close": 159.0,
-          "volume": 21118651.0,
+          "close": 160.5,
+          "volume": 28215621.0,
           "color": "#ef4444"
         }
       ],
@@ -26120,7 +26120,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 152.86
+          "value": 153.01
         }
       ]
     },
@@ -26130,7 +26130,7 @@
       "sector": "金融保險",
       "close": 114.0,
       "ema20": 111.55,
-      "turnover_ma20": 21.4,
+      "turnover_ma20": 21.75,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -28382,7 +28382,7 @@
           "high": 115.0,
           "low": 112.0,
           "close": 114.0,
-          "volume": 14227233.0,
+          "volume": 20527833.0,
           "color": "#ef4444"
         }
       ],
@@ -29393,9 +29393,9 @@
       "ticker": "2412.TW",
       "name": "中華電",
       "sector": "通信網路",
-      "close": 149.0,
-      "ema20": 144.88,
-      "turnover_ma20": 15.93,
+      "close": 148.5,
+      "ema20": 144.84,
+      "turnover_ma20": 16.1,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -31646,8 +31646,8 @@
           "open": 148.0,
           "high": 149.5,
           "low": 147.5,
-          "close": 149.0,
-          "volume": 6864596.0,
+          "close": 148.5,
+          "volume": 9177951.0,
           "color": "#ef4444"
         }
       ],
@@ -32650,7 +32650,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 144.88
+          "value": 144.84
         }
       ]
     },
@@ -32658,9 +32658,9 @@
       "ticker": "2891.TW",
       "name": "中信金",
       "sector": "金融保險",
-      "close": 71.3,
-      "ema20": 68.83,
-      "turnover_ma20": 22.0,
+      "close": 71.4,
+      "ema20": 68.84,
+      "turnover_ma20": 22.31,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -34911,8 +34911,8 @@
           "open": 71.9,
           "high": 71.9,
           "low": 70.6,
-          "close": 71.3,
-          "volume": 22377144.0,
+          "close": 71.4,
+          "volume": 31028309.0,
           "color": "#22c55e"
         }
       ],
@@ -35915,7 +35915,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 68.83
+          "value": 68.84
         }
       ]
     },
@@ -35923,9 +35923,9 @@
       "ticker": "2357.TW",
       "name": "華碩",
       "sector": "電腦及週邊",
-      "close": 988.0,
-      "ema20": 969.97,
-      "turnover_ma20": 20.42,
+      "close": 990.0,
+      "ema20": 970.16,
+      "turnover_ma20": 20.74,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -38176,8 +38176,8 @@
           "open": 980.0,
           "high": 1005.0,
           "low": 975.0,
-          "close": 988.0,
-          "volume": 2491059.0,
+          "close": 990.0,
+          "volume": 3134905.0,
           "color": "#ef4444"
         }
       ],
@@ -39180,7 +39180,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 969.97
+          "value": 970.16
         }
       ]
     },
@@ -39188,9 +39188,9 @@
       "ticker": "2886.TW",
       "name": "兆豐金",
       "sector": "金融保險",
-      "close": 51.0,
-      "ema20": 49.88,
-      "turnover_ma20": 10.67,
+      "close": 51.1,
+      "ema20": 49.89,
+      "turnover_ma20": 10.79,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -41441,8 +41441,8 @@
           "open": 50.9,
           "high": 51.1,
           "low": 50.4,
-          "close": 51.0,
-          "volume": 13800925.0,
+          "close": 51.1,
+          "volume": 18613416.0,
           "color": "#ef4444"
         }
       ],
@@ -42445,7 +42445,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 49.88
+          "value": 49.89
         }
       ]
     },
@@ -42453,9 +42453,9 @@
       "ticker": "3711.TW",
       "name": "日月光投控",
       "sector": "半導體",
-      "close": 750.0,
-      "ema20": 702.71,
-      "turnover_ma20": 92.34,
+      "close": 747.0,
+      "ema20": 702.42,
+      "turnover_ma20": 93.19,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -44706,8 +44706,8 @@
           "open": 755.0,
           "high": 763.0,
           "low": 742.0,
-          "close": 750.0,
-          "volume": 10557276.0,
+          "close": 747.0,
+          "volume": 12849867.0,
           "color": "#22c55e"
         }
       ],
@@ -45710,7 +45710,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 702.71
+          "value": 702.42
         }
       ]
     },
@@ -45718,9 +45718,9 @@
       "ticker": "2884.TW",
       "name": "玉山金",
       "sector": "金融保險",
-      "close": 47.2,
-      "ema20": 45.26,
-      "turnover_ma20": 13.38,
+      "close": 47.3,
+      "ema20": 45.27,
+      "turnover_ma20": 13.63,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -47969,10 +47969,10 @@
         {
           "time": "2026-10-14",
           "open": 46.9,
-          "high": 47.25,
+          "high": 47.3,
           "low": 46.05,
-          "close": 47.2,
-          "volume": 25819397.0,
+          "close": 47.3,
+          "volume": 36260664.0,
           "color": "#ef4444"
         }
       ],
@@ -48975,7 +48975,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 45.26
+          "value": 45.27
         }
       ]
     },
@@ -48983,9 +48983,9 @@
       "ticker": "1216.TW",
       "name": "統一",
       "sector": "食品工業",
-      "close": 78.0,
-      "ema20": 75.31,
-      "turnover_ma20": 7.42,
+      "close": 78.2,
+      "ema20": 75.33,
+      "turnover_ma20": 7.57,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -51234,10 +51234,10 @@
         {
           "time": "2026-10-14",
           "open": 77.1,
-          "high": 78.0,
+          "high": 78.2,
           "low": 76.6,
-          "close": 78.0,
-          "volume": 11621950.0,
+          "close": 78.2,
+          "volume": 15488025.0,
           "color": "#ef4444"
         }
       ],
@@ -52240,7 +52240,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 75.31
+          "value": 75.33
         }
       ]
     },
@@ -52248,9 +52248,9 @@
       "ticker": "2892.TW",
       "name": "第一金",
       "sector": "金融保險",
-      "close": 40.55,
-      "ema20": 38.94,
-      "turnover_ma20": 8.62,
+      "close": 40.65,
+      "ema20": 38.95,
+      "turnover_ma20": 8.73,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -54501,8 +54501,8 @@
           "open": 40.55,
           "high": 40.95,
           "low": 39.95,
-          "close": 40.55,
-          "volume": 14927319.0,
+          "close": 40.65,
+          "volume": 20427535.0,
           "color": "#ef4444"
         }
       ],
@@ -55505,7 +55505,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 38.94
+          "value": 38.95
         }
       ]
     },
@@ -55515,7 +55515,7 @@
       "sector": "金融保險",
       "close": 48.9,
       "ema20": 46.17,
-      "turnover_ma20": 6.02,
+      "turnover_ma20": 6.11,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -57767,7 +57767,7 @@
           "high": 50.0,
           "low": 48.4,
           "close": 48.9,
-          "volume": 9720036.0,
+          "volume": 13698423.0,
           "color": "#22c55e"
         }
       ],
@@ -58778,9 +58778,9 @@
       "ticker": "3008.TW",
       "name": "大立光",
       "sector": "光電業",
-      "close": 6905.0,
-      "ema20": 6610.33,
-      "turnover_ma20": 158.17,
+      "close": 6880.0,
+      "ema20": 6607.95,
+      "turnover_ma20": 158.96,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -61031,8 +61031,8 @@
           "open": 7320.0,
           "high": 7320.0,
           "low": 6670.0,
-          "close": 6905.0,
-          "volume": 4034086.0,
+          "close": 6880.0,
+          "volume": 4280756.0,
           "color": "#22c55e"
         }
       ],
@@ -62035,7 +62035,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 6610.33
+          "value": 6607.95
         }
       ]
     },
@@ -62045,7 +62045,7 @@
       "sector": "半導體",
       "close": 142.0,
       "ema20": 147.18,
-      "turnover_ma20": 244.06,
+      "turnover_ma20": 244.63,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -64297,7 +64297,7 @@
           "high": 144.0,
           "low": 140.0,
           "close": 142.0,
-          "volume": 102284847.0,
+          "volume": 110224887.0,
           "color": "#22c55e"
         }
       ],
@@ -65310,7 +65310,7 @@
       "sector": "水泥工業",
       "close": 27.05,
       "ema20": 25.51,
-      "turnover_ma20": 11.9,
+      "turnover_ma20": 11.94,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -67562,7 +67562,7 @@
           "high": 27.4,
           "low": 26.6,
           "close": 27.05,
-          "volume": 77478678.0,
+          "volume": 80683409.0,
           "color": "#ef4444"
         }
       ],
@@ -68573,9 +68573,9 @@
       "ticker": "2885.TW",
       "name": "元大金",
       "sector": "金融保險",
-      "close": 72.1,
-      "ema20": 69.2,
-      "turnover_ma20": 14.82,
+      "close": 72.2,
+      "ema20": 69.21,
+      "turnover_ma20": 15.02,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -70826,8 +70826,8 @@
           "open": 71.0,
           "high": 72.5,
           "low": 70.1,
-          "close": 72.1,
-          "volume": 32493092.0,
+          "close": 72.2,
+          "volume": 37947672.0,
           "color": "#ef4444"
         }
       ],
@@ -71830,7 +71830,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 69.2
+          "value": 69.21
         }
       ]
     },
@@ -71838,9 +71838,9 @@
       "ticker": "2887.TW",
       "name": "台新金",
       "sector": "金融保險",
-      "close": 42.6,
+      "close": 42.65,
       "ema20": 41.94,
-      "turnover_ma20": 21.83,
+      "turnover_ma20": 22.1,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -74091,8 +74091,8 @@
           "open": 42.45,
           "high": 43.0,
           "low": 41.85,
-          "close": 42.6,
-          "volume": 47449404.0,
+          "close": 42.65,
+          "volume": 60067685.0,
           "color": "#ef4444"
         }
       ],
@@ -75103,9 +75103,9 @@
       "ticker": "5880.TW",
       "name": "合庫金",
       "sector": "金融保險",
-      "close": 27.1,
-      "ema20": 26.55,
-      "turnover_ma20": 4.49,
+      "close": 27.15,
+      "ema20": 26.56,
+      "turnover_ma20": 4.55,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -77356,8 +77356,8 @@
           "open": 27.2,
           "high": 27.2,
           "low": 26.8,
-          "close": 27.1,
-          "volume": 10960342.0,
+          "close": 27.15,
+          "volume": 15613460.0,
           "color": "#22c55e"
         }
       ],
@@ -78360,7 +78360,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 26.55
+          "value": 26.56
         }
       ]
     },
@@ -78368,9 +78368,9 @@
       "ticker": "2379.TW",
       "name": "瑞昱",
       "sector": "半導體",
-      "close": 774.0,
-      "ema20": 747.01,
-      "turnover_ma20": 17.97,
+      "close": 778.0,
+      "ema20": 747.39,
+      "turnover_ma20": 18.17,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -80621,8 +80621,8 @@
           "open": 768.0,
           "high": 779.0,
           "low": 754.0,
-          "close": 774.0,
-          "volume": 2435510.0,
+          "close": 778.0,
+          "volume": 2922834.0,
           "color": "#ef4444"
         }
       ],
@@ -81625,7 +81625,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 747.01
+          "value": 747.39
         }
       ]
     },
@@ -81633,9 +81633,9 @@
       "ticker": "6669.TW",
       "name": "緯穎",
       "sector": "電腦及週邊",
-      "close": 2110.0,
-      "ema20": 2193.33,
-      "turnover_ma20": 69.28,
+      "close": 2115.0,
+      "ema20": 2193.8,
+      "turnover_ma20": 69.76,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -83886,8 +83886,8 @@
           "open": 2230.0,
           "high": 2285.0,
           "low": 2085.0,
-          "close": 2110.0,
-          "volume": 6980579.0,
+          "close": 2115.0,
+          "volume": 7410219.0,
           "color": "#22c55e"
         }
       ],
@@ -84890,7 +84890,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 2193.33
+          "value": 2193.8
         }
       ]
     },
@@ -84898,9 +84898,9 @@
       "ticker": "3034.TW",
       "name": "聯詠",
       "sector": "半導體",
-      "close": 558.0,
-      "ema20": 541.78,
-      "turnover_ma20": 16.32,
+      "close": 560.0,
+      "ema20": 541.97,
+      "turnover_ma20": 16.52,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -87151,8 +87151,8 @@
           "open": 548.0,
           "high": 562.0,
           "low": 537.0,
-          "close": 558.0,
-          "volume": 4350478.0,
+          "close": 560.0,
+          "volume": 5072614.0,
           "color": "#ef4444"
         }
       ],
@@ -88155,7 +88155,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 541.78
+          "value": 541.97
         }
       ]
     },
@@ -88163,9 +88163,9 @@
       "ticker": "2345.TW",
       "name": "智邦",
       "sector": "通信網路",
-      "close": 2055.0,
-      "ema20": 1993.97,
-      "turnover_ma20": 80.29,
+      "close": 2050.0,
+      "ema20": 1993.49,
+      "turnover_ma20": 80.83,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -90416,8 +90416,8 @@
           "open": 2075.0,
           "high": 2110.0,
           "low": 2050.0,
-          "close": 2055.0,
-          "volume": 3889123.0,
+          "close": 2050.0,
+          "volume": 4423619.0,
           "color": "#22c55e"
         }
       ],
@@ -91420,7 +91420,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1993.97
+          "value": 1993.49
         }
       ]
     },
@@ -91428,10 +91428,10 @@
       "ticker": "2890.TW",
       "name": "永豐金",
       "sector": "金融保險",
-      "close": 44.25,
-      "ema20": 44.13,
-      "turnover_ma20": 10.44,
-      "trend_up": 1,
+      "close": 44.05,
+      "ema20": 44.11,
+      "turnover_ma20": 10.59,
+      "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
       "candles": [
@@ -93681,8 +93681,8 @@
           "open": 44.5,
           "high": 45.1,
           "low": 44.0,
-          "close": 44.25,
-          "volume": 20257890.0,
+          "close": 44.05,
+          "volume": 27344161.0,
           "color": "#22c55e"
         }
       ],
@@ -94685,7 +94685,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 44.13
+          "value": 44.11
         }
       ]
     },
@@ -94693,9 +94693,9 @@
       "ticker": "2301.TW",
       "name": "光寶科",
       "sector": "電腦及週邊",
-      "close": 284.0,
-      "ema20": 286.84,
-      "turnover_ma20": 42.75,
+      "close": 283.0,
+      "ema20": 286.74,
+      "turnover_ma20": 42.92,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -96946,8 +96946,8 @@
           "open": 280.0,
           "high": 284.0,
           "low": 278.5,
-          "close": 284.0,
-          "volume": 7252402.0,
+          "close": 283.0,
+          "volume": 8462810.0,
           "color": "#ef4444"
         }
       ],
@@ -97950,7 +97950,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 286.84
+          "value": 286.74
         }
       ]
     },
@@ -97960,7 +97960,7 @@
       "sector": "電腦及週邊",
       "close": 187.0,
       "ema20": 186.44,
-      "turnover_ma20": 63.22,
+      "turnover_ma20": 63.56,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -100212,7 +100212,7 @@
           "high": 190.0,
           "low": 186.5,
           "close": 187.0,
-          "volume": 20786813.0,
+          "volume": 24413379.0,
           "color": "#22c55e"
         }
       ],
@@ -101225,7 +101225,7 @@
       "sector": "金融保險",
       "close": 38.65,
       "ema20": 37.92,
-      "turnover_ma20": 18.17,
+      "turnover_ma20": 18.3,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -103477,7 +103477,7 @@
           "high": 38.9,
           "low": 38.2,
           "close": 38.65,
-          "volume": 22160623.0,
+          "volume": 28902055.0,
           "color": "#22c55e"
         }
       ],
@@ -104488,9 +104488,9 @@
       "ticker": "2327.TW",
       "name": "國巨",
       "sector": "電子零組件",
-      "close": 628.0,
-      "ema20": 598.5,
-      "turnover_ma20": 253.12,
+      "close": 627.0,
+      "ema20": 598.4,
+      "turnover_ma20": 253.71,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -106741,8 +106741,8 @@
           "open": 605.0,
           "high": 635.0,
           "low": 593.0,
-          "close": 628.0,
-          "volume": 45619886.0,
+          "close": 627.0,
+          "volume": 47584088.0,
           "color": "#ef4444"
         }
       ],
@@ -107745,7 +107745,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 598.5
+          "value": 598.4
         }
       ]
     },
@@ -107753,9 +107753,9 @@
       "ticker": "2603.TW",
       "name": "長榮",
       "sector": "航運業",
-      "close": 261.5,
-      "ema20": 242.69,
-      "turnover_ma20": 29.96,
+      "close": 263.0,
+      "ema20": 242.83,
+      "turnover_ma20": 30.32,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -110006,8 +110006,8 @@
           "open": 260.0,
           "high": 267.5,
           "low": 259.0,
-          "close": 261.5,
-          "volume": 17540933.0,
+          "close": 263.0,
+          "volume": 20249906.0,
           "color": "#ef4444"
         }
       ],
@@ -111010,7 +111010,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 242.69
+          "value": 242.83
         }
       ]
     },
@@ -111018,9 +111018,9 @@
       "ticker": "4938.TW",
       "name": "和碩",
       "sector": "電腦及週邊",
-      "close": 99.5,
-      "ema20": 92.72,
-      "turnover_ma20": 12.77,
+      "close": 100.0,
+      "ema20": 92.77,
+      "turnover_ma20": 12.91,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -113271,8 +113271,8 @@
           "open": 102.0,
           "high": 103.0,
           "low": 99.3,
-          "close": 99.5,
-          "volume": 21495690.0,
+          "close": 100.0,
+          "volume": 24167661.0,
           "color": "#22c55e"
         }
       ],
@@ -114275,7 +114275,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 92.72
+          "value": 92.77
         }
       ]
     },
@@ -114283,9 +114283,9 @@
       "ticker": "1303.TW",
       "name": "南亞",
       "sector": "塑膠工業",
-      "close": 349.5,
-      "ema20": 275.49,
-      "turnover_ma20": 222.94,
+      "close": 349.0,
+      "ema20": 275.44,
+      "turnover_ma20": 223.41,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -116536,8 +116536,8 @@
           "open": 321.0,
           "high": 350.5,
           "low": 318.5,
-          "close": 349.5,
-          "volume": 172343441.0,
+          "close": 349.0,
+          "volume": 175325614.0,
           "color": "#ef4444"
         }
       ],
@@ -117540,7 +117540,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 275.49
+          "value": 275.44
         }
       ]
     },
@@ -117550,7 +117550,7 @@
       "sector": "塑膠工業",
       "close": 88.9,
       "ema20": 71.97,
-      "turnover_ma20": 46.99,
+      "turnover_ma20": 47.02,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -119802,7 +119802,7 @@
           "high": 88.9,
           "low": 80.4,
           "close": 88.9,
-          "volume": 190841300.0,
+          "volume": 191569966.0,
           "color": "#ef4444"
         }
       ],
@@ -120813,9 +120813,9 @@
       "ticker": "2609.TW",
       "name": "陽明",
       "sector": "航運業",
-      "close": 64.9,
-      "ema20": 60.53,
-      "turnover_ma20": 18.59,
+      "close": 65.0,
+      "ema20": 60.54,
+      "turnover_ma20": 18.73,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -123066,8 +123066,8 @@
           "open": 64.8,
           "high": 66.5,
           "low": 64.3,
-          "close": 64.9,
-          "volume": 56159929.0,
+          "close": 65.0,
+          "volume": 60200226.0,
           "color": "#ef4444"
         }
       ],
@@ -124070,7 +124070,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 60.53
+          "value": 60.54
         }
       ]
     },
@@ -124078,9 +124078,9 @@
       "ticker": "2615.TW",
       "name": "萬海",
       "sector": "航運業",
-      "close": 124.0,
-      "ema20": 115.13,
-      "turnover_ma20": 17.92,
+      "close": 125.0,
+      "ema20": 115.22,
+      "turnover_ma20": 18.05,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -126331,8 +126331,8 @@
           "open": 123.0,
           "high": 129.5,
           "low": 121.5,
-          "close": 124.0,
-          "volume": 31639897.0,
+          "close": 125.0,
+          "volume": 33433743.0,
           "color": "#ef4444"
         }
       ],
@@ -127335,7 +127335,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 115.13
+          "value": 115.22
         }
       ]
     },
@@ -127345,7 +127345,7 @@
       "sector": "塑膠工業",
       "close": 85.5,
       "ema20": 72.71,
-      "turnover_ma20": 26.05,
+      "turnover_ma20": 26.07,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -129597,7 +129597,7 @@
           "high": 85.5,
           "low": 78.0,
           "close": 85.5,
-          "volume": 103181589.0,
+          "volume": 103486709.0,
           "color": "#ef4444"
         }
       ],
@@ -130610,7 +130610,7 @@
       "sector": "貿易百貨",
       "close": 219.5,
       "ema20": 214.82,
-      "turnover_ma20": 3.7,
+      "turnover_ma20": 3.77,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -132862,7 +132862,7 @@
           "high": 219.5,
           "low": 215.0,
           "close": 219.5,
-          "volume": 2795409.0,
+          "volume": 3407656.0,
           "color": "#ef4444"
         }
       ],
@@ -133875,7 +133875,7 @@
       "sector": "其他",
       "close": 108.5,
       "ema20": 107.92,
-      "turnover_ma20": 6.77,
+      "turnover_ma20": 6.85,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -136127,7 +136127,7 @@
           "high": 108.5,
           "low": 106.5,
           "close": 108.5,
-          "volume": 6364273.0,
+          "volume": 7844962.0,
           "color": "#ef4444"
         }
       ],
@@ -137140,7 +137140,7 @@
       "sector": "油電燃氣",
       "close": 119.5,
       "ema20": 98.99,
-      "turnover_ma20": 35.1,
+      "turnover_ma20": 35.32,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -139392,7 +139392,7 @@
           "high": 129.0,
           "low": 117.0,
           "close": 119.5,
-          "volume": 135520083.0,
+          "volume": 139286022.0,
           "color": "#ef4444"
         }
       ],
@@ -140405,7 +140405,7 @@
       "sector": "鋼鐵工業",
       "close": 19.5,
       "ema20": 19.01,
-      "turnover_ma20": 6.52,
+      "turnover_ma20": 6.58,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -142657,7 +142657,7 @@
           "high": 19.65,
           "low": 19.15,
           "close": 19.5,
-          "volume": 97196599.0,
+          "volume": 103473086.0,
           "color": "#ef4444"
         }
       ],
@@ -143668,9 +143668,9 @@
       "ticker": "3045.TW",
       "name": "台灣大",
       "sector": "通信網路",
-      "close": 127.0,
-      "ema20": 122.36,
-      "turnover_ma20": 9.06,
+      "close": 126.5,
+      "ema20": 122.31,
+      "turnover_ma20": 9.16,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -145921,8 +145921,8 @@
           "open": 124.5,
           "high": 127.5,
           "low": 124.5,
-          "close": 127.0,
-          "volume": 7143075.0,
+          "close": 126.5,
+          "volume": 8728524.0,
           "color": "#ef4444"
         }
       ],
@@ -146925,7 +146925,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 122.36
+          "value": 122.31
         }
       ]
     },
@@ -146933,9 +146933,9 @@
       "ticker": "4904.TW",
       "name": "遠傳",
       "sector": "通信網路",
-      "close": 107.5,
-      "ema20": 105.48,
-      "turnover_ma20": 5.16,
+      "close": 108.0,
+      "ema20": 105.53,
+      "turnover_ma20": 5.21,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -149186,8 +149186,8 @@
           "open": 107.5,
           "high": 108.5,
           "low": 107.0,
-          "close": 107.5,
-          "volume": 3410354.0,
+          "close": 108.0,
+          "volume": 4340315.0,
           "color": "#ef4444"
         }
       ],
@@ -150190,7 +150190,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 105.48
+          "value": 105.53
         }
       ]
     },
@@ -150198,9 +150198,9 @@
       "ticker": "9910.TW",
       "name": "豐泰",
       "sector": "其他",
-      "close": 67.2,
-      "ema20": 67.81,
-      "turnover_ma20": 0.7,
+      "close": 67.5,
+      "ema20": 67.84,
+      "turnover_ma20": 0.71,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -152451,9 +152451,9 @@
           "open": 67.4,
           "high": 67.7,
           "low": 66.8,
-          "close": 67.2,
-          "volume": 942204.0,
-          "color": "#22c55e"
+          "close": 67.5,
+          "volume": 1165438.0,
+          "color": "#ef4444"
         }
       ],
       "ema": [
@@ -153455,7 +153455,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 67.81
+          "value": 67.84
         }
       ]
     },
@@ -153463,9 +153463,9 @@
       "ticker": "1590.TW",
       "name": "亞德客-KY",
       "sector": "電機機械",
-      "close": 1195.0,
-      "ema20": 1230.92,
-      "turnover_ma20": 10.21,
+      "close": 1185.0,
+      "ema20": 1229.97,
+      "turnover_ma20": 10.33,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -155716,8 +155716,8 @@
           "open": 1180.0,
           "high": 1200.0,
           "low": 1175.0,
-          "close": 1195.0,
-          "volume": 844221.0,
+          "close": 1185.0,
+          "volume": 1051214.0,
           "color": "#ef4444"
         }
       ],
@@ -156720,7 +156720,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1230.92
+          "value": 1229.97
         }
       ]
     },
@@ -156728,10 +156728,10 @@
       "ticker": "2395.TW",
       "name": "研華",
       "sector": "電腦及週邊",
-      "close": 709.0,
-      "ema20": 711.32,
-      "turnover_ma20": 16.23,
-      "trend_up": 0,
+      "close": 714.0,
+      "ema20": 711.8,
+      "turnover_ma20": 16.4,
+      "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
       "candles": [
@@ -158981,8 +158981,8 @@
           "open": 716.0,
           "high": 721.0,
           "low": 706.0,
-          "close": 709.0,
-          "volume": 1579205.0,
+          "close": 714.0,
+          "volume": 2055048.0,
           "color": "#22c55e"
         }
       ],
@@ -159985,7 +159985,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 711.32
+          "value": 711.8
         }
       ]
     },
@@ -159993,10 +159993,10 @@
       "ticker": "3661.TW",
       "name": "世芯-KY",
       "sector": "半導體",
-      "close": 3950.0,
-      "ema20": 3946.59,
-      "turnover_ma20": 96.78,
-      "trend_up": 1,
+      "close": 3940.0,
+      "ema20": 3945.63,
+      "turnover_ma20": 97.45,
+      "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
       "candles": [
@@ -162246,8 +162246,8 @@
           "open": 4035.0,
           "high": 4140.0,
           "low": 3925.0,
-          "close": 3950.0,
-          "volume": 2333392.0,
+          "close": 3940.0,
+          "volume": 2682393.0,
           "color": "#22c55e"
         }
       ],
@@ -163250,7 +163250,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 3946.59
+          "value": 3945.63
         }
       ]
     },
@@ -163260,7 +163260,7 @@
       "sector": "半導體",
       "close": 471.0,
       "ema20": 436.36,
-      "turnover_ma20": 10.34,
+      "turnover_ma20": 10.35,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -165512,7 +165512,7 @@
           "high": 471.0,
           "low": 432.0,
           "close": 471.0,
-          "volume": 3165799.0,
+          "volume": 3179486.0,
           "color": "#ef4444"
         }
       ],
@@ -166523,9 +166523,9 @@
       "ticker": "2059.TW",
       "name": "川湖",
       "sector": "其他電子",
-      "close": 9970.0,
-      "ema20": 11754.78,
-      "turnover_ma20": 59.78,
+      "close": 10005.0,
+      "ema20": 11758.12,
+      "turnover_ma20": 60.09,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -168776,8 +168776,8 @@
           "open": 10155.0,
           "high": 10295.0,
           "low": 9950.0,
-          "close": 9970.0,
-          "volume": 611861.0,
+          "close": 10005.0,
+          "volume": 670958.0,
           "color": "#22c55e"
         }
       ],
@@ -169780,7 +169780,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 11754.78
+          "value": 11758.12
         }
       ]
     },
@@ -169788,9 +169788,9 @@
       "ticker": "2376.TW",
       "name": "技嘉",
       "sector": "電腦及週邊",
-      "close": 356.5,
-      "ema20": 361.93,
-      "turnover_ma20": 21.21,
+      "close": 356.0,
+      "ema20": 361.88,
+      "turnover_ma20": 21.31,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -172041,8 +172041,8 @@
           "open": 360.5,
           "high": 362.0,
           "low": 356.0,
-          "close": 356.5,
-          "volume": 2410527.0,
+          "close": 356.0,
+          "volume": 2946801.0,
           "color": "#22c55e"
         }
       ],
@@ -173045,7 +173045,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 361.93
+          "value": 361.88
         }
       ]
     },
@@ -173055,7 +173055,7 @@
       "sector": "電腦及週邊",
       "close": 159.0,
       "ema20": 154.14,
-      "turnover_ma20": 7.48,
+      "turnover_ma20": 7.54,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -175307,7 +175307,7 @@
           "high": 159.5,
           "low": 156.0,
           "close": 159.0,
-          "volume": 5226375.0,
+          "volume": 5919288.0,
           "color": "#ef4444"
         }
       ],
@@ -176318,9 +176318,9 @@
       "ticker": "2409.TW",
       "name": "友達",
       "sector": "光電業",
-      "close": 36.2,
+      "close": 36.25,
       "ema20": 34.76,
-      "turnover_ma20": 189.94,
+      "turnover_ma20": 190.13,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -178571,8 +178571,8 @@
           "open": 34.8,
           "high": 36.3,
           "low": 34.45,
-          "close": 36.2,
-          "volume": 294334211.0,
+          "close": 36.25,
+          "volume": 304335906.0,
           "color": "#ef4444"
         }
       ],
@@ -179583,9 +179583,9 @@
       "ticker": "3481.TW",
       "name": "群創",
       "sector": "光電業",
-      "close": 51.0,
-      "ema20": 50.67,
-      "turnover_ma20": 99.0,
+      "close": 50.9,
+      "ema20": 50.66,
+      "turnover_ma20": 99.18,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -181836,8 +181836,8 @@
           "open": 50.7,
           "high": 51.4,
           "low": 50.0,
-          "close": 51.0,
-          "volume": 82650116.0,
+          "close": 50.9,
+          "volume": 89664048.0,
           "color": "#ef4444"
         }
       ],
@@ -182840,7 +182840,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 50.67
+          "value": 50.66
         }
       ]
     },
@@ -182848,9 +182848,9 @@
       "ticker": "2618.TW",
       "name": "長榮航",
       "sector": "航運業",
-      "close": 43.2,
-      "ema20": 42.21,
-      "turnover_ma20": 7.22,
+      "close": 43.4,
+      "ema20": 42.23,
+      "turnover_ma20": 7.32,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -185099,10 +185099,10 @@
         {
           "time": "2026-10-14",
           "open": 43.1,
-          "high": 43.3,
+          "high": 43.4,
           "low": 42.7,
-          "close": 43.2,
-          "volume": 13167976.0,
+          "close": 43.4,
+          "volume": 17637805.0,
           "color": "#ef4444"
         }
       ],
@@ -186105,7 +186105,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 42.21
+          "value": 42.23
         }
       ]
     },
@@ -186115,7 +186115,7 @@
       "sector": "航運業",
       "close": 20.65,
       "ema20": 20.35,
-      "turnover_ma20": 3.04,
+      "turnover_ma20": 3.06,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -188367,7 +188367,7 @@
           "high": 20.65,
           "low": 20.45,
           "close": 20.65,
-          "volume": 12835633.0,
+          "volume": 15107077.0,
           "color": "#ef4444"
         }
       ],
@@ -189378,9 +189378,9 @@
       "ticker": "2356.TW",
       "name": "英業達",
       "sector": "電腦及週邊",
-      "close": 58.6,
-      "ema20": 59.81,
-      "turnover_ma20": 6.47,
+      "close": 58.3,
+      "ema20": 59.78,
+      "turnover_ma20": 6.51,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -191631,8 +191631,8 @@
           "open": 57.8,
           "high": 58.7,
           "low": 57.6,
-          "close": 58.6,
-          "volume": 10018635.0,
+          "close": 58.3,
+          "volume": 11512463.0,
           "color": "#ef4444"
         }
       ],
@@ -192635,7 +192635,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 59.81
+          "value": 59.78
         }
       ]
     },
@@ -192643,9 +192643,9 @@
       "ticker": "2353.TW",
       "name": "宏碁",
       "sector": "電腦及週邊",
-      "close": 32.2,
-      "ema20": 31.52,
-      "turnover_ma20": 4.08,
+      "close": 32.1,
+      "ema20": 31.51,
+      "turnover_ma20": 4.09,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -194896,8 +194896,8 @@
           "open": 31.6,
           "high": 32.4,
           "low": 31.5,
-          "close": 32.2,
-          "volume": 21460946.0,
+          "close": 32.1,
+          "volume": 22550136.0,
           "color": "#ef4444"
         }
       ],
@@ -195900,7 +195900,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 31.52
+          "value": 31.51
         }
       ]
     },
@@ -195908,9 +195908,9 @@
       "ticker": "1519.TW",
       "name": "華城",
       "sector": "電機機械",
-      "close": 691.0,
-      "ema20": 699.5,
-      "turnover_ma20": 9.69,
+      "close": 690.0,
+      "ema20": 699.4,
+      "turnover_ma20": 9.74,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -198161,8 +198161,8 @@
           "open": 670.0,
           "high": 700.0,
           "low": 661.0,
-          "close": 691.0,
-          "volume": 2654239.0,
+          "close": 690.0,
+          "volume": 2803994.0,
           "color": "#ef4444"
         }
       ],
@@ -199165,7 +199165,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 699.5
+          "value": 699.4
         }
       ]
     },
@@ -199173,9 +199173,9 @@
       "ticker": "1513.TW",
       "name": "中興電",
       "sector": "電機機械",
-      "close": 168.0,
-      "ema20": 166.61,
-      "turnover_ma20": 3.38,
+      "close": 168.5,
+      "ema20": 166.66,
+      "turnover_ma20": 3.4,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -201426,8 +201426,8 @@
           "open": 167.0,
           "high": 169.5,
           "low": 166.0,
-          "close": 168.0,
-          "volume": 2991185.0,
+          "close": 168.5,
+          "volume": 3186584.0,
           "color": "#ef4444"
         }
       ],
@@ -202430,7 +202430,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 166.61
+          "value": 166.66
         }
       ]
     },
@@ -202438,9 +202438,9 @@
       "ticker": "1504.TW",
       "name": "東元",
       "sector": "電機機械",
-      "close": 71.2,
-      "ema20": 70.39,
-      "turnover_ma20": 4.5,
+      "close": 70.9,
+      "ema20": 70.36,
+      "turnover_ma20": 4.52,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -204691,8 +204691,8 @@
           "open": 70.0,
           "high": 71.4,
           "low": 69.8,
-          "close": 71.2,
-          "volume": 4233169.0,
+          "close": 70.9,
+          "volume": 5004936.0,
           "color": "#ef4444"
         }
       ],
@@ -205695,7 +205695,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 70.39
+          "value": 70.36
         }
       ]
     },
@@ -205703,9 +205703,9 @@
       "ticker": "2383.TW",
       "name": "台光電",
       "sector": "電子零組件",
-      "close": 5545.0,
-      "ema20": 5474.98,
-      "turnover_ma20": 121.27,
+      "close": 5520.0,
+      "ema20": 5472.6,
+      "turnover_ma20": 121.88,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -207956,9 +207956,9 @@
           "open": 5545.0,
           "high": 5645.0,
           "low": 5510.0,
-          "close": 5545.0,
-          "volume": 2083780.0,
-          "color": "#ef4444"
+          "close": 5520.0,
+          "volume": 2315803.0,
+          "color": "#22c55e"
         }
       ],
       "ema": [
@@ -208960,7 +208960,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 5474.98
+          "value": 5472.6
         }
       ]
     },
@@ -208968,9 +208968,9 @@
       "ticker": "3037.TW",
       "name": "欣興",
       "sector": "電子零組件",
-      "close": 1190.0,
-      "ema20": 1173.25,
-      "turnover_ma20": 158.66,
+      "close": 1185.0,
+      "ema20": 1172.78,
+      "turnover_ma20": 159.45,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -211221,8 +211221,8 @@
           "open": 1180.0,
           "high": 1195.0,
           "low": 1140.0,
-          "close": 1190.0,
-          "volume": 15843178.0,
+          "close": 1185.0,
+          "volume": 17256069.0,
           "color": "#ef4444"
         }
       ],
@@ -212225,7 +212225,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1173.25
+          "value": 1172.78
         }
       ]
     },
@@ -212233,9 +212233,9 @@
       "ticker": "8046.TW",
       "name": "南電",
       "sector": "電子零組件",
-      "close": 1425.0,
-      "ema20": 1337.98,
-      "turnover_ma20": 137.23,
+      "close": 1430.0,
+      "ema20": 1338.46,
+      "turnover_ma20": 137.6,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -214486,8 +214486,8 @@
           "open": 1440.0,
           "high": 1440.0,
           "low": 1395.0,
-          "close": 1425.0,
-          "volume": 6635100.0,
+          "close": 1430.0,
+          "volume": 7127829.0,
           "color": "#22c55e"
         }
       ],
@@ -215490,7 +215490,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1337.98
+          "value": 1338.46
         }
       ]
     },
@@ -215500,7 +215500,7 @@
       "sector": "半導體",
       "close": 296.5,
       "ema20": 292.0,
-      "turnover_ma20": 89.86,
+      "turnover_ma20": 90.36,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -217752,7 +217752,7 @@
           "high": 306.5,
           "low": 295.0,
           "close": 296.5,
-          "volume": 52604090.0,
+          "volume": 55999416.0,
           "color": "#22c55e"
         }
       ],
@@ -218765,7 +218765,7 @@
       "sector": "電子零組件",
       "close": 1260.0,
       "ema20": 1154.42,
-      "turnover_ma20": 121.07,
+      "turnover_ma20": 121.31,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -221017,7 +221017,7 @@
           "high": 1275.0,
           "low": 1175.0,
           "close": 1260.0,
-          "volume": 16023469.0,
+          "volume": 16410298.0,
           "color": "#ef4444"
         }
       ],
@@ -222028,9 +222028,9 @@
       "ticker": "3017.TW",
       "name": "奇鋐",
       "sector": "電腦及週邊",
-      "close": 3320.0,
-      "ema20": 3397.89,
-      "turnover_ma20": 95.12,
+      "close": 3315.0,
+      "ema20": 3397.41,
+      "turnover_ma20": 95.57,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -224281,8 +224281,8 @@
           "open": 3330.0,
           "high": 3350.0,
           "low": 3275.0,
-          "close": 3320.0,
-          "volume": 2030851.0,
+          "close": 3315.0,
+          "volume": 2306874.0,
           "color": "#22c55e"
         }
       ],
@@ -225285,7 +225285,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 3397.89
+          "value": 3397.41
         }
       ]
     },
@@ -225293,10 +225293,10 @@
       "ticker": "3324.TWO",
       "name": "雙鴻",
       "sector": "電腦及週邊",
-      "close": 1475.0,
-      "ema20": 1480.5,
-      "turnover_ma20": 60.2,
-      "trend_up": 0,
+      "close": 1490.0,
+      "ema20": 1481.93,
+      "turnover_ma20": 60.41,
+      "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
       "candles": [
@@ -227546,9 +227546,9 @@
           "open": 1485.0,
           "high": 1510.0,
           "low": 1460.0,
-          "close": 1475.0,
-          "volume": 2109858.0,
-          "color": "#22c55e"
+          "close": 1490.0,
+          "volume": 2364305.0,
+          "color": "#ef4444"
         }
       ],
       "ema": [
@@ -228550,7 +228550,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1480.5
+          "value": 1481.93
         }
       ]
     },
@@ -228560,7 +228560,7 @@
       "sector": "電子零組件",
       "close": 1735.0,
       "ema20": 1594.89,
-      "turnover_ma20": 146.05,
+      "turnover_ma20": 146.3,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -230812,7 +230812,7 @@
           "high": 1745.0,
           "low": 1660.0,
           "close": 1735.0,
-          "volume": 9424781.0,
+          "volume": 9715675.0,
           "color": "#ef4444"
         }
       ],
@@ -231823,9 +231823,9 @@
       "ticker": "2360.TW",
       "name": "致茂",
       "sector": "其他電子",
-      "close": 2255.0,
-      "ema20": 2247.53,
-      "turnover_ma20": 51.78,
+      "close": 2250.0,
+      "ema20": 2247.05,
+      "turnover_ma20": 52.2,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -234076,9 +234076,9 @@
           "open": 2255.0,
           "high": 2350.0,
           "low": 2230.0,
-          "close": 2255.0,
-          "volume": 2135515.0,
-          "color": "#ef4444"
+          "close": 2250.0,
+          "volume": 2512473.0,
+          "color": "#22c55e"
         }
       ],
       "ema": [
@@ -235080,7 +235080,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 2247.53
+          "value": 2247.05
         }
       ]
     },
@@ -235088,9 +235088,9 @@
       "ticker": "3533.TW",
       "name": "嘉澤",
       "sector": "電子零組件",
-      "close": 1945.0,
-      "ema20": 1792.59,
-      "turnover_ma20": 27.49,
+      "close": 1935.0,
+      "ema20": 1791.64,
+      "turnover_ma20": 27.62,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -237341,8 +237341,8 @@
           "open": 1930.0,
           "high": 2035.0,
           "low": 1930.0,
-          "close": 1945.0,
-          "volume": 4517260.0,
+          "close": 1935.0,
+          "volume": 4678543.0,
           "color": "#ef4444"
         }
       ],
@@ -238345,7 +238345,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1792.59
+          "value": 1791.64
         }
       ]
     },
@@ -238355,7 +238355,7 @@
       "sector": "半導體",
       "close": 8245.0,
       "ema20": 7727.75,
-      "turnover_ma20": 111.59,
+      "turnover_ma20": 111.87,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -240607,7 +240607,7 @@
           "high": 8345.0,
           "low": 7960.0,
           "close": 8245.0,
-          "volume": 1064601.0,
+          "volume": 1133985.0,
           "color": "#ef4444"
         }
       ],
@@ -241620,7 +241620,7 @@
       "sector": "生技醫療",
       "close": 1190.0,
       "ema20": 1207.13,
-      "turnover_ma20": 29.15,
+      "turnover_ma20": 29.27,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -243872,7 +243872,7 @@
           "high": 1195.0,
           "low": 1155.0,
           "close": 1190.0,
-          "volume": 899019.0,
+          "volume": 1096532.0,
           "color": "#ef4444"
         }
       ],
@@ -244885,7 +244885,7 @@
       "sector": "紡織纖維",
       "close": 314.0,
       "ema20": 295.47,
-      "turnover_ma20": 4.39,
+      "turnover_ma20": 4.43,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -247137,7 +247137,7 @@
           "high": 314.5,
           "low": 308.5,
           "close": 314.0,
-          "volume": 800163.0,
+          "volume": 1090559.0,
           "color": "#ef4444"
         }
       ],
@@ -248150,7 +248150,7 @@
       "sector": "其他",
       "close": 26.1,
       "ema20": 25.02,
-      "turnover_ma20": 2.94,
+      "turnover_ma20": 2.96,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -250402,7 +250402,7 @@
           "high": 26.15,
           "low": 25.85,
           "close": 26.1,
-          "volume": 14027472.0,
+          "volume": 15790781.0,
           "color": "#ef4444"
         }
       ],
@@ -251415,7 +251415,7 @@
       "sector": "金融保險",
       "close": 17.7,
       "ema20": 17.64,
-      "turnover_ma20": 5.42,
+      "turnover_ma20": 5.43,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -253667,7 +253667,7 @@
           "high": 17.85,
           "low": 17.55,
           "close": 17.7,
-          "volume": 18771165.0,
+          "volume": 20169677.0,
           "color": "#22c55e"
         }
       ],
@@ -254680,7 +254680,7 @@
       "sector": "金融保險",
       "close": 16.8,
       "ema20": 16.5,
-      "turnover_ma20": 1.62,
+      "turnover_ma20": 1.63,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -256932,7 +256932,7 @@
           "high": 16.95,
           "low": 16.7,
           "close": 16.8,
-          "volume": 4549052.0,
+          "volume": 4948174.0,
           "color": "#ef4444"
         }
       ],
@@ -260197,7 +260197,7 @@
           "high": 13.2,
           "low": 13.05,
           "close": 13.2,
-          "volume": 4734593.0,
+          "volume": 5409170.0,
           "color": "#ef4444"
         }
       ],
@@ -263462,7 +263462,7 @@
           "high": 18.7,
           "low": 18.55,
           "close": 18.65,
-          "volume": 6445222.0,
+          "volume": 7093057.0,
           "color": "#ef4444"
         }
       ],
@@ -264473,9 +264473,9 @@
       "ticker": "5876.TW",
       "name": "上海商銀",
       "sector": "金融保險",
-      "close": 51.6,
-      "ema20": 49.27,
-      "turnover_ma20": 2.92,
+      "close": 51.7,
+      "ema20": 49.28,
+      "turnover_ma20": 2.96,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -266726,8 +266726,8 @@
           "open": 51.4,
           "high": 52.0,
           "low": 51.1,
-          "close": 51.6,
-          "volume": 4047188.0,
+          "close": 51.7,
+          "volume": 5827319.0,
           "color": "#ef4444"
         }
       ],
@@ -267730,7 +267730,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 49.27
+          "value": 49.28
         }
       ]
     },
@@ -267738,9 +267738,9 @@
       "ticker": "2542.TW",
       "name": "興富發",
       "sector": "建材營造",
-      "close": 39.6,
-      "ema20": 41.16,
-      "turnover_ma20": 5.66,
+      "close": 39.7,
+      "ema20": 41.17,
+      "turnover_ma20": 5.67,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -269991,8 +269991,8 @@
           "open": 39.8,
           "high": 39.85,
           "low": 39.45,
-          "close": 39.6,
-          "volume": 4315451.0,
+          "close": 39.7,
+          "volume": 5228672.0,
           "color": "#22c55e"
         }
       ],
@@ -270995,7 +270995,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 41.16
+          "value": 41.17
         }
       ]
     },
@@ -271005,7 +271005,7 @@
       "sector": "建材營造",
       "close": 20.4,
       "ema20": 21.01,
-      "turnover_ma20": 0.51,
+      "turnover_ma20": 0.52,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -273257,7 +273257,7 @@
           "high": 20.45,
           "low": 20.35,
           "close": 20.4,
-          "volume": 906267.0,
+          "volume": 1024267.0,
           "color": "#ef4444"
         }
       ],
@@ -274268,9 +274268,9 @@
       "ticker": "1102.TW",
       "name": "亞泥",
       "sector": "水泥工業",
-      "close": 37.25,
+      "close": 37.3,
       "ema20": 35.83,
-      "turnover_ma20": 2.59,
+      "turnover_ma20": 2.6,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -276521,8 +276521,8 @@
           "open": 36.8,
           "high": 37.3,
           "low": 36.7,
-          "close": 37.25,
-          "volume": 6328552.0,
+          "close": 37.3,
+          "volume": 7091253.0,
           "color": "#ef4444"
         }
       ],
@@ -277533,9 +277533,9 @@
       "ticker": "1402.TW",
       "name": "遠東新",
       "sector": "紡織纖維",
-      "close": 29.6,
-      "ema20": 28.37,
-      "turnover_ma20": 2.41,
+      "close": 29.65,
+      "ema20": 28.38,
+      "turnover_ma20": 2.43,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -279786,8 +279786,8 @@
           "open": 28.65,
           "high": 29.8,
           "low": 28.65,
-          "close": 29.6,
-          "volume": 25793949.0,
+          "close": 29.65,
+          "volume": 26612877.0,
           "color": "#ef4444"
         }
       ],
@@ -280790,7 +280790,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 28.37
+          "value": 28.38
         }
       ]
     },
@@ -280800,7 +280800,7 @@
       "sector": "橡膠工業",
       "close": 31.4,
       "ema20": 30.51,
-      "turnover_ma20": 1.22,
+      "turnover_ma20": 1.23,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -283052,7 +283052,7 @@
           "high": 31.45,
           "low": 30.7,
           "close": 31.4,
-          "volume": 8886095.0,
+          "volume": 9372524.0,
           "color": "#ef4444"
         }
       ],
@@ -284063,9 +284063,9 @@
       "ticker": "9945.TW",
       "name": "潤泰新",
       "sector": "其他",
-      "close": 29.4,
-      "ema20": 29.09,
-      "turnover_ma20": 1.73,
+      "close": 29.35,
+      "ema20": 29.08,
+      "turnover_ma20": 1.74,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -286316,8 +286316,8 @@
           "open": 29.3,
           "high": 29.6,
           "low": 29.25,
-          "close": 29.4,
-          "volume": 2806382.0,
+          "close": 29.35,
+          "volume": 3282515.0,
           "color": "#ef4444"
         }
       ],
@@ -287320,7 +287320,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 29.09
+          "value": 29.08
         }
       ]
     },
@@ -287328,8 +287328,8 @@
       "ticker": "2903.TW",
       "name": "遠百",
       "sector": "貿易百貨",
-      "close": 22.25,
-      "ema20": 22.11,
+      "close": 22.3,
+      "ema20": 22.12,
       "turnover_ma20": 0.26,
       "trend_up": 1,
       "has_signal": 0,
@@ -289581,8 +289581,8 @@
           "open": 22.2,
           "high": 22.35,
           "low": 22.2,
-          "close": 22.25,
-          "volume": 1196019.0,
+          "close": 22.3,
+          "volume": 1279019.0,
           "color": "#ef4444"
         }
       ],
@@ -290585,7 +290585,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 22.11
+          "value": 22.12
         }
       ]
     },
@@ -290593,9 +290593,9 @@
       "ticker": "2207.TW",
       "name": "和泰車",
       "sector": "汽車工業",
-      "close": 539.0,
-      "ema20": 522.71,
-      "turnover_ma20": 1.42,
+      "close": 542.0,
+      "ema20": 523.0,
+      "turnover_ma20": 1.46,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -292844,10 +292844,10 @@
         {
           "time": "2026-10-14",
           "open": 534.0,
-          "high": 541.0,
+          "high": 542.0,
           "low": 532.0,
-          "close": 539.0,
-          "volume": 237562.0,
+          "close": 542.0,
+          "volume": 394466.0,
           "color": "#ef4444"
         }
       ],
@@ -293850,7 +293850,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 522.71
+          "value": 523.0
         }
       ]
     },
@@ -293858,8 +293858,8 @@
       "ticker": "2201.TW",
       "name": "裕隆",
       "sector": "汽車工業",
-      "close": 29.25,
-      "ema20": 29.13,
+      "close": 29.3,
+      "ema20": 29.14,
       "turnover_ma20": 0.86,
       "trend_up": 1,
       "has_signal": 0,
@@ -296111,8 +296111,8 @@
           "open": 28.8,
           "high": 29.3,
           "low": 28.8,
-          "close": 29.25,
-          "volume": 1469620.0,
+          "close": 29.3,
+          "volume": 1575421.0,
           "color": "#ef4444"
         }
       ],
@@ -297115,7 +297115,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 29.13
+          "value": 29.14
         }
       ]
     },
@@ -297123,8 +297123,8 @@
       "ticker": "9921.TW",
       "name": "巨大",
       "sector": "其他",
-      "close": 91.9,
-      "ema20": 92.33,
+      "close": 92.1,
+      "ema20": 92.35,
       "turnover_ma20": 1.16,
       "trend_up": 0,
       "has_signal": 0,
@@ -299376,8 +299376,8 @@
           "open": 91.2,
           "high": 92.4,
           "low": 91.2,
-          "close": 91.9,
-          "volume": 546616.0,
+          "close": 92.1,
+          "volume": 667952.0,
           "color": "#ef4444"
         }
       ],
@@ -300380,7 +300380,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 92.33
+          "value": 92.35
         }
       ]
     },
@@ -300388,8 +300388,8 @@
       "ticker": "9914.TW",
       "name": "美利達",
       "sector": "其他",
-      "close": 66.6,
-      "ema20": 69.02,
+      "close": 66.7,
+      "ema20": 69.03,
       "turnover_ma20": 1.04,
       "trend_up": 0,
       "has_signal": 0,
@@ -302641,8 +302641,8 @@
           "open": 66.4,
           "high": 67.6,
           "low": 66.3,
-          "close": 66.6,
-          "volume": 1459672.0,
+          "close": 66.7,
+          "volume": 1561923.0,
           "color": "#ef4444"
         }
       ],
@@ -303645,7 +303645,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 69.02
+          "value": 69.03
         }
       ]
     },
@@ -303653,9 +303653,9 @@
       "ticker": "2027.TW",
       "name": "大成鋼",
       "sector": "鋼鐵工業",
-      "close": 49.95,
-      "ema20": 48.02,
-      "turnover_ma20": 4.85,
+      "close": 50.0,
+      "ema20": 48.03,
+      "turnover_ma20": 4.87,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -305906,8 +305906,8 @@
           "open": 49.0,
           "high": 50.2,
           "low": 48.75,
-          "close": 49.95,
-          "volume": 15198356.0,
+          "close": 50.0,
+          "volume": 15974295.0,
           "color": "#ef4444"
         }
       ],
@@ -306910,7 +306910,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 48.02
+          "value": 48.03
         }
       ]
     },
@@ -306918,9 +306918,9 @@
       "ticker": "2014.TW",
       "name": "中鴻",
       "sector": "鋼鐵工業",
-      "close": 17.15,
+      "close": 17.2,
       "ema20": 16.92,
-      "turnover_ma20": 0.37,
+      "turnover_ma20": 0.38,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -309171,8 +309171,8 @@
           "open": 16.9,
           "high": 17.3,
           "low": 16.9,
-          "close": 17.15,
-          "volume": 4073806.0,
+          "close": 17.2,
+          "volume": 4170006.0,
           "color": "#ef4444"
         }
       ],
@@ -310185,7 +310185,7 @@
       "sector": "汽車工業",
       "close": 82.6,
       "ema20": 80.07,
-      "turnover_ma20": 1.41,
+      "turnover_ma20": 1.42,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -312437,7 +312437,7 @@
           "high": 83.5,
           "low": 82.4,
           "close": 82.6,
-          "volume": 1823490.0,
+          "volume": 1997459.0,
           "color": "#22c55e"
         }
       ],
@@ -313450,7 +313450,7 @@
       "sector": "化學工業",
       "close": 42.55,
       "ema20": 42.06,
-      "turnover_ma20": 1.08,
+      "turnover_ma20": 1.09,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -315702,7 +315702,7 @@
           "high": 42.6,
           "low": 41.65,
           "close": 42.55,
-          "volume": 2384516.0,
+          "volume": 2557121.0,
           "color": "#ef4444"
         }
       ],
@@ -316713,10 +316713,10 @@
       "ticker": "1707.TW",
       "name": "葡萄王",
       "sector": "生技醫療",
-      "close": 86.6,
-      "ema20": 86.47,
+      "close": 86.3,
+      "ema20": 86.44,
       "turnover_ma20": 0.21,
-      "trend_up": 1,
+      "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
       "candles": [
@@ -318966,8 +318966,8 @@
           "open": 86.3,
           "high": 87.0,
           "low": 86.3,
-          "close": 86.6,
-          "volume": 156370.0,
+          "close": 86.3,
+          "volume": 171371.0,
           "color": "#ef4444"
         }
       ],
@@ -319970,7 +319970,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 86.47
+          "value": 86.44
         }
       ]
     },
@@ -319978,9 +319978,9 @@
       "ticker": "6409.TW",
       "name": "旭隼",
       "sector": "其他電子",
-      "close": 923.0,
-      "ema20": 897.07,
-      "turnover_ma20": 2.35,
+      "close": 924.0,
+      "ema20": 897.17,
+      "turnover_ma20": 2.38,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -322231,8 +322231,8 @@
           "open": 879.0,
           "high": 928.0,
           "low": 878.0,
-          "close": 923.0,
-          "volume": 560727.0,
+          "close": 924.0,
+          "volume": 622059.0,
           "color": "#ef4444"
         }
       ],
@@ -323235,7 +323235,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 897.07
+          "value": 897.17
         }
       ]
     },
@@ -323245,7 +323245,7 @@
       "sector": "電子通路",
       "close": 118.5,
       "ema20": 115.26,
-      "turnover_ma20": 9.84,
+      "turnover_ma20": 9.89,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -325497,7 +325497,7 @@
           "high": 119.5,
           "low": 115.0,
           "close": 118.5,
-          "volume": 12653564.0,
+          "volume": 13458785.0,
           "color": "#ef4444"
         }
       ],
@@ -326508,9 +326508,9 @@
       "ticker": "2347.TW",
       "name": "聯強",
       "sector": "電子通路",
-      "close": 102.0,
-      "ema20": 95.23,
-      "turnover_ma20": 3.15,
+      "close": 102.5,
+      "ema20": 95.28,
+      "turnover_ma20": 3.19,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -328761,8 +328761,8 @@
           "open": 102.0,
           "high": 102.5,
           "low": 100.0,
-          "close": 102.0,
-          "volume": 4707551.0,
+          "close": 102.5,
+          "volume": 5401077.0,
           "color": "#ef4444"
         }
       ],
@@ -329765,7 +329765,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 95.23
+          "value": 95.28
         }
       ]
     },
@@ -329773,9 +329773,9 @@
       "ticker": "6239.TW",
       "name": "力成",
       "sector": "半導體",
-      "close": 299.5,
-      "ema20": 294.01,
-      "turnover_ma20": 42.02,
+      "close": 298.5,
+      "ema20": 293.92,
+      "turnover_ma20": 42.1,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -332026,8 +332026,8 @@
           "open": 301.5,
           "high": 306.0,
           "low": 295.0,
-          "close": 299.5,
-          "volume": 8537836.0,
+          "close": 298.5,
+          "volume": 9123383.0,
           "color": "#22c55e"
         }
       ],
@@ -333030,7 +333030,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 294.01
+          "value": 293.92
         }
       ]
     },
@@ -333038,9 +333038,9 @@
       "ticker": "2408.TW",
       "name": "南亞科",
       "sector": "半導體",
-      "close": 482.5,
-      "ema20": 509.34,
-      "turnover_ma20": 225.95,
+      "close": 480.5,
+      "ema20": 509.15,
+      "turnover_ma20": 226.9,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -335290,9 +335290,9 @@
           "time": "2026-10-14",
           "open": 488.0,
           "high": 491.0,
-          "low": 482.0,
-          "close": 482.5,
-          "volume": 50379420.0,
+          "low": 480.5,
+          "close": 480.5,
+          "volume": 54547707.0,
           "color": "#22c55e"
         }
       ],
@@ -336295,7 +336295,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 509.34
+          "value": 509.15
         }
       ]
     },
@@ -336305,7 +336305,7 @@
       "sector": "半導體",
       "close": 176.0,
       "ema20": 175.87,
-      "turnover_ma20": 32.53,
+      "turnover_ma20": 32.61,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -338557,7 +338557,7 @@
           "high": 178.5,
           "low": 172.5,
           "close": 176.0,
-          "volume": 7458447.0,
+          "volume": 8306342.0,
           "color": "#22c55e"
         }
       ],
@@ -339570,7 +339570,7 @@
       "sector": "半導體",
       "close": 1020.0,
       "ema20": 1050.39,
-      "turnover_ma20": 140.64,
+      "turnover_ma20": 140.92,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -341822,7 +341822,7 @@
           "high": 1030.0,
           "low": 994.0,
           "close": 1020.0,
-          "volume": 10318876.0,
+          "volume": 10877612.0,
           "color": "#ef4444"
         }
       ],
@@ -342833,9 +342833,9 @@
       "ticker": "3529.TWO",
       "name": "力旺",
       "sector": "半導體",
-      "close": 2895.0,
-      "ema20": 2941.61,
-      "turnover_ma20": 38.12,
+      "close": 2875.0,
+      "ema20": 2939.71,
+      "turnover_ma20": 38.2,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -345086,8 +345086,8 @@
           "open": 2850.0,
           "high": 2955.0,
           "low": 2770.0,
-          "close": 2895.0,
-          "volume": 922454.0,
+          "close": 2875.0,
+          "volume": 984762.0,
           "color": "#ef4444"
         }
       ],
@@ -346090,7 +346090,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 2941.61
+          "value": 2939.71
         }
       ]
     },
@@ -346100,7 +346100,7 @@
       "sector": "半導體",
       "close": 71.0,
       "ema20": 72.03,
-      "turnover_ma20": 80.35,
+      "turnover_ma20": 80.49,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -348352,7 +348352,7 @@
           "high": 71.5,
           "low": 67.2,
           "close": 71.0,
-          "volume": 102361548.0,
+          "volume": 106253948.0,
           "color": "#ef4444"
         }
       ],
@@ -349363,10 +349363,10 @@
       "ticker": "4966.TWO",
       "name": "譜瑞-KY",
       "sector": "半導體",
-      "close": 563.0,
-      "ema20": 562.5,
-      "turnover_ma20": 2.98,
-      "trend_up": 1,
+      "close": 561.0,
+      "ema20": 562.31,
+      "turnover_ma20": 3.0,
+      "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
       "candles": [
@@ -351616,8 +351616,8 @@
           "open": 553.0,
           "high": 573.0,
           "low": 541.0,
-          "close": 563.0,
-          "volume": 1449945.0,
+          "close": 561.0,
+          "volume": 1533903.0,
           "color": "#ef4444"
         }
       ],
@@ -352620,7 +352620,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 562.5
+          "value": 562.31
         }
       ]
     },
@@ -352628,9 +352628,9 @@
       "ticker": "3406.TW",
       "name": "玉晶光",
       "sector": "光電業",
-      "close": 1070.0,
-      "ema20": 1004.94,
-      "turnover_ma20": 63.1,
+      "close": 1065.0,
+      "ema20": 1004.46,
+      "turnover_ma20": 63.17,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -354881,8 +354881,8 @@
           "open": 1165.0,
           "high": 1165.0,
           "low": 1060.0,
-          "close": 1070.0,
-          "volume": 10497850.0,
+          "close": 1065.0,
+          "volume": 10675719.0,
           "color": "#22c55e"
         }
       ],
@@ -355885,7 +355885,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 1004.94
+          "value": 1004.46
         }
       ]
     },
@@ -358147,7 +358147,7 @@
           "high": 136.0,
           "low": 132.0,
           "close": 133.5,
-          "volume": 1248001.0,
+          "volume": 1373926.0,
           "color": "#ef4444"
         }
       ],
@@ -359160,7 +359160,7 @@
       "sector": "半導體",
       "close": 211.0,
       "ema20": 199.52,
-      "turnover_ma20": 10.04,
+      "turnover_ma20": 10.05,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -361412,7 +361412,7 @@
           "high": 211.0,
           "low": 192.0,
           "close": 211.0,
-          "volume": 5670776.0,
+          "volume": 5690714.0,
           "color": "#ef4444"
         }
       ],
@@ -362423,8 +362423,8 @@
       "ticker": "2352.TW",
       "name": "佳世達",
       "sector": "電腦及週邊",
-      "close": 29.45,
-      "ema20": 29.01,
+      "close": 29.55,
+      "ema20": 29.02,
       "turnover_ma20": 1.29,
       "trend_up": 1,
       "has_signal": 0,
@@ -364676,8 +364676,8 @@
           "open": 29.15,
           "high": 29.55,
           "low": 29.15,
-          "close": 29.45,
-          "volume": 5175671.0,
+          "close": 29.55,
+          "volume": 5488087.0,
           "color": "#ef4444"
         }
       ],
@@ -365680,7 +365680,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 29.01
+          "value": 29.02
         }
       ]
     },
@@ -365688,9 +365688,9 @@
       "ticker": "2371.TW",
       "name": "大同",
       "sector": "電機機械",
-      "close": 29.9,
-      "ema20": 29.57,
-      "turnover_ma20": 4.39,
+      "close": 29.8,
+      "ema20": 29.56,
+      "turnover_ma20": 4.4,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -367941,8 +367941,8 @@
           "open": 29.2,
           "high": 30.0,
           "low": 29.15,
-          "close": 29.9,
-          "volume": 10226205.0,
+          "close": 29.8,
+          "volume": 10762318.0,
           "color": "#ef4444"
         }
       ],
@@ -368945,7 +368945,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 29.57
+          "value": 29.56
         }
       ]
     },
@@ -368955,7 +368955,7 @@
       "sector": "其他電子",
       "close": 63.7,
       "ema20": 63.93,
-      "turnover_ma20": 5.94,
+      "turnover_ma20": 5.96,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -371207,7 +371207,7 @@
           "high": 63.7,
           "low": 62.4,
           "close": 63.7,
-          "volume": 4201032.0,
+          "volume": 4705171.0,
           "color": "#ef4444"
         }
       ],
@@ -372218,9 +372218,9 @@
       "ticker": "2313.TW",
       "name": "華通",
       "sector": "電子零組件",
-      "close": 251.0,
-      "ema20": 237.08,
-      "turnover_ma20": 61.3,
+      "close": 250.5,
+      "ema20": 237.03,
+      "turnover_ma20": 61.44,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -374471,8 +374471,8 @@
           "open": 243.5,
           "high": 252.5,
           "low": 240.0,
-          "close": 251.0,
-          "volume": 17770445.0,
+          "close": 250.5,
+          "volume": 18919220.0,
           "color": "#ef4444"
         }
       ],
@@ -375475,7 +375475,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 237.08
+          "value": 237.03
         }
       ]
     },
@@ -375483,9 +375483,9 @@
       "ticker": "2367.TW",
       "name": "燿華",
       "sector": "電子零組件",
-      "close": 47.45,
-      "ema20": 44.78,
-      "turnover_ma20": 3.76,
+      "close": 47.35,
+      "ema20": 44.77,
+      "turnover_ma20": 3.77,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -377736,8 +377736,8 @@
           "open": 45.8,
           "high": 47.45,
           "low": 45.25,
-          "close": 47.45,
-          "volume": 6652407.0,
+          "close": 47.35,
+          "volume": 6890871.0,
           "color": "#ef4444"
         }
       ],
@@ -378740,7 +378740,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 44.78
+          "value": 44.77
         }
       ]
     },
@@ -378748,9 +378748,9 @@
       "ticker": "6213.TW",
       "name": "聯茂",
       "sector": "電子零組件",
-      "close": 858.0,
-      "ema20": 685.89,
-      "turnover_ma20": 106.83,
+      "close": 856.0,
+      "ema20": 685.7,
+      "turnover_ma20": 106.89,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -381001,8 +381001,8 @@
           "open": 813.0,
           "high": 858.0,
           "low": 813.0,
-          "close": 858.0,
-          "volume": 4683127.0,
+          "close": 856.0,
+          "volume": 4847238.0,
           "color": "#ef4444"
         }
       ],
@@ -382005,7 +382005,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 685.89
+          "value": 685.7
         }
       ]
     },
@@ -384267,7 +384267,7 @@
           "high": 67.9,
           "low": 67.9,
           "close": 67.9,
-          "volume": 3292544.0,
+          "volume": 3295544.0,
           "color": "#ef4444"
         }
       ],
@@ -385278,9 +385278,9 @@
       "ticker": "3036.TW",
       "name": "文曄",
       "sector": "電子通路",
-      "close": 215.0,
-      "ema20": 208.97,
-      "turnover_ma20": 14.99,
+      "close": 216.0,
+      "ema20": 209.07,
+      "turnover_ma20": 15.04,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -387531,8 +387531,8 @@
           "open": 213.5,
           "high": 218.0,
           "low": 213.5,
-          "close": 215.0,
-          "volume": 5682464.0,
+          "close": 216.0,
+          "volume": 6060543.0,
           "color": "#ef4444"
         }
       ],
@@ -388535,7 +388535,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 208.97
+          "value": 209.07
         }
       ]
     },
@@ -388545,7 +388545,7 @@
       "sector": "其他電子",
       "close": 196.5,
       "ema20": 202.4,
-      "turnover_ma20": 3.94,
+      "turnover_ma20": 3.96,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -390797,7 +390797,7 @@
           "high": 197.0,
           "low": 195.5,
           "close": 196.5,
-          "volume": 586025.0,
+          "volume": 807222.0,
           "color": "#ef4444"
         }
       ],
@@ -391808,8 +391808,8 @@
       "ticker": "6176.TW",
       "name": "瑞儀",
       "sector": "光電業",
-      "close": 92.2,
-      "ema20": 92.25,
+      "close": 91.7,
+      "ema20": 92.2,
       "turnover_ma20": 1.55,
       "trend_up": 0,
       "has_signal": 0,
@@ -394061,8 +394061,8 @@
           "open": 91.1,
           "high": 92.4,
           "low": 91.0,
-          "close": 92.2,
-          "volume": 1323913.0,
+          "close": 91.7,
+          "volume": 1458135.0,
           "color": "#ef4444"
         }
       ],
@@ -395065,7 +395065,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 92.25
+          "value": 92.2
         }
       ]
     },
@@ -395073,7 +395073,7 @@
       "ticker": "2498.TW",
       "name": "宏達電",
       "sector": "通信網路",
-      "close": 40.95,
+      "close": 41.0,
       "ema20": 41.42,
       "turnover_ma20": 2.93,
       "trend_up": 0,
@@ -397326,8 +397326,8 @@
           "open": 40.85,
           "high": 41.25,
           "low": 40.7,
-          "close": 40.95,
-          "volume": 2798553.0,
+          "close": 41.0,
+          "volume": 2929899.0,
           "color": "#ef4444"
         }
       ],
@@ -398338,9 +398338,9 @@
       "ticker": "2439.TW",
       "name": "美律",
       "sector": "通信網路",
-      "close": 81.6,
-      "ema20": 78.7,
-      "turnover_ma20": 1.25,
+      "close": 81.7,
+      "ema20": 78.71,
+      "turnover_ma20": 1.26,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -400591,8 +400591,8 @@
           "open": 81.6,
           "high": 82.1,
           "low": 81.1,
-          "close": 81.6,
-          "volume": 2293927.0,
+          "close": 81.7,
+          "volume": 2468795.0,
           "color": "#ef4444"
         }
       ],
@@ -401595,7 +401595,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 78.7
+          "value": 78.71
         }
       ]
     },
@@ -401603,9 +401603,9 @@
       "ticker": "3105.TWO",
       "name": "穩懋",
       "sector": "半導體",
-      "close": 556.0,
-      "ema20": 534.02,
-      "turnover_ma20": 142.81,
+      "close": 557.0,
+      "ema20": 534.11,
+      "turnover_ma20": 143.03,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -403856,8 +403856,8 @@
           "open": 559.0,
           "high": 570.0,
           "low": 552.0,
-          "close": 556.0,
-          "volume": 11132421.0,
+          "close": 557.0,
+          "volume": 11905269.0,
           "color": "#22c55e"
         }
       ],
@@ -404860,7 +404860,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 534.02
+          "value": 534.11
         }
       ]
     },
@@ -404868,9 +404868,9 @@
       "ticker": "4919.TW",
       "name": "新唐",
       "sector": "半導體",
-      "close": 151.5,
-      "ema20": 142.03,
-      "turnover_ma20": 26.0,
+      "close": 150.0,
+      "ema20": 141.89,
+      "turnover_ma20": 26.02,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -407121,8 +407121,8 @@
           "open": 144.0,
           "high": 152.5,
           "low": 141.0,
-          "close": 151.5,
-          "volume": 15228140.0,
+          "close": 150.0,
+          "volume": 15699012.0,
           "color": "#ef4444"
         }
       ],
@@ -408125,7 +408125,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 142.03
+          "value": 141.89
         }
       ]
     },
@@ -408135,7 +408135,7 @@
       "sector": "半導體",
       "close": 208.5,
       "ema20": 202.77,
-      "turnover_ma20": 46.1,
+      "turnover_ma20": 46.17,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -410387,7 +410387,7 @@
           "high": 209.5,
           "low": 202.5,
           "close": 208.5,
-          "volume": 9446892.0,
+          "volume": 10125456.0,
           "color": "#ef4444"
         }
       ],
@@ -411398,9 +411398,9 @@
       "ticker": "6531.TW",
       "name": "愛普*",
       "sector": "半導體",
-      "close": 928.0,
-      "ema20": 960.26,
-      "turnover_ma20": 34.98,
+      "close": 923.0,
+      "ema20": 959.78,
+      "turnover_ma20": 35.15,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -413651,8 +413651,8 @@
           "open": 940.0,
           "high": 970.0,
           "low": 923.0,
-          "close": 928.0,
-          "volume": 4257613.0,
+          "close": 923.0,
+          "volume": 4637575.0,
           "color": "#22c55e"
         }
       ],
@@ -414655,7 +414655,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 960.26
+          "value": 959.78
         }
       ]
     },
@@ -414663,8 +414663,8 @@
       "ticker": "6789.TW",
       "name": "采鈺",
       "sector": "半導體",
-      "close": 460.5,
-      "ema20": 469.53,
+      "close": 460.0,
+      "ema20": 469.48,
       "turnover_ma20": 4.8,
       "trend_up": 0,
       "has_signal": 0,
@@ -416916,8 +416916,8 @@
           "open": 459.0,
           "high": 467.0,
           "low": 455.0,
-          "close": 460.5,
-          "volume": 514053.0,
+          "close": 460.0,
+          "volume": 545960.0,
           "color": "#ef4444"
         }
       ],
@@ -417920,7 +417920,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 469.53
+          "value": 469.48
         }
       ]
     },
@@ -420182,7 +420182,7 @@
           "high": 47.6,
           "low": 46.75,
           "close": 47.3,
-          "volume": 3383405.0,
+          "volume": 3655554.0,
           "color": "#ef4444"
         }
       ],
@@ -423447,7 +423447,7 @@
           "high": 181.0,
           "low": 178.5,
           "close": 180.0,
-          "volume": 481642.0,
+          "volume": 512934.0,
           "color": "#ef4444"
         }
       ],
@@ -424458,9 +424458,9 @@
       "ticker": "6472.TW",
       "name": "保瑞",
       "sector": "生技醫療",
-      "close": 426.5,
-      "ema20": 422.33,
-      "turnover_ma20": 2.25,
+      "close": 424.5,
+      "ema20": 422.14,
+      "turnover_ma20": 2.26,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -426711,9 +426711,9 @@
           "open": 426.0,
           "high": 427.5,
           "low": 420.5,
-          "close": 426.5,
-          "volume": 284012.0,
-          "color": "#ef4444"
+          "close": 424.5,
+          "volume": 313461.0,
+          "color": "#22c55e"
         }
       ],
       "ema": [
@@ -427715,7 +427715,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 422.33
+          "value": 422.14
         }
       ]
     },
@@ -427723,9 +427723,9 @@
       "ticker": "2385.TW",
       "name": "群光",
       "sector": "電腦及週邊",
-      "close": 105.0,
-      "ema20": 104.89,
-      "turnover_ma20": 2.59,
+      "close": 105.5,
+      "ema20": 104.93,
+      "turnover_ma20": 2.6,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -429976,8 +429976,8 @@
           "open": 104.0,
           "high": 106.0,
           "low": 104.0,
-          "close": 105.0,
-          "volume": 3270721.0,
+          "close": 105.5,
+          "volume": 3501139.0,
           "color": "#ef4444"
         }
       ],
@@ -430980,7 +430980,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 104.89
+          "value": 104.93
         }
       ]
     },
@@ -430988,8 +430988,8 @@
       "ticker": "2374.TW",
       "name": "佳能",
       "sector": "光電業",
-      "close": 66.3,
-      "ema20": 66.47,
+      "close": 65.9,
+      "ema20": 66.43,
       "turnover_ma20": 0.98,
       "trend_up": 0,
       "has_signal": 0,
@@ -433241,8 +433241,8 @@
           "open": 64.4,
           "high": 67.4,
           "low": 64.2,
-          "close": 66.3,
-          "volume": 2021139.0,
+          "close": 65.9,
+          "volume": 2135411.0,
           "color": "#ef4444"
         }
       ],
@@ -434245,7 +434245,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 66.47
+          "value": 66.43
         }
       ]
     },
@@ -434253,9 +434253,9 @@
       "ticker": "3653.TW",
       "name": "健策",
       "sector": "電子零組件",
-      "close": 7095.0,
-      "ema20": 6585.46,
-      "turnover_ma20": 76.28,
+      "close": 7070.0,
+      "ema20": 6583.08,
+      "turnover_ma20": 76.51,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -436506,8 +436506,8 @@
           "open": 7120.0,
           "high": 7330.0,
           "low": 6965.0,
-          "close": 7095.0,
-          "volume": 1097706.0,
+          "close": 7070.0,
+          "volume": 1166967.0,
           "color": "#22c55e"
         }
       ],
@@ -437510,7 +437510,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 6585.46
+          "value": 6583.08
         }
       ]
     },
@@ -437518,9 +437518,9 @@
       "ticker": "2441.TW",
       "name": "超豐",
       "sector": "半導體",
-      "close": 127.5,
-      "ema20": 124.39,
-      "turnover_ma20": 6.18,
+      "close": 128.0,
+      "ema20": 124.44,
+      "turnover_ma20": 6.21,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -439771,8 +439771,8 @@
           "open": 130.0,
           "high": 132.5,
           "low": 127.5,
-          "close": 127.5,
-          "volume": 7074363.0,
+          "close": 128.0,
+          "volume": 7589970.0,
           "color": "#22c55e"
         }
       ],
@@ -440775,7 +440775,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 124.39
+          "value": 124.44
         }
       ]
     },
@@ -440783,9 +440783,9 @@
       "ticker": "2451.TW",
       "name": "創見",
       "sector": "半導體",
-      "close": 278.0,
-      "ema20": 284.11,
-      "turnover_ma20": 5.49,
+      "close": 278.5,
+      "ema20": 284.16,
+      "turnover_ma20": 5.52,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -443036,8 +443036,8 @@
           "open": 277.5,
           "high": 281.0,
           "low": 275.0,
-          "close": 278.0,
-          "volume": 1471483.0,
+          "close": 278.5,
+          "volume": 1660572.0,
           "color": "#ef4444"
         }
       ],
@@ -444040,7 +444040,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 284.11
+          "value": 284.16
         }
       ]
     },
@@ -444048,9 +444048,9 @@
       "ticker": "3005.TW",
       "name": "神基",
       "sector": "電腦及週邊",
-      "close": 120.0,
-      "ema20": 117.66,
-      "turnover_ma20": 1.91,
+      "close": 120.5,
+      "ema20": 117.71,
+      "turnover_ma20": 1.92,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -446301,8 +446301,8 @@
           "open": 119.0,
           "high": 121.0,
           "low": 119.0,
-          "close": 120.0,
-          "volume": 2055632.0,
+          "close": 120.5,
+          "volume": 2251386.0,
           "color": "#ef4444"
         }
       ],
@@ -447305,7 +447305,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 117.66
+          "value": 117.71
         }
       ]
     },
@@ -447313,9 +447313,9 @@
       "ticker": "3706.TW",
       "name": "神達",
       "sector": "電腦及週邊",
-      "close": 84.4,
-      "ema20": 81.32,
-      "turnover_ma20": 5.26,
+      "close": 84.2,
+      "ema20": 81.3,
+      "turnover_ma20": 5.29,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -449566,8 +449566,8 @@
           "open": 83.2,
           "high": 85.0,
           "low": 83.2,
-          "close": 84.4,
-          "volume": 14314131.0,
+          "close": 84.2,
+          "volume": 15062473.0,
           "color": "#ef4444"
         }
       ],
@@ -450570,7 +450570,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 81.32
+          "value": 81.3
         }
       ]
     },
@@ -450578,9 +450578,9 @@
       "ticker": "6285.TW",
       "name": "啟碁",
       "sector": "通信網路",
-      "close": 254.0,
-      "ema20": 244.32,
-      "turnover_ma20": 13.51,
+      "close": 253.0,
+      "ema20": 244.22,
+      "turnover_ma20": 13.55,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -452831,8 +452831,8 @@
           "open": 249.5,
           "high": 255.0,
           "low": 248.5,
-          "close": 254.0,
-          "volume": 5123444.0,
+          "close": 253.0,
+          "volume": 5454483.0,
           "color": "#ef4444"
         }
       ],
@@ -453835,7 +453835,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 244.32
+          "value": 244.22
         }
       ]
     },
@@ -453843,8 +453843,8 @@
       "ticker": "5388.TW",
       "name": "中磊",
       "sector": "通信網路",
-      "close": 75.4,
-      "ema20": 73.5,
+      "close": 75.2,
+      "ema20": 73.48,
       "turnover_ma20": 1.33,
       "trend_up": 1,
       "has_signal": 0,
@@ -456096,8 +456096,8 @@
           "open": 74.5,
           "high": 75.4,
           "low": 74.0,
-          "close": 75.4,
-          "volume": 2273865.0,
+          "close": 75.2,
+          "volume": 2387165.0,
           "color": "#ef4444"
         }
       ],
@@ -457100,7 +457100,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 73.5
+          "value": 73.48
         }
       ]
     },
@@ -457108,9 +457108,9 @@
       "ticker": "4906.TW",
       "name": "正文",
       "sector": "通信網路",
-      "close": 42.9,
+      "close": 42.95,
       "ema20": 40.2,
-      "turnover_ma20": 3.82,
+      "turnover_ma20": 3.83,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -459361,8 +459361,8 @@
           "open": 41.8,
           "high": 43.35,
           "low": 41.55,
-          "close": 42.9,
-          "volume": 10881595.0,
+          "close": 42.95,
+          "volume": 11277405.0,
           "color": "#ef4444"
         }
       ],
@@ -460373,8 +460373,8 @@
       "ticker": "3380.TW",
       "name": "明泰",
       "sector": "通信網路",
-      "close": 31.7,
-      "ema20": 30.96,
+      "close": 31.65,
+      "ema20": 30.95,
       "turnover_ma20": 1.06,
       "trend_up": 1,
       "has_signal": 0,
@@ -462626,8 +462626,8 @@
           "open": 31.5,
           "high": 31.8,
           "low": 31.25,
-          "close": 31.7,
-          "volume": 1511956.0,
+          "close": 31.65,
+          "volume": 1636056.0,
           "color": "#ef4444"
         }
       ],
@@ -463630,7 +463630,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 30.96
+          "value": 30.95
         }
       ]
     },
@@ -463638,8 +463638,8 @@
       "ticker": "3596.TW",
       "name": "智易",
       "sector": "通信網路",
-      "close": 161.5,
-      "ema20": 156.63,
+      "close": 160.5,
+      "ema20": 156.53,
       "turnover_ma20": 1.25,
       "trend_up": 1,
       "has_signal": 0,
@@ -465891,8 +465891,8 @@
           "open": 159.0,
           "high": 161.5,
           "low": 159.0,
-          "close": 161.5,
-          "volume": 1215003.0,
+          "close": 160.5,
+          "volume": 1276217.0,
           "color": "#ef4444"
         }
       ],
@@ -466895,7 +466895,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 156.63
+          "value": 156.53
         }
       ]
     },
@@ -466905,7 +466905,7 @@
       "sector": "半導體",
       "close": 523.0,
       "ema20": 539.84,
-      "turnover_ma20": 49.25,
+      "turnover_ma20": 49.33,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -469157,7 +469157,7 @@
           "high": 530.0,
           "low": 498.5,
           "close": 523.0,
-          "volume": 6675598.0,
+          "volume": 6990307.0,
           "color": "#ef4444"
         }
       ],
@@ -470168,9 +470168,9 @@
       "ticker": "8069.TWO",
       "name": "元太",
       "sector": "光電業",
-      "close": 152.0,
-      "ema20": 147.84,
-      "turnover_ma20": 8.94,
+      "close": 151.5,
+      "ema20": 147.8,
+      "turnover_ma20": 9.0,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -472421,8 +472421,8 @@
           "open": 147.5,
           "high": 152.5,
           "low": 147.0,
-          "close": 152.0,
-          "volume": 7492752.0,
+          "close": 151.5,
+          "volume": 8388059.0,
           "color": "#ef4444"
         }
       ],
@@ -473425,7 +473425,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 147.84
+          "value": 147.8
         }
       ]
     },
@@ -473435,7 +473435,7 @@
       "sector": "半導體",
       "close": 232.0,
       "ema20": 215.53,
-      "turnover_ma20": 93.53,
+      "turnover_ma20": 93.7,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -475687,7 +475687,7 @@
           "high": 233.0,
           "low": 218.5,
           "close": 232.0,
-          "volume": 35085970.0,
+          "volume": 36513649.0,
           "color": "#ef4444"
         }
       ],
@@ -476700,7 +476700,7 @@
       "sector": "電子零組件",
       "close": 290.0,
       "ema20": 230.23,
-      "turnover_ma20": 27.28,
+      "turnover_ma20": 27.29,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -478952,7 +478952,7 @@
           "high": 290.0,
           "low": 282.5,
           "close": 290.0,
-          "volume": 12643363.0,
+          "volume": 12671498.0,
           "color": "#ef4444"
         }
       ],
@@ -479965,7 +479965,7 @@
       "sector": "電子零組件",
       "close": 603.0,
       "ema20": 547.94,
-      "turnover_ma20": 15.18,
+      "turnover_ma20": 15.28,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -482217,7 +482217,7 @@
           "high": 604.0,
           "low": 573.0,
           "close": 603.0,
-          "volume": 4669545.0,
+          "volume": 5000860.0,
           "color": "#ef4444"
         }
       ],
@@ -483228,9 +483228,9 @@
       "ticker": "8299.TWO",
       "name": "群聯",
       "sector": "半導體",
-      "close": 1970.0,
-      "ema20": 2062.31,
-      "turnover_ma20": 62.46,
+      "close": 1965.0,
+      "ema20": 2061.83,
+      "turnover_ma20": 62.67,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -485481,8 +485481,8 @@
           "open": 1980.0,
           "high": 1990.0,
           "low": 1945.0,
-          "close": 1970.0,
-          "volume": 1527893.0,
+          "close": 1965.0,
+          "volume": 1742686.0,
           "color": "#22c55e"
         }
       ],
@@ -486485,7 +486485,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 2062.31
+          "value": 2061.83
         }
       ]
     },
@@ -486495,7 +486495,7 @@
       "sector": "半導體",
       "close": 315.5,
       "ema20": 308.41,
-      "turnover_ma20": 13.17,
+      "turnover_ma20": 13.19,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -488747,7 +488747,7 @@
           "high": 326.5,
           "low": 301.5,
           "close": 315.5,
-          "volume": 3361272.0,
+          "volume": 3526378.0,
           "color": "#22c55e"
         }
       ],
@@ -489758,9 +489758,9 @@
       "ticker": "3042.TW",
       "name": "晶豪科",
       "sector": "半導體",
-      "close": 206.0,
-      "ema20": 201.17,
-      "turnover_ma20": 39.53,
+      "close": 205.0,
+      "ema20": 201.08,
+      "turnover_ma20": 39.58,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -492011,8 +492011,8 @@
           "open": 197.0,
           "high": 209.0,
           "low": 194.0,
-          "close": 206.0,
-          "volume": 9420435.0,
+          "close": 205.0,
+          "volume": 9874515.0,
           "color": "#ef4444"
         }
       ],
@@ -493015,7 +493015,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 201.17
+          "value": 201.08
         }
       ]
     },
@@ -493023,9 +493023,9 @@
       "ticker": "6005.TW",
       "name": "群益證",
       "sector": "金融保險",
-      "close": 32.8,
-      "ema20": 32.19,
-      "turnover_ma20": 2.26,
+      "close": 32.95,
+      "ema20": 32.2,
+      "turnover_ma20": 2.27,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -495276,8 +495276,8 @@
           "open": 32.35,
           "high": 32.95,
           "low": 32.3,
-          "close": 32.8,
-          "volume": 5886487.0,
+          "close": 32.95,
+          "volume": 6605778.0,
           "color": "#ef4444"
         }
       ],
@@ -496280,7 +496280,7 @@
         },
         {
           "time": "2026-10-14",
-          "value": 32.19
+          "value": 32.2
         }
       ]
     }
