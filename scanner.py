@@ -1,266 +1,212 @@
-"""
-scanner.py
-台股價格行為選股系統核心執行排程器
-"""
-
+# ==============================================================================
+# scanner.py
+# 臺股價格行為 H2 突破 ＋ 投信買超濾網 C — GitHub Actions 盤中/盤後自動掃描器
+# ==============================================================================
+import os, sys, time, requests
 from datetime import datetime
-import json
-import math
-import os
-import numpy as np
-import pandas as pd
-import pytz
-
-import config
-from data_fetcher import fetch_history, get_market_status
-from portfolio_tracker import evaluate_holdings
+import numpy as np, pandas as pd, yfinance as yf
 from price_action_engine import PriceActionEngine
-from universe_updater import update_universe
+from taiwan_market_rules import next_tick_price, previous_tick_price
 
+TOTAL_CAPITAL = 1_000_000.0
+MAX_POSITIONS = 3
+ALLOCATION_PER_TRADE = TOTAL_CAPITAL / MAX_POSITIONS
+PORTFOLIO_FILE = "portfolio.csv"
+OUTPUT_HTML = "index.html"
 
-def sanitize_for_json(obj):
-    """
-    全域 JSON 資料清洗函式：
-    將所有 Python/NumPy 的 NaN 與 Infinity 轉為 None (JSON null)
-    """
-    if isinstance(obj, (float, np.floating)):
-        if math.isnan(obj) or math.isinf(obj):
-            return None
-        return float(obj)
-    if isinstance(obj, (int, np.integer)):
-        return int(obj)
-    if isinstance(obj, (bool, np.bool_)):
-        return bool(obj)
-    if isinstance(obj, dict):
-        return {str(k): sanitize_for_json(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [sanitize_for_json(i) for i in obj]
-    return obj
+# 1. 讀取持倉記錄
+if os.path.exists(PORTFOLIO_FILE):
+    portfolio_df = pd.read_csv(PORTFOLIO_FILE)
+    holding_trades = portfolio_df[portfolio_df["status"] == "HOLDING"].copy()
+else:
+    holding_trades = pd.DataFrame()
 
+# 2. 讀取 150 檔成分股
+wl_df = pd.read_csv("watchlist.csv")
+ticker_name_map = dict(zip(wl_df["ticker"], wl_df["name"]))
+universe = wl_df["ticker"].tolist()
 
-def run_scanner():
-    tz = pytz.timezone(config.TIMEZONE)
-    now = datetime.now(tz)
-    scan_date = now.strftime("%Y-%m-%d")
-    scan_time = now.strftime("%H:%M")
+HEADERS = {"User-Agent": "Mozilla/5.0"}
+dfs = {}
 
-    print(f"=== 開始執行台股價格行為掃描 [{scan_date} {scan_time}] ===")
-
-    # 1. 更新觀察池清單
-    update_universe()
-
-    # 2. 重新載入觀察池 metadata
-    config.WATCHLIST_METADATA = config.load_universe()
-    universe_dict = config.WATCHLIST_METADATA
-    tickers = list(universe_dict.keys())
-    print(f"[掃描] 載入觀察池共 {len(tickers)} 檔標的")
-
-    # 3. 抓取大盤指數狀態
-    market_status = get_market_status(config.BENCHMARK_TICKER)
-    t_now = now.time()
-    is_post = (t_now >= datetime.strptime("13:30", "%H:%M").time() or now.weekday() > 4)
-    market_status["market_phase"] = "盤後定盤" if is_post else "盤中即時"
-    print(f"[大盤] 加權指數: {market_status['close']}, EMA20: {market_status['ema20']}, 多頭: {market_status['bullish']} ({market_status['market_phase']})")
-
-    signals = []
-    forming = []
-    universe_list = []
-    current_prices = {}
-
-    # 4. 逐檔抓取行情與分析
-    for idx, ticker in enumerate(tickers, start=1):
-        meta = universe_dict.get(ticker, {})
-        name = meta.get("name", ticker)
-        sector = meta.get("sector", "其他")
-
-        df = fetch_history(ticker, lookback_days=config.DATA_LOOKBACK_DAYS)
-        # 防禦升級 2：溫機資料不足過濾（少於 120 根有效 K 棒之新股/標的一律跳過）
-        if df.empty or len(df) < 120:
-            continue
-
-        latest_bar = df.iloc[-1]
-        
-        # 防禦升級 3：停牌與無交易過濾（最後一根 K 棒日期距離當前超過 6 天視為停牌或無成交）
-        latest_bar_date = pd.to_datetime(latest_bar["Date"])
-        if (now.date() - latest_bar_date.date()).days > 6:
-            continue
-
-        close_price = float(latest_bar["Close"])
-        volume = float(latest_bar["Volume"])
-        current_prices[ticker] = close_price
-
-        # 流動性指標：近 20 個交易日平均日成交金額 (無前視偏誤，嚴格僅計算至當日)
-        turnover_series = df["TradeValue"] if "TradeValue" in df.columns else (df["Close"] * df["Volume"])
-        ma_period = getattr(config, "TURNOVER_MA_PERIOD", 20)
-        min_turnover_ma = getattr(config, "MIN_TURNOVER_MA", 100_000_000)
-        turnover_ma20 = float(turnover_series.rolling(window=ma_period, min_periods=5).mean().iloc[-1]) if len(turnover_series) > 0 else 0.0
-        is_liquid = turnover_ma20 >= min_turnover_ma
-        is_valid_price = (config.MIN_PRICE <= close_price <= config.MAX_PRICE)
-
+def fetch_latest_bars(ticker: str) -> pd.DataFrame:
+    clean_sym = ticker.split(".")[0].strip()
+    candidates = [f"{clean_sym}.TW", f"{clean_sym}.TWO"] if not ticker.startswith("^") else [ticker]
+    for sym in candidates:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=1y"
         try:
-            analyzed_df = PriceActionEngine.analyze_setups(df)
-        except Exception as e:
-            print(f"[分析異常] {ticker} ({name}): {e}")
+            r = requests.get(url, headers=HEADERS, timeout=8)
+            if r.status_code == 200:
+                res = r.json().get("chart", {}).get("result", [])
+                if res:
+                    ts = res[0].get("timestamp", [])
+                    quote = res[0].get("indicators", {}).get("quote", [{}])[0]
+                    rows = []
+                    for i in range(len(ts)):
+                        o, h, l, c = quote.get("open", [])[i], quote.get("high", [])[i], quote.get("low", [])[i], quote.get("close", [])[i]
+                        v = quote.get("volume", [])[i] if quote.get("volume") else 0
+                        if None in (o, h, l, c) or pd.isna(o): continue
+                        dt = datetime.fromtimestamp(ts[i]).strftime("%Y-%m-%d")
+                        rows.append({"Date": dt, "Open": float(o), "High": float(h), "Low": float(l), "Close": float(c), "Volume": int(v or 0)})
+                    if len(rows) >= 120:
+                        return pd.DataFrame(rows).drop_duplicates(subset=["Date"]).sort_values("Date").reset_index(drop=True)
+        except Exception:
             continue
+    try:
+        df = yf.download(ticker, period="1y", interval="1d", progress=False)
+        if not df.empty and len(df) >= 120:
+            df = df.reset_index()
+            df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
+            return df[["Date", "Open", "High", "Low", "Close", "Volume"]].dropna().reset_index(drop=True)
+    except Exception:
+        pass
+    return pd.DataFrame()
 
-        if analyzed_df.empty:
-            continue
+print(">>> 正在同步 150 檔日線行情...")
+for i, tkr in enumerate(universe, 1):
+    df_t = fetch_latest_bars(tkr)
+    if not df_t.empty: dfs[tkr] = df_t
 
-        last_row = analyzed_df.iloc[-1]
-        ema20 = float(last_row.get("EMA_20", 0.0))
-        
-        # 嚴格過濾：台股漲停鎖死標的（當日漲幅大於 9.5% 或接近漲停）避免追高風險
-        prev_close = float(df['Close'].iloc[-2]) if len(df) > 1 else close_price
-        is_limit_up = (close_price >= prev_close * 1.095)
+# 3. 監控個人真實持倉
+holding_rows_html = ""
+total_market_val = 0.0
+total_unrealized_pnl = 0.0
+any_exit_alert = False
 
-        is_signal_h2 = bool(last_row.get("Signal_H2", False)) and is_liquid and is_valid_price and not is_limit_up
-        is_forming = bool(last_row.get("Setup_Forming", False)) and is_liquid and is_valid_price
-        grade = str(last_row.get("Signal_Grade", "NONE"))
-        trend_up = bool(last_row.get("Always_In", "") == "LONG")
+if not holding_trades.empty:
+    for _, row in holding_trades.iterrows():
+        tkr = str(row["ticker"])
+        name = row.get("name", ticker_name_map.get(tkr, tkr))
+        shares = int(row["shares"])
+        entry_p = float(row["entry_price"])
+        df_h = dfs.get(tkr)
+        if df_h is not None and not df_h.empty:
+            df_ind = PriceActionEngine._prepare_indicators(df_h)
+            last_b = df_ind.iloc[-1]
+            cur_p = float(last_b["Close"])
+            ema_20 = float(last_b["EMA_20"])
+            is_broken = bool(cur_p < ema_20)
+            mkt_val = cur_p * shares
+            pnl = (cur_p - entry_p) * shares
+            ret_pct = ((cur_p - entry_p) / entry_p) * 100.0
+            total_market_val += mkt_val
+            total_unrealized_pnl += pnl
+            if is_broken:
+                any_exit_alert = True
+                badge = '<span class="badge bg-danger" style="padding:6px 10px;">🔴 跌破 20EMA（次日開盤市價全數賣出）</span>'
+            else:
+                badge = '<span class="badge bg-success" style="padding:6px 10px;">🟢 持穩 20EMA（繼續持有）</span>'
+            color = "#dc3545" if pnl < 0 else "#198754"
+            holding_rows_html += f"""
+            <tr>
+                <td><strong>{tkr}</strong></td><td>{name}</td><td>{row['entry_date']}</td><td>{shares:,}</td>
+                <td>{entry_p:.2f}</td><td><strong>{cur_p:.2f}</strong></td><td>{ema_20:.2f}</td>
+                <td style="color:{color}; font-weight:bold;">{pnl:+,.0f} 元 ({ret_pct:+.2f}%)</td><td>{badge}</td>
+            </tr>"""
 
-        # 整理最近 1 年 (約 250 根交易日) K 線與 20EMA 供前端渲染
-        valid_ema_df = analyzed_df.dropna(subset=["EMA_20"])
-        recent_bars = valid_ema_df.tail(250) if len(valid_ema_df) >= 250 else valid_ema_df
-        if recent_bars.empty:
-            recent_bars = analyzed_df.tail(250)
-
-        candles = []
-        ema_series = []
-        for _, b in recent_bars.iterrows():
-            d_str = str(b["Date"])
-            op = float(b["Open"])
-            cl = float(b["Close"])
-            vol = float(b["Volume"])
-            candles.append({
-                "time": d_str,
-                "open": round(op, 2),
-                "high": round(float(b["High"]), 2),
-                "low": round(float(b["Low"]), 2),
-                "close": round(cl, 2),
-                "volume": round(vol, 2),
-                "color": '#ef4444' if cl >= op else '#22c55e'
-            })
-            if pd.notna(b.get("EMA_20")):
-                ema_series.append({
-                    "time": d_str,
-                    "value": round(float(b["EMA_20"]), 2),
-                })
-
-        universe_list.append({
-            "ticker": ticker,
-            "name": name,
-            "sector": sector,
-            "close": round(close_price, 2),
-            "ema20": round(ema20, 2),
-            "turnover_ma20": round(turnover_ma20 / 1e8, 2),
-            "trend_up": trend_up,
-            "has_signal": is_signal_h2,
-            "grade": grade,
-            "candles": candles,
-            "ema": ema_series,
+# 4. 掃描明日 H2 突破 ＋ 投信買超訊號
+h2_candidates = []
+for tkr, df in dfs.items():
+    if len(df) < 120: continue
+    df_analyzed = PriceActionEngine.analyze_setups(df)
+    last_r = df_analyzed.iloc[-1]
+    if last_r.get("Signal_H2") == True:
+        h2_candidates.append({
+            "ticker": tkr, "name": ticker_name_map.get(tkr, tkr),
+            "date": str(last_r["Date"]), "grade": str(last_r["Signal_Grade"]),
+            "close_price": float(last_r["Close"]), "trigger_price": float(last_r["Trigger_Price"]),
+            "stop_loss": float(last_r["Stop_Loss"]), "target_price": float(last_r["Target_Price"])
         })
 
-        # 防禦升級 1：盤中即時預覽防護標註
-        is_intraday_preview = (datetime.strptime("09:00", "%H:%M").time() <= t_now <= datetime.strptime("13:30", "%H:%M").time() and now.weekday() <= 4)
-        status_label = "[盤中預覽] (Intraday Preview)" if is_intraday_preview else "[正式定盤]"
+signals_rows_html = ""
+CHIP_API_URL = "https://api.finmindtrade.com/api/v4/data"
+new_signals_count = 0
 
-        # 訊號符合 (H2 突破)
-        if is_signal_h2:
-            trigger_p = float(last_row.get("Trigger_Price", close_price))
-            stop_p = float(last_row.get("Stop_Loss", 0.0))
-            target_p = float(last_row.get("Target_Price", 0.0))
-            risk_pct = float(last_row.get("Risk_Pct", 0.0))
-            net_rr = float(last_row.get("Net_RR", config.R_MULTIPLE))
+for item in h2_candidates:
+    sid = item["ticker"].split(".")[0]
+    sig_dt = item["date"]
+    start_dt = (pd.to_datetime(sig_dt) - pd.Timedelta(days=15)).strftime("%Y-%m-%d")
+    t_net, t_5d = 0, 0
+    try:
+        r = requests.get(CHIP_API_URL, params={"dataset": "TaiwanStockInstitutionalInvestorsBuySell", "data_id": sid, "start_date": start_dt, "end_date": sig_dt}, headers=HEADERS, timeout=6)
+        if r.status_code == 200:
+            data = r.json().get("data", [])
+            if data:
+                df_c = pd.DataFrame(data)
+                df_c["net"] = df_c["buy"] - df_c["sell"]
+                day_c = df_c[df_c["date"] == sig_dt]
+                t_rows = day_c[day_c["name"].str.contains("Investment_Trust", case=False, na=False)]
+                if not t_rows.empty: t_net = t_rows["net"].sum()
+                trust_all = df_c[df_c["name"].str.contains("Investment_Trust", case=False, na=False)]
+                if not trust_all.empty: t_5d = trust_all.tail(5)["net"].sum()
+    except Exception:
+        pass
+    if (t_net > 0 or t_5d > 0):
+        new_signals_count += 1
+        ep = item["trigger_price"]
+        s_shares = max(1000, int((ALLOCATION_PER_TRADE / ep) // 1000 * 1000)) if ep > 0 else 0
+        signals_rows_html += f"""
+        <tr>
+            <td><strong>{item['ticker']}</strong></td><td>{item['name']}</td>
+            <td><span class="badge bg-primary">{item['grade']} 級</span></td>
+            <td>{item['close_price']:.2f}</td><td style="color:#0d6efd; font-weight:bold;">{ep:.2f}</td>
+            <td style="color:#dc3545;">{item['stop_loss']:.2f}</td><td style="color:#198754;">{item['target_price']:.2f}</td>
+            <td>{int(t_net/1000):+d} 張 (5日: {int(t_5d/1000):+d} 張)</td><td><strong>{s_shares:,} 股</strong></td>
+            <td>{int(s_shares * ep):,} 元</td>
+        </tr>"""
 
-            signals.append({
-                "ticker": ticker,
-                "name": name,
-                "sector": sector,
-                "grade": grade,
-                "status_label": status_label,
-                "close": round(close_price, 2),
-                "trigger_price": round(trigger_p, 2),
-                "stop_loss": round(stop_p, 2),
-                "target_price": round(target_p, 2),
-                "risk_pct": round(risk_pct, 2),
-                "net_rr": round(net_rr, 2),
-                "candles": candles,
-                "ema": ema_series,
-            })
-            print(f"  ★ [訊號發出 {status_label}] {ticker} {name} (等級: {grade}) | 觸發: {trigger_p}, 停損: {stop_p}")
+status_bg = "#dc3545" if any_exit_alert else ("#198754" if new_signals_count > 0 else "#6c757d")
+status_title = "🔴 賣出警示" if any_exit_alert else ("🟢 買進訊號" if new_signals_count > 0 else "⚪ 續抱 / 空手觀望")
+status_desc = "持倉中有標的收盤跌破 20EMA，請於明日開盤市價賣出！" if any_exit_alert else (f"偵測到 {new_signals_count} 檔 H2 突破＋投信買超標的！" if new_signals_count > 0 else "持倉狀態健康，今日無新進場標的。")
 
-        # 醞釀中名單
-        elif is_forming:
-            forming.append({
-                "ticker": ticker,
-                "name": name,
-                "sector": sector,
-                "close": round(close_price, 2),
-                "ema20": round(ema20, 2),
-                "candles": candles,
-                "ema": ema_series,
-            })
-            print(f"  ● [醞釀中] {ticker} {name} | 現價: {close_price}, 20EMA: {ema20}")
+# 5. 生成完整 HTML 檔案
+html_content = f"""<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8"><title>臺股價格行為量化儀表板</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {{ background-color: #f8f9fa; font-family: -apple-system, sans-serif; }}
+        .card {{ border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border: none; }}
+        .header-box {{ background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }}
+        .light-box {{ background-color: {status_bg}; color: white; padding: 16px 20px; border-radius: 12px; font-weight: bold; margin-bottom: 20px; }}
+    </style>
+</head>
+<body>
+<div class="container py-4">
+    <div class="header-box d-flex justify-content-between align-items-center">
+        <div><h3 class="mb-1">📊 臺股價格行為選股系統（Al Brooks H2 ＋ 投信濾網）</h3><small>V1 20EMA 趨勢追蹤體系</small></div>
+        <span class="badge bg-light text-dark">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+    </div>
+    <div class="light-box"><h4>{status_title}</h4><div>{status_desc}</div></div>
+    
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="card p-3 text-center"><div class="text-muted">總預算規模</div><h4>{TOTAL_CAPITAL:,.0f} 元</h4></div></div>
+        <div class="col-md-3"><div class="card p-3 text-center"><div class="text-muted">持股市值</div><h4>{total_market_val:,.0f} 元</h4></div></div>
+        <div class="col-md-3"><div class="card p-3 text-center"><div class="text-muted">未實現損益</div><h4 style="color:{'#dc3545' if total_unrealized_pnl < 0 else '#198754'};">{total_unrealized_pnl:+,.0f} 元</h4></div></div>
+        <div class="col-md-3"><div class="card p-3 text-center"><div class="text-muted">持倉檔數</div><h4>{len(holding_trades)} / {MAX_POSITIONS} 檔</h4></div></div>
+    </div>
 
-    # 5. 評估現有持倉與持倉上限警示
-    from portfolio_tracker import load_holdings
-    holdings_raw = load_holdings()
-    portfolio_warning = ""
-    if len(holdings_raw) >= 3:
-        portfolio_warning = "⚠️ 當前持倉已滿 3 檔，建議依紀律不開新倉"
-        print(f"[持倉警示] {portfolio_warning}")
+    <div class="card p-4">
+        <h5 class="text-primary mb-3">🎯 明日掛單進場清單（H2 突破 ＋ 投信買超）</h5>
+        <div class="table-responsive"><table class="table table-hover align-middle">
+            <thead class="table-light"><tr><th>代號</th><th>名稱</th><th>評級</th><th>今日收盤</th><th>掛單進場價</th><th>停損價</th><th>目標價</th><th>投信籌碼</th><th>建議股數</th><th>預估金額</th></tr></thead>
+            <tbody>{signals_rows_html if signals_rows_html else '<tr><td colspan="10" class="text-center py-3 text-muted">今日無符合條件之新訊號</td></tr>'}</tbody>
+        </table></div>
+    </div>
 
-    # 防禦升級 4：訊號排序（A 級優先，B 級次之，同級別按 Net_RR 降冪排序）
-    signals.sort(key=lambda x: (0 if x["grade"] == "A" else 1, -x["net_rr"]))
+    <div class="card p-4">
+        <h5 class="text-success mb-3">📈 個人持倉 20EMA 監控帳本</h5>
+        <div class="table-responsive"><table class="table table-hover align-middle">
+            <thead class="table-light"><tr><th>代號</th><th>名稱</th><th>買進日期</th><th>持有股數</th><th>成本均價</th><th>今日收盤</th><th>20EMA</th><th>浮動損益</th><th>操作指示</th></tr></thead>
+            <tbody>{holding_rows_html if holding_rows_html else '<tr><td colspan="9" class="text-center py-3 text-muted">目前 portfolio.csv 中無持倉記錄</td></tr>'}</tbody>
+        </table></div>
+    </div>
+</div>
+</body>
+</html>"""
 
-    for h in holdings_raw:
-        ht = h.get("ticker")
-        if ht and ht not in current_prices:
-            try:
-                hdf = fetch_history(ht, lookback_days=5)
-                if not hdf.empty:
-                    current_prices[ht] = float(hdf.iloc[-1]["Close"])
-            except Exception as e:
-                print(f"[提示] 持股 {ht} 補抓收盤行情失敗: {e}")
+with open(OUTPUT_HTML, "w", encoding="utf-8") as f:
+    f.write(html_content)
 
-    holdings_status = evaluate_holdings(current_prices)
-
-    # 6. 組裝輸出資料
-    output_payload = {
-        "scan_date": scan_date,
-        "scan_time": scan_time,
-        "market_status": market_status,
-        "signals": signals,
-        "forming": forming,
-        "holdings_status": holdings_status,
-        "universe": universe_list,
-        "portfolio_warning": portfolio_warning,
-    }
-
-    # 7. 全域清洗並寫入 public/scan_result.json
-    clean_payload = sanitize_for_json(output_payload)
-    os.makedirs("public", exist_ok=True)
-    out_path = os.path.join("public", "scan_result.json")
-
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(clean_payload, f, ensure_ascii=False, indent=2)
-
-    with open("scan_result.json", "w", encoding="utf-8") as f:
-        json.dump(clean_payload, f, ensure_ascii=False, indent=2)
-
-    # 8. 終端機摘要
-    print()
-    print("=" * 50)
-    print("【掃描執行摘要】")
-    print(f"掃描時間: {scan_date} {scan_time}")
-    print(f"大盤趨勢: {'多頭格局' if market_status['bullish'] else '防禦警戒'}")
-    print(f"產生買進訊號: {len(signals)} 檔")
-    print(f"醞釀中標的: {len(forming)} 檔")
-    print(f"追蹤持倉標的: {len(holdings_status)} 檔")
-    print(f"結果已成功輸出至: {out_path}")
-    print("=" * 50)
-    print()
-
-
-if __name__ == "__main__":
-    run_scanner()
+print(f"✅ {OUTPUT_HTML} 已成功更新！")
