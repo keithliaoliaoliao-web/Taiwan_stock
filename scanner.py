@@ -337,4 +337,73 @@ def run_scanner():
             "ticker": ticker, "name": name, "sector": sector,
             "close": round(close_price, 2), "ema20": round(ema20, 2),
             "turnover_ma20": round(turnover_ma20 / 1e8, 2),
-            "trend_up": trend_up, "has_signal": is_
+            "trend_up": trend_up, "has_signal": is_signal_h2, "grade": grade,
+            "candles": candles, "ema": ema_series,
+        })
+
+        # 訊號符合 (H2 突破) -> 啟動【任務 G 投信買超濾網 C】驗證
+        if is_signal_h2:
+            chip_info = fetch_institutional_chips(ticker, str(latest_bar["Date"]))
+            if chip_info["trust_buy_pass"]:
+                trigger_p = float(last_row.get("Trigger_Price", close_price))
+                stop_p = float(last_row.get("Stop_Loss", 0.0))
+                target_p = float(last_row.get("Target_Price", 0.0))
+                s_shares = max(1000, int((333_333.0 / trigger_p) // 1000 * 1000)) if trigger_p > 0 else 0
+
+                signals.append({
+                    "ticker": ticker, "name": name, "sector": sector, "grade": grade,
+                    "close": round(close_price, 2), "trigger_price": round(trigger_p, 2),
+                    "stop_loss": round(stop_p, 2), "target_price": round(target_p, 2),
+                    "trust_net_lots": int(chip_info["trust_net"] / 1000),
+                    "trust_5d_lots": int(chip_info["trust_5d"] / 1000),
+                    "suggested_shares": s_shares,
+                    "candles": candles, "ema": ema_series,
+                })
+                print(f"  ★ [正式買訊：H2突破＋投信買超] {ticker} {name} (等級: {grade}) | 掛單進場: {trigger_p}, 停損: {stop_p}")
+            else:
+                print(f"  [濾網排除] {ticker} {name} 雖符合 H2，但投信未買超 (已濾除假突破)")
+
+        elif is_forming:
+            forming.append({
+                "ticker": ticker, "name": name, "sector": sector,
+                "close": round(close_price, 2), "ema20": round(ema20, 2),
+                "candles": candles, "ema": ema_series,
+            })
+
+    # 5. 評估個人真實持倉 (讀取 portfolio.csv)
+    ticker_name_map = {t: universe_dict.get(t, {}).get("name", t) for t in tickers}
+    holdings_data, tot_val, tot_pnl, any_alert = evaluate_portfolio_holdings(current_prices, dfs, ticker_name_map)
+
+    # 6. 組裝與輸出 scan_result.json (供原本的前端使用)
+    signals.sort(key=lambda x: (0 if x["grade"] == "A" else 1, x["trigger_price"]))
+    output_payload = {
+        "scan_date": scan_date,
+        "scan_time": scan_time,
+        "market_status": market_status,
+        "signals": signals,
+        "forming": forming,
+        "holdings_status": holdings_data,
+        "universe": universe_list,
+    }
+    clean_payload = sanitize_for_json(output_payload)
+    os.makedirs("public", exist_ok=True)
+    with open("public/scan_result.json", "w", encoding="utf-8") as f:
+        json.dump(clean_payload, f, ensure_ascii=False, indent=2)
+    with open("scan_result.json", "w", encoding="utf-8") as f:
+        json.dump(clean_payload, f, ensure_ascii=False, indent=2)
+
+    # 7. 生成現代化靜態 public/index.html (含紅綠燈號與個人持倉帳本)
+    generate_static_html(scan_date, scan_time, market_status, signals, forming, holdings_data, tot_val, tot_pnl, any_alert)
+
+    print()
+    print("=" * 50)
+    print("【掃描執行摘要】")
+    print(f"掃描時間: {scan_date} {scan_time}")
+    print(f"產生買進訊號 (H2+投信): {len(signals)} 檔")
+    print(f"個人追蹤持倉: {len(holdings_data)} 檔 (持股市值: {tot_val:,.0f} 元, 損益: {tot_pnl:+,.0f} 元)")
+    print(f"結果已成功輸出至: public/scan_result.json 與 public/index.html")
+    print("=" * 50)
+
+
+if __name__ == "__main__":
+    run_scanner()
