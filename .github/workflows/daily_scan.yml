@@ -2,9 +2,22 @@ name: Taiwan Stock Scanner
 
 on:
   schedule:
-    - cron: '30 7 * * 1-5'      # 台灣時間 15:30 收盤完整掃描 (UTC 07:30)
-    - cron: '*/15 1-5 * * 1-5'  # 台灣時間 09:00-13:30 盤中每 15 分鐘掃描 (UTC 01:00-05:30)
-  workflow_dispatch:            # 支援於 GitHub Actions 介面手動觸發
+    # 1. 盤中排程：週一至週五台灣時間 09:12 ~ 13:42，每 30 分鐘自動執行一次
+    # 避開 00 與 30 分的整點高峰期，改以 12 與 42 分觸發，大幅降低 GitHub 免費隊列塞車機率
+    # 對應 UTC 時間：01:12 ~ 05:42
+    - cron: '12,42 1-5 * * 1-5'
+
+    # 2. 盤後正式定盤掃描：週一至週五台灣時間 15:35
+    # 對應 UTC 時間：07:35
+    - cron: '35 7 * * 1-5'
+
+  # 支援在 GitHub 網頁介面上隨時手動點擊「Run workflow」立即執行
+  workflow_dispatch:
+
+# 防塞車機制：若前一次執行尚未結束，自動取消舊任務，優先執行最新一次掃描
+concurrency:
+  group: stock-scanner-group
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -13,27 +26,21 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
+
       - name: Install dependencies
         run: pip install -r requirements.txt
-        
+
       - name: Run scanner
         run: python scanner.py
-        
+
       - name: Commit scan result
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add public/scan_result.json scan_result.json watchlist.csv
-          git diff --staged --quiet || git commit -m "chore: update scan result"
-          git push
-- name: Commit scan result
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
