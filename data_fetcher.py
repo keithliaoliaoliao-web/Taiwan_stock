@@ -1,7 +1,7 @@
 """
 data_fetcher.py
-統一資料取得模組 (FinMind API 專用版)
-提供日 K 線行情 (TaiwanStockPrice) 與三大法人買賣超 (TaiwanStockInstitutionalInvestorsBuySell) 擷取
+統一資料取得模組 (FinMind API 完整版)
+支援個股歷史 K 線、大盤加權指數 (TAIEX) 狀態判定、三大法人買賣超籌碼
 """
 
 import os
@@ -13,8 +13,11 @@ from datetime import datetime, timedelta
 FINMIND_API_URL = "https://api.finmindtrade.com/api/v4/data"
 
 def clean_ticker(ticker: str) -> str:
-    """去除 .TW、.TWO 等後綴，轉為 FinMind 所需之純代碼 (例如 2330.TW -> 2330)"""
-    return str(ticker).split(".")[0].strip()
+    """去除 .TW、.TWO 等後綴，轉為純代碼 (例如 2330.TW -> 2330)"""
+    t = str(ticker).strip()
+    if t.upper() in ["^TWII", "0000", "TAIEX"]:
+        return "TAIEX"
+    return t.split(".")[0].strip()
 
 def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 10) -> list:
     """發送請求至 FinMind API 並處理基礎容錯重試"""
@@ -34,8 +37,8 @@ def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 10) -> l
 
 def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
     """
-    從 FinMind 取得單一標的歷史日 K 線並轉為 PriceActionEngine 標準 DataFrame
-    欄位需求: Date, Open, High, Low, Close, Volume
+    從 FinMind 取得歷史日 K 線並轉為 PriceActionEngine 標準 DataFrame
+    標準欄位: Date, Open, High, Low, Close, Volume
     """
     stock_id = clean_ticker(ticker)
     end_date = datetime.now().strftime("%Y-%m-%d")
@@ -55,7 +58,6 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
     try:
         df = pd.DataFrame(raw_data)
         
-        # 欄位對齊系統標準名稱
         rename_map = {
             "date": "Date",
             "open": "Open",
@@ -66,7 +68,6 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
         }
         df = df.rename(columns=rename_map)
 
-        # 數值型別轉換與清理
         df["Date"] = pd.to_datetime(df["Date"])
         num_cols = ["Open", "High", "Low", "Close", "Volume"]
         for col in num_cols:
@@ -81,14 +82,50 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
         print(f"[{ticker}] 轉換日K線資料失敗: {e}")
         return pd.DataFrame()
 
+def get_market_status(lookback_days: int = 120) -> dict:
+    """
+    評估大盤加權指數 (TAIEX) 狀態與 20EMA
+    回傳字典: {bullish: bool, close: float, ema20: float, market_phase: str}
+    供 scanner.py 與前端儀表板顯示
+    """
+    df = fetch_history("TAIEX", lookback_days=lookback_days)
+    
+    # 若 TAIEX 暫時無資料，改用台灣 50 (0050) 替代判定
+    if df.empty or len(df) < 25:
+        df = fetch_history("0050", lookback_days=lookback_days)
+
+    if df.empty or len(df) < 20:
+        return {
+            "bullish": True,
+            "close": 0.0,
+            "ema20": 0.0,
+            "market_phase": "盤後定盤"
+        }
+
+    # 計算大盤 20EMA
+    df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
+    last_row = df.iloc[-1]
+    close_val = round(float(last_row["Close"]), 2)
+    ema20_val = round(float(last_row["EMA_20"]), 2)
+    is_bullish = bool(close_val >= ema20_val)
+
+    now = datetime.now()
+    # 台灣時間 13:45 之後視為收盤定盤
+    phase = "盤後定盤" if (now.hour > 13 or (now.hour == 13 and now.minute >= 45)) else "盤中即時"
+
+    return {
+        "bullish": is_bullish,
+        "close": close_val,
+        "ema20": ema20_val,
+        "market_phase": phase
+    }
+
 def fetch_batch_history(tickers: list, lookback_days: int = 300, delay_sec: float = 0.05) -> dict:
     """
-    批次抓取觀察池歷史日 K
-    回傳字典: {ticker: pd.DataFrame}
+    批次抓取標的歷史日 K
     """
     results = {}
-    total = len(tickers)
-    for idx, t in enumerate(tickers, start=1):
+    for t in tickers:
         df = fetch_history(t, lookback_days=lookback_days)
         if not df.empty:
             results[t] = df
@@ -98,8 +135,7 @@ def fetch_batch_history(tickers: list, lookback_days: int = 300, delay_sec: floa
 
 def fetch_institutional_chips(ticker: str, days: int = 15) -> dict:
     """
-    取得標的三大法人籌碼 (專案任務 G 投信買超濾網 C 專用)
-    回傳當日淨買超、5日累計買超與濾網是否合格
+    取得三大法人籌碼 (專案任務 G 投信買超濾網 C 專用)
     """
     stock_id = clean_ticker(ticker)
     end_date = datetime.now().strftime("%Y-%m-%d")
@@ -130,18 +166,14 @@ def fetch_institutional_chips(ticker: str, days: int = 15) -> dict:
 
         df["net"] = df["buy"] - df["sell"]
 
-        # 篩選投信 (Investment Trust)
         trust_df = df[df["name"].str.contains("Investment_Trust|投信", case=False, na=False)].copy()
         if not trust_df.empty:
             trust_df = trust_df.sort_values("date").reset_index(drop=True)
-            
-            # 轉換為張數 (股數 / 1000)
             today_net = int(trust_df.iloc[-1]["net"] // 1000)
             net_5d = int(trust_df.tail(5)["net"].sum() // 1000)
 
             result["trust_net_today"] = today_net
             result["trust_net_5d"] = net_5d
-            # 任務 G 濾網 C: 當日淨買超 > 0 或 5日累計淨買超 > 0
             result["pass_trust_filter"] = bool(today_net > 0 or net_5d > 0)
             result["detail"] = trust_df[["date", "buy", "sell", "net"]].to_dict(orient="records")
 
@@ -152,7 +184,7 @@ def fetch_institutional_chips(ticker: str, days: int = 15) -> dict:
 
 def get_latest_quote(ticker: str) -> dict:
     """
-    抓取標的最新單日行情
+    抓取最新單日報價
     """
     df = fetch_history(ticker, lookback_days=10)
     if df.empty:
