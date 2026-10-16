@@ -1,7 +1,7 @@
 """
 data_fetcher.py
-統一資料取得模組 (FinMind API 完整版)
-支援個股歷史 K 線、大盤加權指數 (TAIEX) 狀態判定、三大法人買賣超籌碼
+統一資料取得模組 (FinMind API 完整相容版)
+完全相容 scanner.py / portfolio_tracker.py 既有函式簽名與參數型別
 """
 
 import os
@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 FINMIND_API_URL = "https://api.finmindtrade.com/api/v4/data"
 
 def clean_ticker(ticker: str) -> str:
-    """去除 .TW、.TWO 等後綴，轉為純代碼 (例如 2330.TW -> 2330)"""
+    """去除 .TW、.TWO、^TWII 等後綴，轉為 FinMind 所需代碼"""
     t = str(ticker).strip()
     if t.upper() in ["^TWII", "0000", "TAIEX"]:
         return "TAIEX"
@@ -41,8 +41,15 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
     標準欄位: Date, Open, High, Low, Close, Volume
     """
     stock_id = clean_ticker(ticker)
+    
+    # 型別防呆：若傳入 str，安全轉為 int
+    try:
+        days = int(lookback_days)
+    except (ValueError, TypeError):
+        days = 300
+
     end_date = datetime.now().strftime("%Y-%m-%d")
-    start_date = (datetime.now() - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
 
     params = {
         "dataset": "TaiwanStockPrice",
@@ -82,15 +89,25 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
         print(f"[{ticker}] 轉換日K線資料失敗: {e}")
         return pd.DataFrame()
 
-def get_market_status(lookback_days: int = 120) -> dict:
+def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
     """
-    評估大盤加權指數 (TAIEX) 狀態與 20EMA
-    回傳字典: {bullish: bool, close: float, ema20: float, market_phase: str}
-    供 scanner.py 與前端儀表板顯示
+    評估大盤加權指數狀態與 20EMA
+    參數支援 get_market_status(ticker) 或 get_market_status(lookback_days)
     """
-    df = fetch_history("TAIEX", lookback_days=lookback_days)
+    # 參數型別自動識別相容
+    if isinstance(ticker, int):
+        lookback_days = ticker
+        target_ticker = "TAIEX"
+    else:
+        target_ticker = clean_ticker(ticker)
+        try:
+            lookback_days = int(lookback_days)
+        except (ValueError, TypeError):
+            lookback_days = 120
+
+    df = fetch_history(target_ticker, lookback_days=lookback_days)
     
-    # 若 TAIEX 暫時無資料，改用台灣 50 (0050) 替代判定
+    # 若 TAIEX 暫時無資料，改用 0050 替代判定
     if df.empty or len(df) < 25:
         df = fetch_history("0050", lookback_days=lookback_days)
 
@@ -121,9 +138,7 @@ def get_market_status(lookback_days: int = 120) -> dict:
     }
 
 def fetch_batch_history(tickers: list, lookback_days: int = 300, delay_sec: float = 0.05) -> dict:
-    """
-    批次抓取標的歷史日 K
-    """
+    """批次抓取標的歷史日 K"""
     results = {}
     for t in tickers:
         df = fetch_history(t, lookback_days=lookback_days)
@@ -133,70 +148,15 @@ def fetch_batch_history(tickers: list, lookback_days: int = 300, delay_sec: floa
             time.sleep(delay_sec)
     return results
 
-def fetch_institutional_chips(ticker: str, days: int = 15) -> dict:
+def fetch_institutional_investors(ticker: str, days: int = 15) -> dict:
     """
-    取得三大法人籌碼 (專案任務 G 投信買超濾網 C 專用)
+    相容原 scanner.py 函式命名：取得三大法人籌碼 (投信買超濾網 C)
     """
     stock_id = clean_ticker(ticker)
-    end_date = datetime.now().strftime("%Y-%m-%d")
-    start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-
-    params = {
-        "dataset": "TaiwanStockInstitutionalInvestorsBuySell",
-        "data_id": stock_id,
-        "start_date": start_date,
-        "end_date": end_date
-    }
-
-    result = {
-        "trust_net_today": 0,
-        "trust_net_5d": 0,
-        "pass_trust_filter": False,
-        "detail": []
-    }
-
-    raw_data = _request_finmind(params)
-    if not raw_data:
-        return result
-
-    try:
-        df = pd.DataFrame(raw_data)
-        if df.empty:
-            return result
-
-        df["net"] = df["buy"] - df["sell"]
-
-        trust_df = df[df["name"].str.contains("Investment_Trust|投信", case=False, na=False)].copy()
-        if not trust_df.empty:
-            trust_df = trust_df.sort_values("date").reset_index(drop=True)
-            today_net = int(trust_df.iloc[-1]["net"] // 1000)
-            net_5d = int(trust_df.tail(5)["net"].sum() // 1000)
-
-            result["trust_net_today"] = today_net
-            result["trust_net_5d"] = net_5d
-            result["pass_trust_filter"] = bool(today_net > 0 or net_5d > 0)
-            result["detail"] = trust_df[["date", "buy", "sell", "net"]].to_dict(orient="records")
-
-    except Exception as e:
-        print(f"[{ticker}] 抓取投信籌碼失敗: {e}")
-
-    return result
-
-def get_latest_quote(ticker: str) -> dict:
-    """
-    抓取最新單日報價
-    """
-    df = fetch_history(ticker, lookback_days=10)
-    if df.empty:
-        return {}
     
-    last = df.iloc[-1]
-    return {
-        "ticker": ticker,
-        "date": last["Date"].strftime("%Y-%m-%d"),
-        "open": float(last["Open"]),
-        "high": float(last["High"]),
-        "low": float(last["Low"]),
-        "close": float(last["Close"]),
-        "volume": float(last["Volume"])
-    }
+    try:
+        days = int(days)
+    except (ValueError, TypeError):
+        days = 15
+
+    end_date = datetime.now
