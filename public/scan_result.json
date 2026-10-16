@@ -1,11 +1,11 @@
 {
   "scan_date": "2026-10-16",
-  "scan_time": "09:10",
+  "scan_time": "13:47",
   "market_status": {
     "bullish": 0,
     "close": 46969.87,
     "ema20": 48079.8,
-    "market_phase": "盤中即時"
+    "market_phase": "盤後定盤"
   },
   "signals": [],
   "forming": [
