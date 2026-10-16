@@ -1,245 +1,170 @@
 """
 data_fetcher.py
-台股即時與歷史真實行情自動抓取模組 (支援 TWSE 官方 OpenAPI 與 Yahoo Finance 雙通道備援)
-嚴格禁止任何隨機或假造數據，確保 100% 真實市場數據。
+統一資料取得模組 (FinMind API 專用版)
+提供日 K 線行情 (TaiwanStockPrice) 與三大法人買賣超 (TaiwanStockInstitutionalInvestorsBuySell) 擷取
 """
 
+import os
 import time
-import json
-import logging
-from datetime import datetime, timedelta
-import pandas as pd
-import numpy as np
 import requests
-import config
+import pandas as pd
+from datetime import datetime, timedelta
 
-try:
-    import yfinance as yf
-except ImportError:
-    yf = None
+FINMIND_API_URL = "https://api.finmindtrade.com/api/v4/data"
 
-logger = logging.getLogger("data_fetcher")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-}
-
-
-def format_ticker_symbol(ticker: str) -> str:
-    """
-    格式化台股代號：
-    大盤指數 (如 ^TWII) 保持原樣；已有後綴保持原樣；純代號補上 .TW
-    """
-    t = str(ticker).strip()
-    if t.startswith("^"):
-        return t
-    if t.endswith(".TW") or t.endswith(".TWO"):
-        return t
-    return f"{t}.TW"
-
-
-def _clean_symbol(ticker: str) -> str:
-    """去除 .TW / .TWO 後綴取得純代號 (例如 3324.TWO -> 3324, 2330.TW -> 2330)"""
+def clean_ticker(ticker: str) -> str:
+    """去除 .TW、.TWO 等後綴，轉為 FinMind 所需之純代碼 (例如 2330.TW -> 2330)"""
     return str(ticker).split(".")[0].strip()
 
-
-def fetch_history_yahoo_chart_api(ticker: str, range_str: str = "2y") -> pd.DataFrame:
-    """
-    透過 Yahoo Finance 官方輕量 Chart API 抓取歷史日線。
-    自動適配上市 (.TW) 與上櫃 (.TWO)，互為備援重試。
-    """
-    clean_sym = _clean_symbol(ticker)
-    if ticker.startswith("^"):
-        candidates = [ticker]
-    elif ticker.endswith(".TWO"):
-        candidates = [f"{clean_sym}.TWO", f"{clean_sym}.TW"]
-    else:
-        # 先試 .TW，若 404 (上櫃股) 自動切換 .TWO
-        candidates = [f"{clean_sym}.TW", f"{clean_sym}.TWO"]
-    
-    for symbol in candidates:
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={range_str}"
+def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 10) -> list:
+    """發送請求至 FinMind API 並處理基礎容錯重試"""
+    headers = {"User-Agent": "Mozilla/5.0"}
+    for attempt in range(max_retries):
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=10)
-            if resp.status_code != 200:
-                continue
-                
-            data = resp.json()
-            result = data.get("chart", {}).get("result")
-            if not result or len(result) == 0:
-                continue
-                
-            chart_data = result[0]
-            timestamps = chart_data.get("timestamp", [])
-            quote = chart_data.get("indicators", {}).get("quote", [{}])[0]
-            
-            opens = quote.get("open", [])
-            highs = quote.get("high", [])
-            lows = quote.get("low", [])
-            closes = quote.get("close", [])
-            volumes = quote.get("volume", [])
-            
-            rows = []
-            for i in range(len(timestamps)):
-                ts = timestamps[i]
-                o = opens[i] if i < len(opens) else None
-                h = highs[i] if i < len(highs) else None
-                l = lows[i] if i < len(lows) else None
-                c = closes[i] if i < len(closes) else None
-                v = volumes[i] if i < len(volumes) else 0
-                
-                if None in (o, h, l, c) or pd.isna(o) or pd.isna(h) or pd.isna(l) or pd.isna(c):
-                    continue
-                    
-                dt_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
-                rows.append({
-                    "Date": dt_str,
-                    "Open": float(o),
-                    "High": float(h),
-                    "Low": float(l),
-                    "Close": float(c),
-                    "Volume": int(v or 0)
-                })
-                
-            if len(rows) >= config.EMA_PERIOD:
-                df = pd.DataFrame(rows).drop_duplicates(subset=["Date"]).sort_values("Date").reset_index(drop=True)
-                return df
+            res = requests.get(FINMIND_API_URL, params=params, headers=headers, timeout=timeout)
+            if res.status_code == 200:
+                payload = res.json()
+                if payload.get("status") == 200 or "data" in payload:
+                    return payload.get("data", [])
+            elif res.status_code == 429:
+                time.sleep(1.0 * (attempt + 1))
         except Exception:
-            continue
-            
-    return pd.DataFrame()
+            time.sleep(0.5 * (attempt + 1))
+    return []
 
+def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
+    """
+    從 FinMind 取得單一標的歷史日 K 線並轉為 PriceActionEngine 標準 DataFrame
+    欄位需求: Date, Open, High, Low, Close, Volume
+    """
+    stock_id = clean_ticker(ticker)
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
 
-def fetch_history_yfinance_fallback(ticker: str, lookback_days: int = config.DATA_LOOKBACK_DAYS) -> pd.DataFrame:
-    """
-    備援：透過標準 yfinance 抓取日線，支援 .TW 與 .TWO 雙市場自動切換
-    """
-    if yf is None:
+    params = {
+        "dataset": "TaiwanStockPrice",
+        "data_id": stock_id,
+        "start_date": start_date,
+        "end_date": end_date
+    }
+
+    raw_data = _request_finmind(params)
+    if not raw_data:
         return pd.DataFrame()
-        
-    clean_sym = _clean_symbol(ticker)
-    if ticker.startswith("^"):
-        candidates = [ticker]
-    elif ticker.endswith(".TWO"):
-        candidates = [f"{clean_sym}.TWO", f"{clean_sym}.TW"]
-    else:
-        candidates = [f"{clean_sym}.TW", f"{clean_sym}.TWO"]
-        
-    for symbol in candidates:
-        try:
-            stock = yf.Ticker(symbol)
-            fetch_days = max(lookback_days + 60, 380)
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=fetch_days)
-            
-            df = stock.history(
-                start=start_date.strftime("%Y-%m-%d"),
-                end=(end_date + timedelta(days=1)).strftime("%Y-%m-%d"),
-                interval="1d",
-                auto_adjust=False,
-            )
-            
-            if df.empty or len(df) < config.EMA_PERIOD:
-                continue
-                
-            df = df.reset_index()
-            if "Date" in df.columns:
-                df["Date"] = pd.to_datetime(df["Date"]).dt.tz_localize(None).dt.strftime("%Y-%m-%d")
-            elif "Datetime" in df.columns:
-                df["Date"] = pd.to_datetime(df["Datetime"]).dt.tz_localize(None).dt.strftime("%Y-%m-%d")
-                
-            required_cols = ["Open", "High", "Low", "Close", "Volume"]
-            for col in required_cols:
-                if col not in df.columns:
-                    return pd.DataFrame()
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-                
-            df = df.dropna(subset=["Open", "High", "Low", "Close"]).sort_values("Date").reset_index(drop=True)
-            if len(df) >= config.EMA_PERIOD:
-                return df
-        except Exception:
-            continue
-            
-    return pd.DataFrame()
 
-
-def fetch_history(ticker: str, lookback_days: int = config.DATA_LOOKBACK_DAYS) -> pd.DataFrame:
-    """
-    整合抓取入口：優先使用直連 Chart API，失敗自動退回 yfinance 備援。
-    嚴格禁止生成任何假數據。
-    """
-    range_s = "5y" if lookback_days > 400 else "2y"
-    # 1. 優先直連 Yahoo Chart API (快速、穩定、不易觸發 429)
-    df = fetch_history_yahoo_chart_api(ticker, range_str=range_s)
-    if not df.empty and len(df) >= config.EMA_PERIOD:
-        return df
-        
-    # 2. 備援 yfinance
-    df = fetch_history_yfinance_fallback(ticker, lookback_days=lookback_days)
-    if not df.empty and len(df) >= config.EMA_PERIOD:
-        return df
-        
-    logger.warning(f"[即時抓取] 標的 {ticker} 暫時無法自線上取得足夠日 K 資料")
-    return pd.DataFrame()
-
-
-def fetch_twse_all_today() -> dict:
-    """
-    自臺灣證券交易所 (TWSE) 官方 OpenAPI 一次取得今日所有上市股票的最新收盤行情
-    API: https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL
-    回傳: { '2330': {'open': ..., 'high': ..., 'low': ..., 'close': ..., 'volume': ...}, ... }
-    """
-    url = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
-    quotes = {}
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=12)
-        if resp.status_code == 200:
-            data = resp.json()
-            for item in data:
-                code = str(item.get("Code", "")).strip()
-                try:
-                    c = float(str(item.get("ClosingPrice", "")).replace(",", ""))
-                    o = float(str(item.get("OpeningPrice", "")).replace(",", ""))
-                    h = float(str(item.get("HighestPrice", "")).replace(",", ""))
-                    l = float(str(item.get("LowestPrice", "")).replace(",", ""))
-                    v = int(str(item.get("TradeVolume", "")).replace(",", ""))
-                    quotes[code] = {
-                        "open": o,
-                        "high": h,
-                        "low": l,
-                        "close": c,
-                        "volume": v
-                    }
-                except (ValueError, TypeError):
-                    continue
-            logger.info(f"成功自 TWSE OpenAPI 取得 {len(quotes)} 檔今日官方即時/收盤行情")
-    except Exception as e:
-        logger.debug(f"TWSE OpenAPI 抓取失敗: {e}")
-    return quotes
-
-
-def get_market_status(benchmark_ticker: str = config.BENCHMARK_TICKER) -> dict:
-    """
-    評估大盤加權指數狀態 (收盤價與 20 EMA)
-    """
-    df = fetch_history(benchmark_ticker, lookback_days=60)
-    if df.empty or len(df) < config.EMA_PERIOD:
-        return {
-            "close": 23000.0,
-            "ema20": 22800.0,
-            "bullish": True,
+        df = pd.DataFrame(raw_data)
+        
+        # 欄位對齊系統標準名稱
+        rename_map = {
+            "date": "Date",
+            "open": "Open",
+            "max": "High",
+            "min": "Low",
+            "close": "Close",
+            "Trading_Volume": "Volume"
         }
+        df = df.rename(columns=rename_map)
 
-    ema_series = df["Close"].ewm(span=config.EMA_PERIOD, adjust=False).mean()
-    latest_close = float(df["Close"].iloc[-1])
-    latest_ema = float(ema_series.iloc[-1])
-    is_bullish = bool(latest_close >= latest_ema)
+        # 數值型別轉換與清理
+        df["Date"] = pd.to_datetime(df["Date"])
+        num_cols = ["Open", "High", "Low", "Close", "Volume"]
+        for col in num_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
 
+        df = df.dropna(subset=["Close", "Open", "High", "Low"])
+        df = df.sort_values("Date").reset_index(drop=True)
+        return df
+
+    except Exception as e:
+        print(f"[{ticker}] 轉換日K線資料失敗: {e}")
+        return pd.DataFrame()
+
+def fetch_batch_history(tickers: list, lookback_days: int = 300, delay_sec: float = 0.05) -> dict:
+    """
+    批次抓取觀察池歷史日 K
+    回傳字典: {ticker: pd.DataFrame}
+    """
+    results = {}
+    total = len(tickers)
+    for idx, t in enumerate(tickers, start=1):
+        df = fetch_history(t, lookback_days=lookback_days)
+        if not df.empty:
+            results[t] = df
+        if delay_sec > 0:
+            time.sleep(delay_sec)
+    return results
+
+def fetch_institutional_chips(ticker: str, days: int = 15) -> dict:
+    """
+    取得標的三大法人籌碼 (專案任務 G 投信買超濾網 C 專用)
+    回傳當日淨買超、5日累計買超與濾網是否合格
+    """
+    stock_id = clean_ticker(ticker)
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+    params = {
+        "dataset": "TaiwanStockInstitutionalInvestorsBuySell",
+        "data_id": stock_id,
+        "start_date": start_date,
+        "end_date": end_date
+    }
+
+    result = {
+        "trust_net_today": 0,
+        "trust_net_5d": 0,
+        "pass_trust_filter": False,
+        "detail": []
+    }
+
+    raw_data = _request_finmind(params)
+    if not raw_data:
+        return result
+
+    try:
+        df = pd.DataFrame(raw_data)
+        if df.empty:
+            return result
+
+        df["net"] = df["buy"] - df["sell"]
+
+        # 篩選投信 (Investment Trust)
+        trust_df = df[df["name"].str.contains("Investment_Trust|投信", case=False, na=False)].copy()
+        if not trust_df.empty:
+            trust_df = trust_df.sort_values("date").reset_index(drop=True)
+            
+            # 轉換為張數 (股數 / 1000)
+            today_net = int(trust_df.iloc[-1]["net"] // 1000)
+            net_5d = int(trust_df.tail(5)["net"].sum() // 1000)
+
+            result["trust_net_today"] = today_net
+            result["trust_net_5d"] = net_5d
+            # 任務 G 濾網 C: 當日淨買超 > 0 或 5日累計淨買超 > 0
+            result["pass_trust_filter"] = bool(today_net > 0 or net_5d > 0)
+            result["detail"] = trust_df[["date", "buy", "sell", "net"]].to_dict(orient="records")
+
+    except Exception as e:
+        print(f"[{ticker}] 抓取投信籌碼失敗: {e}")
+
+    return result
+
+def get_latest_quote(ticker: str) -> dict:
+    """
+    抓取標的最新單日行情
+    """
+    df = fetch_history(ticker, lookback_days=10)
+    if df.empty:
+        return {}
+    
+    last = df.iloc[-1]
     return {
-        "close": round(latest_close, 2),
-        "ema20": round(latest_ema, 2),
-        "bullish": is_bullish,
+        "ticker": ticker,
+        "date": last["Date"].strftime("%Y-%m-%d"),
+        "open": float(last["Open"]),
+        "high": float(last["High"]),
+        "low": float(last["Low"]),
+        "close": float(last["Close"]),
+        "volume": float(last["Volume"])
     }
