@@ -27,12 +27,18 @@ except Exception:
 
 def get_tw_tick(price: float) -> float:
     """台股法定升降單位"""
-    if price < 10.0: return 0.01
-    elif price < 50.0: return 0.05
-    elif price < 100.0: return 0.1
-    elif price < 500.0: return 0.5
-    elif price < 1000.0: return 1.0
-    else: return 5.0
+    if price < 10.0:
+        return 0.01
+    elif price < 50.0:
+        return 0.05
+    elif price < 100.0:
+        return 0.1
+    elif price < 500.0:
+        return 0.5
+    elif price < 1000.0:
+        return 1.0
+    else:
+        return 5.0
 
 
 def get_tick_down(price: float) -> float:
@@ -55,9 +61,12 @@ def get_universe_tickers() -> list:
         if callable(f):
             try:
                 res = f()
-                if isinstance(res, dict): return list(res.keys())
-                if isinstance(res, (list, tuple)): return [str(x) for x in res]
-            except Exception: pass
+                if isinstance(res, dict):
+                    return list(res.keys())
+                if isinstance(res, (list, tuple)):
+                    return [str(x) for x in res]
+            except Exception:
+                pass
     return []
 
 
@@ -192,12 +201,12 @@ def calc_stats(r_series: pd.Series) -> dict:
     losses = r_series[r_series <= 0]
     win_rate = (len(wins) / n) * 100
     median_r = r_series.median()
-    
+
     # 剔除最大 1%
     trim_k = max(1, int(np.ceil(n * 0.01)))
     trimmed = r_series.sort_values().iloc[:-trim_k] if n > 10 else r_series
     trim1_mean = trimmed.mean()
-    
+
     pf = (wins.sum() / abs(losses.sum())) if len(losses) > 0 and losses.sum() != 0 else 99.9
     mean_r = r_series.mean()
 
@@ -243,7 +252,8 @@ def main():
                     pdf = PriceActionEngine.analyze_setups(df.copy())
                     if "Signal_H2" in pdf.columns:
                         df["Signal_H2_Orig"] = pdf["Signal_H2"].fillna(False).astype(bool)
-                except Exception: pass
+                except Exception:
+                    pass
             stock_map[t] = df
         time.sleep(0.18)
 
@@ -285,14 +295,19 @@ def main():
     md.append(f"- **C 組 vs A 組 (任務K - H2)**：差值 {df_c['net_r'].mean() - df_a['net_r'].mean():+.3f}R，95% CI [{ci_c_minus_a[0]:+.3f}R, {ci_c_minus_a[1]:+.3f}R]")
     md.append(f"- **C 組 vs B 組 (任務K - 任意棒)**：差值 {df_c['net_r'].mean() - df_b['net_r'].mean():+.3f}R，95% CI [{ci_c_minus_b[0]:+.3f}R, {ci_c_minus_b[1]:+.3f}R]\n")
 
-md.append("\n## 四、 各組最大 5 筆獲利交易")
+    md.append("## 四、 各組最大 5 筆獲利交易")
     for name, df_sub in [("A組 (H2)", df_a), ("B組 (順勢任意棒)", df_b), ("C組 (任務K)", df_c)]:
         md.append(f"### {name}")
         top5 = df_sub.sort_values("net_r", ascending=False).head(5)
         for _, r in top5.iterrows():
-            md.append(
-                f"- {r['ticker']} | 進場: {r['entry_date']} (${r['entry_price']}) | 出場: {r['exit_date']} (${r['exit_price']}) | 原因: {r['exit_reason']} | **{r['net_r']:+.2f}R**"
-            )
+            ticker_val = r['ticker']
+            e_date = r['entry_date']
+            e_p = r['entry_price']
+            x_date = r['exit_date']
+            x_p = r['exit_price']
+            x_reason = r['exit_reason']
+            nr = r['net_r']
+            md.append(f"- {ticker_val} | 進場: {e_date} (${e_p}) \vert{} 出場: {x_date} (${x_p}) | 原因: {x_reason} | **{nr:+.2f}R**")
 
     md.append("\n## 五、 回測核心邏輯程式碼原文")
     md.append("```python")
