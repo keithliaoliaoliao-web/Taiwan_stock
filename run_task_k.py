@@ -285,12 +285,14 @@ def main():
     md.append(f"- **C 組 vs A 組 (任務K - H2)**：差值 {df_c['net_r'].mean() - df_a['net_r'].mean():+.3f}R，95% CI [{ci_c_minus_a[0]:+.3f}R, {ci_c_minus_a[1]:+.3f}R]")
     md.append(f"- **C 組 vs B 組 (任務K - 任意棒)**：差值 {df_c['net_r'].mean() - df_b['net_r'].mean():+.3f}R，95% CI [{ci_c_minus_b[0]:+.3f}R, {ci_c_minus_b[1]:+.3f}R]\n")
 
-    md.append("## 四、 各組最大 5 筆獲利交易")
+md.append("\n## 四、 各組最大 5 筆獲利交易")
     for name, df_sub in [("A組 (H2)", df_a), ("B組 (順勢任意棒)", df_b), ("C組 (任務K)", df_c)]:
         md.append(f"### {name}")
         top5 = df_sub.sort_values("net_r", ascending=False).head(5)
         for _, r in top5.iterrows():
-            md.append(f"- {r['ticker']} | 進場: {r['entry_date']} (${r['entry_price']}) \vert{} 出場: {r['exit_date']} (${r['exit_price']}) | 原因: {r['exit_reason']} | **{r['net_r']:+.2f}R**")
+            md.append(
+                f"- {r['ticker']} | 進場: {r['entry_date']} (${r['entry_price']}) | 出場: {r['exit_date']} (${r['exit_price']}) | 原因: {r['exit_reason']} | **{r['net_r']:+.2f}R**"
+            )
 
     md.append("\n## 五、 回測核心邏輯程式碼原文")
     md.append("```python")
