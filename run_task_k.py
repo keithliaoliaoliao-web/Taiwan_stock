@@ -1,13 +1,11 @@
 """
 run_task_k.py
-嚴格落實 Claude 任務 K 規格：
-- 本次不做：廣度濾網、1%以損定量、固定1/3資金、資金曲線/複利模擬、投信濾網
-- 評估方式：每筆獨立交易計 1R，無資金限制，同標的持倉中不重複進場
-- 三組對照：
-  Group A: H2 全條件 (剔除緯創 3231)
-  Group B: 順勢任意棒 (Close >= 20EMA)
-  Group C: 任務 K (Close >= 20EMA 且 High > 前20日最高價)
-- 輸出：task_k_trades.csv 與 task_k_report.md
+嚴格落實 Claude 任務 K 最終修訂規格：
+1. 資料清洗軌跡：在計算 20EMA/前20日高之前，先抓出 Open<=0, Close<=0, Vol=0，產出清洗前後稽核清單
+2. 基準期精確切分：2022-04 基準期 vs 2021 全期間
+3. 雙版本輸出：(a) 各訊號獨立版 (核對 416訊號/281成交/+0.123R) (b) 不重複進場版
+4. 跳空停損全月份檢核：所有月份跳空停損統計與 Top 10 跌破停損詳表
+5. 未平倉處理：期末未達 120 日者標為 OPEN，排除於績效統計
 """
 
 import os
@@ -70,26 +68,76 @@ def get_universe_tickers() -> list:
     return []
 
 
-def simulate_group_trades(stock_map: dict, group_name: str) -> list:
+def clean_stock_data(df: pd.DataFrame, ticker: str) -> tuple:
+    """
+    資料清洗層 (在指標計算前執行)：
+    - 全零/停牌棒 (Open<=0 and Close<=0, 或 Volume==0)：整根丟棄
+    - 缺開盤價棒 (Open<=0 但 Close>0)：以前一日 Close 補值
+    回傳：(清洗後df, 清洗稽核日誌列表)
+    """
+    df = df.copy().sort_values("Date").reset_index(drop=True)
+    audit_logs = []
+    cleaned_rows = []
+
+    for idx, row in df.iterrows():
+        o = float(row.get("Open", 0))
+        h = float(row.get("High", 0))
+        l = float(row.get("Low", 0))
+        c = float(row.get("Close", 0))
+        v = float(row.get("Volume", 0))
+        d_str = str(row["Date"])[:10]
+
+        # 1. 全零或停牌
+        if (o <= 0 and c <= 0) or v <= 0:
+            audit_logs.append({
+                "ticker": ticker,
+                "date": d_str,
+                "action": "DROP_ZERO_BAR",
+                "raw": f"O:{o}, H:{h}, L:{l}, C:{c}, V:{v}",
+                "detail": "停牌或全零棒丟棄"
+            })
+            continue
+
+        # 2. 開盤價缺失但有成交
+        if o <= 0 and c > 0:
+            prev_c = cleaned_rows[-1]["Close"] if cleaned_rows else c
+            row["Open"] = prev_c
+            audit_logs.append({
+                "ticker": ticker,
+                "date": d_str,
+                "action": "IMPUTE_OPEN",
+                "raw": f"O:{o}, H:{h}, L:{l}, C:{c}",
+                "detail": f"Open<=0，以前日收盤 {prev_c} 補值"
+            })
+
+        cleaned_rows.append(row)
+
+    clean_df = pd.DataFrame(cleaned_rows).reset_index(drop=True)
+    return clean_df, audit_logs
+
+
+def simulate_group_trades(stock_map: dict, group_name: str, allow_overlap: bool, start_date_str: str) -> list:
     cost_rate = 0.00585
     trades = []
+    min_date = pd.Timestamp(start_date_str)
 
     for ticker, df in stock_map.items():
         if group_name == "A_H2" and "3231" in ticker:
-            continue  # 規格：A組剔除緯創
+            continue
 
         df_len = len(df)
         in_pos = False
         pos_exit_idx = -1
 
         for i in range(21, df_len - 1):
-            if in_pos and i <= pos_exit_idx:
-                continue
-            in_pos = False
+            if not allow_overlap:
+                if in_pos and i <= pos_exit_idx:
+                    continue
+                in_pos = False
 
             sig_row = df.iloc[i]
             sig_date = sig_row["Date"]
-            if sig_date < pd.Timestamp("2021-01-01"):
+            if sig_date < min_date:
                 continue
 
             # 訊號判斷
@@ -113,7 +161,7 @@ def simulate_group_trades(stock_map: dict, group_name: str) -> list:
             next_high = float(next_bar["High"])
             next_low = float(next_bar["Low"])
 
-            # 隔日未過高則不進場
+            # 隔日未過高 -> 不進場
             if next_high < trigger_price:
                 continue
 
@@ -127,6 +175,8 @@ def simulate_group_trades(stock_map: dict, group_name: str) -> list:
             exit_price = entry_price
             exit_reason = ""
             days_held = 0
+            is_open = False
+            prev_close_at_exit = float(next_bar["Close"])
 
             # 進場當日反轉停損
             if next_low <= initial_stop:
@@ -144,6 +194,7 @@ def simulate_group_trades(stock_map: dict, group_name: str) -> list:
                     cur_close = float(cur_bar["Close"])
                     cur_low = float(cur_bar["Low"])
                     cur_ema = float(cur_bar["EMA_20"])
+                    prev_close_at_exit = float(df.iloc[k-1]["Close"])
 
                     if pending_ema_exit:
                         exit_date = cur_bar["Date"]
@@ -161,7 +212,7 @@ def simulate_group_trades(stock_map: dict, group_name: str) -> list:
                         in_pos = True
                         break
 
-                    if days_held >= 120 or k == df_len - 1:
+                    if days_held >= 120:
                         exit_date = cur_bar["Date"]
                         exit_price = cur_close
                         exit_reason = "MAX_120D"
@@ -169,10 +220,24 @@ def simulate_group_trades(stock_map: dict, group_name: str) -> list:
                         in_pos = True
                         break
 
+                    if k == df_len - 1:
+                        # 期末未出場：標註 OPEN
+                        exit_date = cur_bar["Date"]
+                        exit_price = cur_close
+                        exit_reason = "OPEN"
+                        is_open = True
+                        pos_exit_idx = k
+                        in_pos = True
+                        break
+
                     if cur_close < cur_ema:
                         pending_ema_exit = True
 
-            net_r = ((exit_price * (1.0 - cost_rate)) - entry_price) / risk_per_share
+            net_r = ((exit_price * (1.0 - cost_rate)) - entry_price) / risk_per_share if not is_open else 0.0
+            gap_down_pct = 0.0
+            if exit_reason in ["INITIAL_STOP", "SAME_DAY_STOP"] and exit_price < initial_stop:
+                gap_down_pct = round(((initial_stop - exit_price) / initial_stop) * 100, 2)
+
             trades.append({
                 "group": group_name,
                 "ticker": ticker,
@@ -186,8 +251,12 @@ def simulate_group_trades(stock_map: dict, group_name: str) -> list:
                 "risk_per_share": risk_per_share,
                 "net_r": net_r,
                 "days_held": days_held,
+                "is_open": is_open,
                 "year": entry_date.year,
-                "month_cohort": str(entry_date)[:7]
+                "entry_month": str(entry_date)[:7],
+                "exit_month": str(exit_date)[5:7],
+                "gap_down_pct": gap_down_pct,
+                "prev_close_at_exit": prev_close_at_exit
             })
 
     return trades
@@ -202,7 +271,6 @@ def calc_stats(r_series: pd.Series) -> dict:
     win_rate = (len(wins) / n) * 100
     median_r = r_series.median()
 
-    # 剔除最大 1%
     trim_k = max(1, int(np.ceil(n * 0.01)))
     trimmed = r_series.sort_values().iloc[:-trim_k] if n > 10 else r_series
     trim1_mean = trimmed.mean()
@@ -216,12 +284,12 @@ def calc_stats(r_series: pd.Series) -> dict:
     }
 
 
-def bootstrap_diff(df_a: pd.DataFrame, df_b: pd.DataFrame, n_iter: int = 2000, seed: int = 42) -> tuple:
-    """按月分群 Block Bootstrap 95% 信賴區間"""
+def bootstrap_paired_diff(df_a: pd.DataFrame, df_b: pd.DataFrame, n_iter: int = 2000, seed: int = 42) -> tuple:
+    """同月份配對重抽 (Paired Block Bootstrap) 95% 信賴區間"""
     np.random.seed(seed)
-    all_months = sorted(list(set(df_a["month_cohort"].unique()).union(set(df_b["month_cohort"].unique()))))
-    m_a = df_a.groupby("month_cohort")["net_r"].mean()
-    m_b = df_b.groupby("month_cohort")["net_r"].mean()
+    all_months = sorted(list(set(df_a["entry_month"].unique()).union(set(df_b["entry_month"].unique()))))
+    m_a = df_a.groupby("entry_month")["net_r"].mean()
+    m_b = df_b.groupby("entry_month")["net_r"].mean()
 
     diffs = []
     n_m = len(all_months)
@@ -235,107 +303,155 @@ def bootstrap_diff(df_a: pd.DataFrame, df_b: pd.DataFrame, n_iter: int = 2000, s
 
 
 def main():
-    print("【任務 K 規格檢驗啟動】")
-    print("本次不做清單：廣度濾網、1%以損定量、固定1/3資金、資金曲線/複利模擬、投信濾網")
-    print("每筆獨立交易計 1R，無資金上限，同標的持倉中不重複進場。")
-
+    print("【任務 K 嚴格驗算啟動】")
     tickers = get_universe_tickers()
     stock_map = {}
+    all_audit_logs = []
+
+    print(f"載入觀察池 {len(tickers)} 檔，執行指標前置清洗...")
     for t in tickers:
-        df = fetch_history(t, lookback_days=2200)
-        if not df.empty and len(df) >= 120:
-            df = df.copy().sort_values("Date").reset_index(drop=True)
-            df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
-            df["Signal_H2_Orig"] = False
+        raw_df = fetch_history(t, lookback_days=2200)
+        if not raw_df.empty and len(raw_df) >= 120:
+            clean_df, logs = clean_stock_data(raw_df, t)
+            all_audit_logs.extend(logs)
+            
+            # 指標計算嚴格在清洗後執行
+            clean_df["EMA_20"] = clean_df["Close"].ewm(span=20, adjust=False).mean()
+            clean_df["Signal_H2_Orig"] = False
             if HAS_PA:
                 try:
-                    pdf = PriceActionEngine.analyze_setups(df.copy())
+                    pdf = PriceActionEngine.analyze_setups(clean_df.copy())
                     if "Signal_H2" in pdf.columns:
-                        df["Signal_H2_Orig"] = pdf["Signal_H2"].fillna(False).astype(bool)
+                        clean_df["Signal_H2_Orig"] = pdf["Signal_H2"].fillna(False).astype(bool)
                 except Exception:
                     pass
-            stock_map[t] = df
-        time.sleep(0.18)
+            stock_map[t] = clean_df
+        time.sleep(0.15)
 
-    # 執行三組模擬
-    trades_a = simulate_group_trades(stock_map, "A_H2")
-    trades_b = simulate_group_trades(stock_map, "B_AnyBar")
-    trades_c = simulate_group_trades(stock_map, "C_TaskK")
+    print(f"清洗完成，共記錄 {len(all_audit_logs)} 筆資料清洗事件。")
 
-    all_trades = pd.DataFrame(trades_a + trades_b + trades_c)
-    all_trades.to_csv("task_k_trades.csv", index=False, encoding="utf-8-sig")
-    print("已輸出 task_k_trades.csv (逐筆交易明細)")
+    # 1. 執行 2022-04 基準期 (獨立訊號版) -> 核對 281 筆 / +0.123R
+    trades_base_indep = []
+    for g in ["A_H2", "B_AnyBar", "C_TaskK"]:
+        trades_base_indep.extend(simulate_group_trades(stock_map, g, allow_overlap=True, start_date_str="2022-04-01"))
+    df_base_indep = pd.DataFrame(trades_base_indep)
 
-    # 統計指標計算
-    df_a = all_trades[all_trades["group"] == "A_H2"]
-    df_b = all_trades[all_trades["group"] == "B_AnyBar"]
-    df_c = all_trades[all_trades["group"] == "C_TaskK"]
+    # 2. 執行 2022-04 基準期 (不重複進場版)
+    trades_base_no_ov = []
+    for g in ["A_H2", "B_AnyBar", "C_TaskK"]:
+        trades_base_no_ov.extend(simulate_group_trades(stock_map, g, allow_overlap=False, start_date_str="2022-04-01"))
+    df_base_no_ov = pd.DataFrame(trades_base_no_ov)
 
-    ci_c_minus_a = bootstrap_diff(df_a, df_c)
-    ci_c_minus_b = bootstrap_diff(df_b, df_c)
+    # 3. 執行 2021 全期間 (不重複進場版)
+    trades_all_no_ov = []
+    for g in ["A_H2", "B_AnyBar", "C_TaskK"]:
+        trades_all_no_ov.extend(simulate_group_trades(stock_map, g, allow_overlap=False, start_date_str="2021-01-01"))
+    df_all_no_ov = pd.DataFrame(trades_all_no_ov)
 
-    # 生成 Markdown 報表 (改用乾淨字串拼接，避免任何 f-string 逃脫字元錯誤)
-    pipe = " | "
+    # 匯出逐筆明細 CSV
+    df_base_indep.to_csv("task_k_trades_base_indep.csv", index=False, encoding="utf-8-sig")
+    df_base_no_ov.to_csv("task_k_trades_base_no_ov.csv", index=False, encoding="utf-8-sig")
+    df_all_no_ov.to_csv("task_k_trades_all_2021.csv", index=False, encoding="utf-8-sig")
+    print("已輸出 task_k 逐筆 CSV 檔案。")
+
+    # 撰寫 Markdown 報表
     md = []
-    md.append("# 任務 K 嚴格規格檢驗報表\n")
-    md.append("## 一、 核心設定原則")
-    md.append("- **本次不做**：廣度濾網、1%以損定量、固定 1/3 資金、資產曲線/複利模擬、投信濾網。")
-    md.append("- **部位評估**：每筆獨立交易計算 Net R，無資金上限限制，同標的持倉中不重複進場。\n")
+    md.append("# 任務 K 嚴格修正版檢驗報表\n")
 
-    md.append("## 二、 三組全期間 vs 排除 2023 表現對照")
-    md.append("| 組別 | 期間 | 成交筆數 | 勝率 | 單筆中位數 | 剔除最大1%平均 | 獲利因子 (PF) | 平均淨 R |")
+    # 第一節：資料清洗證據
+    md.append("## 一、 前置資料清洗稽核軌跡 (Audit Trail)")
+    md.append(f"- 清洗總事件數：共 {len(all_audit_logs)} 根異常日K被清洗")
+    md.append("- 執行順序：**嚴格在計算 20EMA、前20日High 之前執行**，全零棒整根丟棄，Open<=0 以前日收盤補值。\n")
+    if all_audit_logs:
+        md.append("| 股票代號 | 日期 | 清洗動作 | 原始數據 | 處理說明 |")
+        md.append("| :--- | :--- | :--- | :--- | :--- |")
+        for log in all_audit_logs[:25]:
+            md.append(f"| {log['ticker']} | {log['date']} | {log['action']} | {log['raw']} | {log['detail']} |")
+        if len(all_audit_logs) > 25:
+            md.append(f"| ... | ... | ... | (共 {len(all_audit_logs)} 筆，其餘見 logs) | ... |")
+
+    # 第二節：基準期 (2022-04 起) 基準重現檢驗
+    md.append("\n## 二、 基準期 (2022-04 起) 基準重現檢核 (各訊號獨立版)")
+    md.append("> 門檻目標：A 組 (H2 無緯創) 必須重現 **416 訊號 / 281 成交 / +0.123R**\n")
+    
+    a_indep_closed = df_base_indep[(df_base_indep["group"] == "A_H2") & (~df_base_indep["is_open"])]
+    s_a_indep = calc_stats(a_indep_closed["net_r"])
+    md.append("| 項目 | 任務 J 基準值 | 本次重現值 | 差異判定 |")
+    md.append("| :--- | :---: | :---: | :---: |")
+    md.append(f"| 成交筆數 | 281 筆 | {s_a_indep['n']} 筆 | {'完全相符' if s_a_indep['n'] == 281 else '不符差 ' + str(s_a_indep['n'] - 281) + ' 筆'} |")
+    md.append(f"| 平均淨 R | +0.123R | {s_a_indep['mean_r']:+.3f}R | {'完全相符' if abs(s_a_indep['mean_r'] - 0.123) < 0.001 else '差 ' + str(round(s_a_indep['mean_r'] - 0.123, 4)) + 'R'} |")
+    md.append(f"| 勝率 | -- | {s_a_indep['win_rate']:.1f}% | 獲利因子: {s_a_indep['pf']:.2f} |")
+
+    # 第三節：基準期 (2022-04 起) 三組核心表現
+    md.append("\n## 三、 基準期 (2022-04 起) 三組核心表現 (不重複進場版，排除 OPEN)")
+    md.append("| 組別 | 期間 | 成交筆數 | 勝率 | 單筆中位數 | 剔除最大1%平均 | 獲利因子 | 平均淨 R |")
     md.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |")
 
-    groups_data = [
-        ("A組 (H2不含BOS/無緯創)", df_a),
-        ("B組 (順勢任意棒)", df_b),
-        ("C組 (任務K 突破20日高)", df_c)
-    ]
+    groups = [("A組 (H2不含BOS)", "A_H2"), ("B組 (順勢任意棒)", "B_AnyBar"), ("C組 (突破20日高)", "C_TaskK")]
+    for label, g_key in groups:
+        sub = df_base_no_ov[(df_base_no_ov["group"] == g_key) & (~df_base_no_ov["is_open"])]
+        s_all = calc_stats(sub["net_r"])
+        s_no23 = calc_stats(sub[sub["year"] != 2023]["net_r"])
+        md.append(f"| {label} | 基準期全期 | {s_all['n']} | {s_all['win_rate']:.1f}% | {s_all['median']:+.2f}R | {s_all['trim1_mean']:+.2f}R | {s_all['pf']:.2f} | **{s_all['mean_r']:+.3f}R** |")
+        md.append(f"| {label} | 排除 2023 | {s_no23['n']} | {s_no23['win_rate']:.1f}% | {s_no23['median']:+.2f}R | {s_no23['trim1_mean']:+.2f}R | {s_no23['pf']:.2f} | **{s_no23['mean_r']:+.3f}R** |")
 
-    for name, df_sub in groups_data:
-        s_all = calc_stats(df_sub["net_r"])
-        s_no23 = calc_stats(df_sub[df_sub["year"] != 2023]["net_r"])
-        
-        row_all = "| " + name + " | 全期間 (2021-2026) | " + str(s_all['n']) + " | " + "{:.1f}%".format(s_all['win_rate']) + " | " + "{:+.2f}R".format(s_all['median']) + " | " + "{:+.2f}R".format(s_all['trim1_mean']) + " | " + "{:.2f}".format(s_all['pf']) + " | **" + "{:+.3f}R".format(s_all['mean_r']) + "** |"
-        row_no23 = "| " + name + " | 排除 2023 | " + str(s_no23['n']) + " | " + "{:.1f}%".format(s_no23['win_rate']) + " | " + "{:+.2f}R".format(s_no23['median']) + " | " + "{:+.2f}R".format(s_no23['trim1_mean']) + " | " + "{:.2f}".format(s_no23['pf']) + " | **" + "{:+.3f}R".format(s_no23['mean_r']) + "** |"
-        md.append(row_all)
-        md.append(row_no23)
+    # 第四節：組間差值與同月配對 95% 信賴區間
+    df_a_c = df_base_no_ov[(df_base_no_ov["group"] == "A_H2") & (~df_base_no_ov["is_open"])]
+    df_b_c = df_base_no_ov[(df_base_no_ov["group"] == "B_AnyBar") & (~df_base_no_ov["is_open"])]
+    df_c_c = df_base_no_ov[(df_base_no_ov["group"] == "C_TaskK") & (~df_base_no_ov["is_open"])]
 
-    diff_ca = df_c['net_r'].mean() - df_a['net_r'].mean() if len(df_c) > 0 and len(df_a) > 0 else 0.0
-    diff_cb = df_c['net_r'].mean() - df_b['net_r'].mean() if len(df_c) > 0 and len(df_b) > 0 else 0.0
+    ci_ca_all = bootstrap_paired_diff(df_a_c, df_c_c)
+    ci_cb_all = bootstrap_paired_diff(df_b_c, df_c_c)
+    ci_ca_no23 = bootstrap_paired_diff(df_a_c[df_a_c["year"] != 2023], df_c_c[df_c_c["year"] != 2023])
+    ci_cb_no23 = bootstrap_paired_diff(df_b_c[df_b_c["year"] != 2023], df_c_c[df_c_c["year"] != 2023])
 
-    md.append("\n## 三、 組間差值與按月分群 95% 信賴區間 (2000次 Bootstrap, seed=42)")
-    md.append("- **C 組 vs A 組 (任務K - H2)**：差值 {:+.3f}R，95% CI [{:+.3f}R, {:+.3f}R]".format(diff_ca, ci_c_minus_a[0], ci_c_minus_a[1]))
-    md.append("- **C 組 vs B 組 (任務K - 任意棒)**：差值 {:+.3f}R，95% CI [{:+.3f}R, {:+.3f}R]\n".format(diff_cb, ci_c_minus_b[0], ci_c_minus_b[1]))
+    md.append("\n## 四、 組間差值與同月配對 Block Bootstrap 95% 信賴區間 (2000次)")
+    md.append(f"- **C 組 vs A 組 (全期間)**：差值 {df_c_c['net_r'].mean() - df_a_c['net_r'].mean():+.3f}R，95% CI [{ci_ca_all[0]:+.3f}R, {ci_ca_all[1]:+.3f}R]")
+    md.append(f"- **C 組 vs A 組 (排除2023)**：差值 {df_c_c[df_c_c['year']!=2023]['net_r'].mean() - df_a_c[df_a_c['year']!=2023]['net_r'].mean():+.3f}R，95% CI [{ci_ca_no23[0]:+.3f}R, {ci_ca_no23[1]:+.3f}R]")
+    md.append(f"- **C 組 vs B 組 (全期間)**：差值 {df_c_c['net_r'].mean() - df_b_c['net_r'].mean():+.3f}R，95% CI [{ci_cb_all[0]:+.3f}R, {ci_cb_all[1]:+.3f}R]")
+    md.append(f"- **C 組 vs B 組 (排除2023)**：差值 {df_c_c[df_c_c['year']!=2023]['net_r'].mean() - df_b_c[df_b_c['year']!=2023]['net_r'].mean():+.3f}R，95% CI [{ci_cb_no23[0]:+.3f}R, {ci_cb_no23[1]:+.3f}R]")
 
-    md.append("## 四、 各組最大 5 筆獲利交易")
-    for name, df_sub in [("A組 (H2)", df_a), ("B組 (順勢任意棒)", df_b), ("C組 (任務K)", df_c)]:
-        md.append("### " + name)
-        top5 = df_sub.sort_values("net_r", ascending=False).head(5)
-        for _, r in top5.iterrows():
-            item_str = "- " + str(r['ticker']) + " | 進場: " + str(r['entry_date']) + " ($" + str(r['entry_price']) + ") \vert{} 出場: " + str(r['exit_date']) + " ($" + str(r['exit_price']) + ") | 原因: " + str(r['exit_reason']) + " | **" + "{:+.2f}R".format(r['net_r']) + "**"
-            md.append(item_str)
+    # 第五節：跳空停損月份分佈與 Top 10 全檢驗
+    md.append("\n## 五、 跳空低於停損價之全月份分佈與前 10 大檢驗 (不限月份)")
+    stops_df = df_base_no_ov[df_base_no_ov["exit_reason"].isin(["INITIAL_STOP", "SAME_DAY_STOP"])].copy()
+    gap_stops_df = stops_df[stops_df["gap_down_pct"] > 0].copy()
 
-    md.append("\n## 五、 回測核心邏輯程式碼原文")
-    md.append("```python")
-    md.append("# 1. 訊號判斷")
-    md.append("prev_20_high = df['High'].iloc[i-20:i].max()")
-    md.append("is_signal = (sig_row['Close'] >= sig_row['EMA_20']) and (sig_row['High'] > prev_20_high)")
-    md.append("")
-    md.append("# 2. 進場價 (次日破最高價下一檔進場，跳空開高以開盤價計)")
-    md.append("trigger_price = get_tick_up(float(sig_row['High']))")
-    md.append("if next_high >= trigger_price:")
-    md.append("    entry_price = max(trigger_price, next_open)")
-    md.append("")
-    md.append("# 3. 停損價 (訊號棒最低價退下一檔)")
-    md.append("initial_stop = get_tick_down(float(sig_row['Low']))")
-    md.append("```")
+    md.append("### 1. 1~12 月月份分佈比較")
+    md.append("| 月份 | 總停損筆數 | 總停損占比 | 跳空停損筆數 | 跳空停損占比 |")
+    md.append("| :---: | :---: | :---: | :---: | :---: |")
+    all_stop_counts = stops_df["exit_month"].value_counts().to_dict()
+    gap_stop_counts = gap_stops_df["exit_month"].value_counts().to_dict()
+    tot_stops = len(stops_df)
+    tot_gap_stops = len(gap_stops_df)
+
+    for m_int in range(1, 13):
+        m_str = f"{m_int:02d}"
+        s_cnt = all_stop_counts.get(m_str, 0)
+        g_cnt = gap_stop_counts.get(m_str, 0)
+        s_pct = (s_cnt / tot_stops * 100) if tot_stops > 0 else 0
+        g_pct = (g_cnt / tot_gap_stops * 100) if tot_gap_stops > 0 else 0
+        md.append(f"| {m_str}月 | {s_cnt} | {s_pct:.1f}% | {g_cnt} | {g_pct:.1f}% |")
+
+    md.append("\n### 2. 跳空停損幅度最大 Top 10 交易詳表 (不限月份)")
+    top10_gap = gap_stops_df.sort_values("gap_down_pct", ascending=False).head(10)
+    md.append("| 標的 | 進場日 | 出場日 | 前日收盤 | 開盤出場價 | 原停損價 | 跳空幅度 | 虧損 R 值 |")
+    md.append("| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: |")
+    for _, r in top10_gap.iterrows():
+        md.append(f"| {r['ticker']} | {r['entry_date']} | {r['exit_date']} | ${r['prev_close_at_exit']} | ${r['exit_price']} | ${r['stop_price']} | -{r['gap_down_pct']}% | **{r['net_r']:+.2f}R** |")
+
+    # 第六節：補充 2021 全期間數據 (隔離展示)
+    md.append("\n## 六、 補充參考：2021 全期間表現 (獨立列示，不混入基準期結論)")
+    md.append("| 組別 | 全期間成交筆數 | 2021年筆數 | 2021年平均 R | 全期間平均淨 R |")
+    md.append("| :--- | :---: | :---: | :---: | :---: |")
+    for label, g_key in groups:
+        sub = df_all_no_ov[(df_all_no_ov["group"] == g_key) & (~df_all_no_ov["is_open"])]
+        sub_21 = sub[sub["year"] == 2021]
+        md.append(f"| {label} | {len(sub)} 筆 | {len(sub_21)} 筆 | {sub_21['net_r'].mean():+.3f}R | **{sub['net_r'].mean():+.3f}R** |")
 
     report_text = "\n".join(md)
     with open("task_k_report.md", "w", encoding="utf-8") as f:
         f.write(report_text)
-    print("已輸出 task_k_report.md")
-    print("\n" + report_text)
+    print("已成功產出嚴格修正版 task_k_report.md！")
 
 
 if __name__ == "__main__":
