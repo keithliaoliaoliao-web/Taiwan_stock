@@ -1,14 +1,16 @@
-name: Run Task K Verification
+name: Run Universe Investigation
 
 on:
   workflow_dispatch:
 
 jobs:
-  run-task-k:
+  investigate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 抓取完整 git log 以便追溯 config.py 歷史
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -18,14 +20,11 @@ jobs:
       - name: Install dependencies
         run: pip install pandas numpy requests pytz
 
-      - name: Run Task K
-        run: python run_task_k.py
+      - name: Run Investigation
+        run: python investigate_universe.py
 
-      - name: Upload Report & Trades CSV
+      - name: Upload Audit CSV
         uses: actions/upload-artifact@v4
         with:
-          name: task-k-artifacts
-          path: |
-            task_k_trades_base_indep.csv
-            task_k_trades_base_no_ov.csv
-            task_k_report.md
+          name: universe-audit-artifact
+          path: universe_listing_audit.csv
