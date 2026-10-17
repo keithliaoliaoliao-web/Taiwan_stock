@@ -110,13 +110,13 @@
         <div class="flex items-center gap-2 w-full md:w-auto">
           <div class="relative flex-1 md:w-64">
             <span class="absolute left-3 top-2.5 text-slate-400 text-sm font-semibold">NT$</span>
-            <input type="number" id="monthly-budget-input" min="10000" step="10000" placeholder="例如：1000000"
+            <input type="number" id="monthly-budget-input" min="10000" step="10000" placeholder="例如：100000"
               class="w-full pl-12 pr-4 py-2 bg-white text-slate-900 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-inner">
           </div>
-          <button onclick="applyBudget()" class="px-5 py-2 bg-blue-500 hover:bg-blue-400 text-white text-sm font-semibold rounded-xl shadow-md transition active:scale-95">
+          <button onclick="applyBudget()" class="px-5 py-2 bg-blue-500 hover:bg-blue-400 text-white text-sm font-semibold rounded-xl shadow-md transition active:scale-95 cursor-pointer">
             套用
           </button>
-          <button onclick="clearBudget()" class="px-3 py-2 bg-blue-950/60 hover:bg-blue-950 text-blue-200 text-xs rounded-xl border border-blue-700/50 transition">
+          <button onclick="clearBudget()" class="px-3 py-2 bg-blue-950/60 hover:bg-blue-950 text-blue-200 text-xs rounded-xl border border-blue-700/50 transition cursor-pointer">
             重設
           </button>
         </div>
@@ -142,7 +142,7 @@
         </div>
         
         <div class="flex items-center gap-3">
-          <button onclick="openManualRegisterModal()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5 active:scale-95">
+          <button onclick="openManualRegisterModal()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <span class="text-sm">➕</span>
             <span>手動新增持股</span>
           </button>
@@ -157,7 +157,7 @@
 
       <!-- 已平倉歷史交易紀錄折疊專區 -->
       <div class="mt-4 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <button type="button" onclick="toggleTradeHistory()" class="w-full px-5 py-3.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-700 transition">
+        <button type="button" onclick="toggleTradeHistory()" class="w-full px-5 py-3.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-700 transition cursor-pointer">
           <div class="flex items-center gap-2">
             <span>📜</span>
             <span>已平倉歷史交易紀錄</span>
@@ -277,7 +277,7 @@
           <h3 class="text-base font-bold text-slate-900">登記賣出平倉結算</h3>
           <p class="text-xs text-slate-500">結算已實現損益並歸檔至歷史交易紀錄</p>
         </div>
-        <button onclick="closeSellModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">✕</button>
+        <button onclick="closeSellModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">✕</button>
       </div>
 
       <form id="sell-form" onsubmit="submitSellHolding(event)" class="p-6 space-y-4 text-xs">
@@ -330,8 +330,8 @@
         </div>
 
         <div class="pt-3 flex items-center justify-end gap-3">
-          <button type="button" onclick="closeSellModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">取消</button>
-          <button type="submit" id="btn-submit-sell" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition">確認平倉結算</button>
+          <button type="button" onclick="closeSellModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition cursor-pointer">取消</button>
+          <button type="submit" id="btn-submit-sell" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition cursor-pointer">確認平倉結算</button>
         </div>
       </form>
     </div>
@@ -349,10 +349,10 @@
         </div>
         <div class="flex items-center gap-2">
           <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs text-xs font-semibold">
-            <button type="button" id="btn-range-1m" onclick="setChartRange(20, '1m')" class="px-2 py-0.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1個月</button>
-            <button type="button" id="btn-range-3m" onclick="setChartRange(60, '3m')" class="px-2 py-0.5 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition">3個月</button>
-            <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">半年</button>
-            <button type="button" id="btn-range-1y" onclick="setChartRange(250, '1y')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1年</button>
+            <button type="button" id="btn-range-1m" onclick="setChartRange(20, '1m')" class="px-2 py-0.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">1個月</button>
+            <button type="button" id="btn-range-3m" onclick="setChartRange(60, '3m')" class="px-2 py-0.5 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition cursor-pointer">3個月</button>
+            <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">半年</button>
+            <button type="button" id="btn-range-1y" onclick="setChartRange(250, '1y')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">1年</button>
           </div>
         </div>
       </div>
@@ -379,7 +379,7 @@
           <h3 id="reg-modal-title" class="text-base font-bold text-slate-900">納入個人持股登記</h3>
           <p class="text-xs text-slate-500">登記買進紀錄，系統將透過 GitHub API 寫入 holdings.json</p>
         </div>
-        <button onclick="closeRegisterModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">✕</button>
+        <button onclick="closeRegisterModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">✕</button>
       </div>
 
       <form id="register-form" onsubmit="submitHoldingRegistration(event)" class="p-6 space-y-4 text-xs">
@@ -418,7 +418,7 @@
             <input type="number" step="0.01" id="reg-entry-price" oninput="calculateTotalAmount()" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-900">
           </div>
           <div>
-            <label class="block text-slate-600 font-semibold mb-1">買進股數 (建議以損定量)</label>
+            <label class="block text-slate-600 font-semibold mb-1">買進股數 (建議依損定量)</label>
             <input type="number" min="1" step="1" id="reg-shares" oninput="calculateTotalAmount()" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-900">
           </div>
         </div>
@@ -445,8 +445,8 @@
         <div id="github-api-status" class="hidden text-xs py-2 px-3 rounded-lg"></div>
 
         <div class="pt-4 flex items-center justify-end gap-3">
-          <button type="button" onclick="closeRegisterModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">取消</button>
-          <button type="submit" id="btn-submit-registration" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition">確認登記寫入</button>
+          <button type="button" onclick="closeRegisterModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition cursor-pointer">取消</button>
+          <button type="submit" id="btn-submit-registration" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition cursor-pointer">確認登記寫入</button>
         </div>
       </form>
     </div>
@@ -457,7 +457,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <h3 class="text-base font-bold text-slate-900">GitHub API 連線設定</h3>
-        <button onclick="closeGithubModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">✕</button>
+        <button onclick="closeGithubModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">✕</button>
       </div>
 
       <div class="p-6 space-y-4 text-xs">
@@ -481,10 +481,10 @@
         </div>
 
         <div class="pt-2 flex items-center justify-between">
-          <button onclick="clearGithubSettings()" class="text-rose-600 hover:underline">清除設定</button>
+          <button onclick="clearGithubSettings()" class="text-rose-600 hover:underline cursor-pointer">清除設定</button>
           <div class="flex gap-2">
-            <button onclick="closeGithubModal()" class="px-3.5 py-1.5 bg-slate-100 text-slate-700 rounded-lg">關閉</button>
-            <button onclick="saveGithubSettings()" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-500">儲存設定</button>
+            <button onclick="closeGithubModal()" class="px-3.5 py-1.5 bg-slate-100 text-slate-700 rounded-lg cursor-pointer">關閉</button>
+            <button onclick="saveGithubSettings()" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-500 cursor-pointer">儲存設定</button>
           </div>
         </div>
       </div>
@@ -893,10 +893,10 @@
             </div>
 
             <div class="flex items-center gap-2 pt-2 border-t border-slate-200/50">
-              <button onclick="openSellModal('${h.ticker}', '${h.name}', ${entryPrice}, ${shares}, ${currentClose}, '${h.entry_date}')" class="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1">
+              <button onclick="openSellModal('${h.ticker}', '${h.name}', ${entryPrice}, ${shares}, ${currentClose}, '${h.entry_date}')" class="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1 cursor-pointer">
                 <span>💰</span> 登記賣出
               </button>
-              <button onclick="handleDeleteHolding('${h.ticker}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition">
+              <button onclick="handleDeleteHolding('${h.ticker}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer">
                 刪除
               </button>
             </div>
@@ -932,8 +932,8 @@
           ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">A 級 (爆量突破)</span>`
           : `<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">B 級 (標準突破)</span>`;
 
-        // 1. 修復 NaN%：相容 stop_pct 與 risk_pct，或自動以價格推算
-        let stopDist = (sig.trigger_price - sig.stop_loss);
+        // 1. 修復 NaN%：優先抓取 stop_pct，若無則依進場價與停損價自動算
+        const stopDist = (sig.trigger_price - sig.stop_loss);
         let riskPctVal = 0.0;
         if (sig.stop_pct !== undefined && !isNaN(Number(sig.stop_pct))) {
           riskPctVal = Number(sig.stop_pct);
@@ -944,14 +944,16 @@
         }
         const riskPctFormatted = Math.max(0, riskPctVal).toFixed(2);
 
-        // 2. 1% 以損定量部位計算
-        let calculatedShares = sig.suggested_shares || 0;
-        if (calculatedShares <= 0 && stopDist > 0) {
-          const riskBudget = budget * 0.01;
-          const maxCap = budget * 0.25;
+        // 2. 核心修正：強制依據使用者即時輸入的 budget 動態算 1% 以損定量股數
+        let calculatedShares = 0;
+        if (stopDist > 0 && budget > 0) {
+          const riskBudget = budget * 0.01;              // 單筆最大損失鎖定總本金 1%
+          const maxCap = budget * 0.25;                  // 單一標的最高上限 25% 總資金
           const sharesByRisk = riskBudget / stopDist;
           const sharesByCap = maxCap / sig.trigger_price;
           calculatedShares = Math.max(1, Math.floor(Math.min(sharesByRisk, sharesByCap)));
+        } else {
+          calculatedShares = sig.suggested_shares || 1000;
         }
 
         const totalAlloc = calculatedShares * sig.trigger_price;
@@ -1032,10 +1034,10 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <button onclick="openChartModal('${sig.ticker}')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1">
+              <button onclick="openChartModal('${sig.ticker}')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1 cursor-pointer">
                 <span>📈</span> 檢視K線
               </button>
-              <button onclick="openRegisterModal('${sig.ticker}', ${calculatedShares})" class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1">
+              <button onclick="openRegisterModal('${sig.ticker}', ${calculatedShares})" class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1 cursor-pointer">
                 <span>➕</span> 納入我的持股
               </button>
             </div>
@@ -1224,8 +1226,8 @@
         const btn = document.getElementById('btn-range-' + k);
         if (btn) {
           btn.className = (k === rangeKey)
-            ? "px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition"
-            : "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition";
+            ? "px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition cursor-pointer"
+            : "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer";
         }
       });
 
@@ -1572,7 +1574,7 @@
               </span>
             </td>
             <td class="py-2.5 px-3 text-center">
-              <button onclick="deleteTradeHistoryItem(${idx})" class="text-slate-400 hover:text-rose-600 text-xs">✕</button>
+              <button onclick="deleteTradeHistoryItem(${idx})" class="text-slate-400 hover:text-rose-600 text-xs cursor-pointer">✕</button>
             </td>
           </tr>
         `;
