@@ -4,8 +4,8 @@ run_task_k.py
 1. 啟動前檔案完整性校驗：大小 1,345,484 bytes、6,797 行 (含表頭)、MD5: 592c9f995194eb226ca307e5c17ddc17
 2. 資料硬性核對 1：筆數 6,796 筆，is_wistron_outlier 為 True 僅 1 筆
 3. 資料硬性核對 2：
-   - 全條件不含 BOS (剔除緯創)：416 訊號 / 281 成交 / net_r +0.123
-   - 全條件含 BOS (剔除緯創)：132 訊號 / 87 成交 / net_r +0.482
+   - 全條件不含 BOS (剔除緯創離群值)：416 訊號 / 281 成交 / net_r +0.123
+   - 全條件含 BOS (剔除緯創離群值)：132 訊號 / 87 成交 / net_r +0.482
    (若核對不符即刻中止)
 4. B、C 組嚴格沿用第三輪平滑演算法 (adjust_corporate_actions) 與鏡像回測規則
 5. 報表全由動態數值判斷產出，無任何寫死文字
@@ -125,7 +125,7 @@ def verify_and_load_task_j(filepath: str) -> tuple:
         print("【中止】is_wistron_outlier 為 True 筆數不符: 實測 " + str(wistron_outlier_count) + " 筆 != 預期 1 筆")
         sys.exit(1)
 
-    # 基礎條件：6 個條件全為 True，排除緯創
+    # 基礎條件：6 個條件全為 True，嚴格僅剔除 is_wistron_outlier
     cond_base = (
         df["c_above_ema"].apply(to_bool) &
         df["c_ema_up6"].apply(to_bool) &
@@ -133,8 +133,7 @@ def verify_and_load_task_j(filepath: str) -> tuple:
         df["c_no_climax"].apply(to_bool) &
         df["c_bar_quality"].apply(to_bool) &
         df["c_ema_dist"].apply(to_bool) &
-        (~df["is_wistron_outlier"].apply(to_bool)) &
-        (~df["ticker"].astype(str).str.contains("3231"))
+        (~df["is_wistron_outlier"].apply(to_bool))
     )
 
     # 檢查 2a：不含 BOS
@@ -163,25 +162,84 @@ def verify_and_load_task_j(filepath: str) -> tuple:
     print("- 無 BOS: 416 訊號 / 281 成交 / " + "{:+.3f}R".format(mean_r_no_bos))
     print("- 含 BOS: 132 訊號 / 87 成交 / " + "{:+.3f}R".format(mean_r_with_bos))
 
-    # A 組 (獨立版 281 筆)
-    trades_no_bos_df["group"] = "A_H2"
-    if "is_open" not in trades_no_bos_df.columns:
-        trades_no_bos_df["is_open"] = (trades_no_bos_df["exit_reason"] == "OPEN") if "exit_reason" in trades_no_bos_df.columns else False
+    # A 組 (獨立版 281 筆) 轉換標準欄位結構
+    a_indep = []
+    for _, r in trades_no_bos_df.iterrows():
+        entry_p = float(r["entry_price"])
+        stop_p = float(r["stop_loss"])
+        exit_p = float(r["exit_price"])
+        exit_r = str(r["exit_reason"])
+        entry_d = str(r["entry_date"])[:10]
+        exit_d = str(r["exit_date"])[:10]
+        sig_d = str(r["signal_date"])[:10]
+        
+        gap_down = 0.0
+        if exit_r in ["STOP_LOSS", "ENTRY_DAY_REVERSAL_STOP"] and exit_p < stop_p:
+            gap_down = round(((stop_p - exit_p) / stop_p) * 100, 2)
 
-    a_indep = trades_no_bos_df.to_dict("records")
+        a_indep.append({
+            "group": "A_H2",
+            "ticker": str(r["ticker"]),
+            "sig_date": sig_d,
+            "entry_date": entry_d,
+            "exit_date": exit_d,
+            "entry_price": entry_p,
+            "stop_price": stop_p,
+            "exit_price": exit_p,
+            "exit_reason": exit_r,
+            "risk_per_share": round(entry_p - stop_p, 2),
+            "net_r": float(r["net_r"]),
+            "days_held": int(r["holding_days"]),
+            "is_open": (exit_r == "OPEN"),
+            "year": int(r["year"]),
+            "entry_month": str(r.get("ym", entry_d[:7])),
+            "exit_month": exit_d[5:7],
+            "gap_down_pct": gap_down,
+            "prev_close_at_exit": exit_p
+        })
 
-    # A 組 (不重複進場版)
-    df_sorted = trades_no_bos_df.sort_values("entry_date").copy()
+    # A 組 (不重複進場版) 按 entry_date 排序，同一檔股票持倉期間不重疊
+    trades_no_bos_df_sorted = trades_no_bos_df.sort_values("entry_date").copy()
     a_no_ov = []
     last_exit = {}
-    for _, r in df_sorted.iterrows():
+    for _, r in trades_no_bos_df_sorted.iterrows():
         t = str(r["ticker"])
         e_d = str(r["entry_date"])[:10]
         x_d = str(r["exit_date"])[:10]
         if t in last_exit and e_d <= last_exit[t]:
             continue
         last_exit[t] = x_d
-        a_no_ov.append(dict(r))
+        
+        entry_p = float(r["entry_price"])
+        stop_p = float(r["stop_loss"])
+        exit_p = float(r["exit_price"])
+        exit_r = str(r["exit_reason"])
+        sig_d = str(r["signal_date"])[:10]
+        
+        gap_down = 0.0
+        if exit_r in ["STOP_LOSS", "ENTRY_DAY_REVERSAL_STOP"] and exit_p < stop_p:
+            gap_down = round(((stop_p - exit_p) / stop_p) * 100, 2)
+
+        a_no_ov.append({
+            "group": "A_H2",
+            "ticker": t,
+            "sig_date": sig_d,
+            "entry_date": e_d,
+            "exit_date": x_d,
+            "entry_price": entry_p,
+            "stop_price": stop_p,
+            "exit_price": exit_p,
+            "exit_reason": exit_r,
+            "risk_per_share": round(entry_p - stop_p, 2),
+            "net_r": float(r["net_r"]),
+            "days_held": int(r["holding_days"]),
+            "is_open": (exit_r == "OPEN"),
+            "year": int(r["year"]),
+            "entry_month": str(r.get("ym", e_d[:7])),
+            "exit_month": x_d[5:7],
+            "gap_down_pct": gap_down,
+            "prev_close_at_exit": exit_p
+        })
 
     check_stats = {
         "n_rows": len(df),
