@@ -18,5 +18,15 @@
     "shares": 158,
     "stop_loss": 26.26,
     "target_price": 0
+  },
+  {
+    "ticker": "2027.TW",
+    "name": "大成鋼",
+    "grade": "A",
+    "entry_date": "2026-10-17",
+    "entry_price": 50.9,
+    "shares": 86,
+    "stop_loss": 47.44,
+    "target_price": 0
   }
 ]
