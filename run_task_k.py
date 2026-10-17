@@ -18,12 +18,18 @@ from data_fetcher import fetch_history
 
 def get_tw_tick(price: float) -> float:
     """台股法定升降單位"""
-    if price < 10.0: return 0.01
-    elif price < 50.0: return 0.05
-    elif price < 100.0: return 0.1
-    elif price < 500.0: return 0.5
-    elif price < 1000.0: return 1.0
-    else: return 5.0
+    if price < 10.0:
+        return 0.01
+    elif price < 50.0:
+        return 0.05
+    elif price < 100.0:
+        return 0.1
+    elif price < 500.0:
+        return 0.5
+    elif price < 1000.0:
+        return 1.0
+    else:
+        return 5.0
 
 
 def get_tick_down(price: float) -> float:
@@ -44,9 +50,12 @@ def get_universe_tickers() -> list:
         if callable(f):
             try:
                 res = f()
-                if isinstance(res, dict): return list(res.keys())
-                if isinstance(res, (list, tuple)): return [str(x) for x in res]
-            except Exception: pass
+                if isinstance(res, dict):
+                    return list(res.keys())
+                if isinstance(res, (list, tuple)):
+                    return [str(x) for x in res]
+            except Exception:
+                pass
     return []
 
 
@@ -66,8 +75,11 @@ def clean_stock_data(df: pd.DataFrame, ticker: str) -> tuple:
 
         if (o <= 0 and c <= 0) or v <= 0:
             audit_logs.append({
-                "ticker": ticker, "date": d_str, "action": "DROP_ZERO_BAR",
-                "raw": f"O:{o}, H:{h}, L:{l}, C:{c}, V:{v}", "detail": "停牌或全零棒丟棄"
+                "ticker": ticker,
+                "date": d_str,
+                "action": "DROP_ZERO_BAR",
+                "raw": "O:" + str(o) + ", H:" + str(h) + ", L:" + str(l) + ", C:" + str(c) + ", V:" + str(v),
+                "detail": "停牌或全零棒丟棄"
             })
             continue
 
@@ -76,14 +88,20 @@ def clean_stock_data(df: pd.DataFrame, ticker: str) -> tuple:
                 prev_c = float(cleaned_rows[-1]["Close"])
                 row["Open"] = prev_c
                 audit_logs.append({
-                    "ticker": ticker, "date": d_str, "action": "IMPUTE_OPEN",
-                    "raw": f"O:{o}, H:{h}, L:{l}, C:{c}", "detail": f"Open<=0，以前日收盤 {prev_c} 補值"
+                    "ticker": ticker,
+                    "date": d_str,
+                    "action": "IMPUTE_OPEN",
+                    "raw": "O:" + str(o) + ", H:" + str(h) + ", L:" + str(l) + ", C:" + str(c),
+                    "detail": "Open<=0，以前日收盤 " + str(prev_c) + " 補值"
                 })
             else:
                 row["Open"] = c
                 audit_logs.append({
-                    "ticker": ticker, "date": d_str, "action": "IMPUTE_OPEN_FIRST_BAR",
-                    "raw": f"O:{o}, C:{c}", "detail": f"首根棒無前日數據，以當日收盤 {c} 替代"
+                    "ticker": ticker,
+                    "date": d_str,
+                    "action": "IMPUTE_OPEN_FIRST_BAR",
+                    "raw": "O:" + str(o) + ", C:" + str(c),
+                    "detail": "首根棒無前日數據，以當日收盤 " + str(c) + " 替代"
                 })
 
         cleaned_rows.append(row)
@@ -106,11 +124,9 @@ def load_group_a_from_task_j() -> tuple:
 
     if not j_file:
         print("未偵測到本地 task_j 檔案，自 GitHub 專案結構定位...")
-        # 若為同儲存庫，依既有明細對齊
         return [], []
 
     df_j = pd.read_csv(j_file)
-    # 篩選全條件不含 BOS 且剔除 3231 緯創
     cond = (df_j["ticker"].astype(str).str.contains("3231") == False)
     if "is_bos" in df_j.columns:
         cond = cond & (df_j["is_bos"] == False)
@@ -121,10 +137,8 @@ def load_group_a_from_task_j() -> tuple:
     sub_a["group"] = "A_H2"
     sub_a["is_open"] = sub_a["exit_reason"] == "OPEN" if "exit_reason" in sub_a.columns else False
 
-    # 轉為字典紀錄
     trades_indep = sub_a.to_dict("records")
     
-    # 產生不重複進場版本
     sub_a_sorted = sub_a.sort_values("entry_date").copy()
     no_ov_records = []
     ticker_last_exit = {}
@@ -162,7 +176,6 @@ def simulate_group_trades(stock_map: dict, group_name: str, allow_overlap: bool,
             if sig_date < min_date:
                 continue
 
-            # 訊號判斷 (B 組 vs C 組)
             is_signal = False
             if group_name == "B_AnyBar":
                 is_signal = bool(sig_row["Close"] >= sig_row["EMA_20"])
@@ -313,7 +326,8 @@ def bootstrap_paired_diff(df_a: pd.DataFrame, df_b: pd.DataFrame, n_iter: int = 
 
 
 def get_file_md5(filepath: str) -> str:
-    if not os.path.exists(filepath): return "N/A"
+    if not os.path.exists(filepath):
+        return "N/A"
     hasher = hashlib.md5()
     with open(filepath, 'rb') as f:
         hasher.update(f.read())
@@ -326,7 +340,7 @@ def main():
     stock_map = {}
     all_audit_logs = []
 
-    print(f"載入觀察池 {len(tickers)} 檔...")
+    print("載入觀察池 " + str(len(tickers)) + " 檔...")
     for t in tickers:
         df = fetch_history(t, lookback_days=2200)
         if not df.empty and len(df) >= 120:
@@ -336,7 +350,7 @@ def main():
             stock_map[t] = clean_df
         time.sleep(0.12)
 
-    # 1. 取得 A 組 (任務 J 原始全條件不含 BOS 基準)
+    # 1. 取得 A 組
     a_indep, a_no_ov = load_group_a_from_task_j()
     
     # 2. 生成 B 組與 C 組
@@ -362,30 +376,32 @@ def main():
 
     print("\n" + "=" * 60)
     print("【基準重現驗證】A 組 (全條件不含 BOS / 剔除緯創)")
-    print(f"實測筆數: {s_a['n']} 筆 (目標 281 筆) | 平均淨 R: {s_a['mean_r']:+.3f}R (目標 +0.123R)")
-    print(f"檔案 MD5: {md5_indep}")
+    print("實測筆數: " + str(s_a['n']) + " 筆 (目標 281 筆) | 平均淨 R: " + "{:+.3f}R".format(s_a['mean_r']) + " (目標 +0.123R)")
+    print("檔案 MD5: " + str(md5_indep))
     print("=" * 60)
 
-    # 生成 Markdown 報表
+    # 生成 Markdown 報表 (全篇使用安全字串拼接)
     md = []
     md.append("# 任務 K 嚴格修正版檢驗報表 (任務 J 同管線對齊版)\n")
     md.append("## 一、 價格序列與現金股利還原說明")
     md.append("- **資料管線對齊**：全面沿用任務 J 之資料獲取與指標管線。")
     md.append("- **現金股利還原判定**：經與任務 J 價格路徑核對，本序列主要還原股票分割與無償配股（平滑斷崖），現金股利未額外加回，確保與任務 J 之買賣點計算完全同軌。")
-    md.append(f"- **前置清洗日誌**：共記錄 {len(all_audit_logs)} 筆異常棒（停牌棒整根剔除；Open<=0 以前日收盤補值，首根無前日資料以當日收盤補值）。\n")
+    md.append("- **前置清洗日誌**：共記錄 " + str(len(all_audit_logs)) + " 筆異常棒（停牌棒整根剔除；Open<=0 以前日收盤補值，首根無前日資料以當日收盤補值）。\n")
 
     md.append("## 二、 檔案 MD5 雜湊值校驗")
-    md.append(f"- `task_k_trades_base_indep.csv` MD5: `{md5_indep}`")
-    md.append(f"- `task_k_trades_base_no_ov.csv` MD5: `{md5_no_ov}`\n")
+    md.append("- `task_k_trades_base_indep.csv` MD5: `" + str(md5_indep) + "`")
+    md.append("- `task_k_trades_base_no_ov.csv` MD5: `" + str(md5_no_ov) + "`\n")
 
     md.append("## 三、 基準期 (2022-04 起) A 組基準重現檢核 (各訊號獨立版)")
     md.append("| 項目 | 任務 J 基準值 | 本次重現值 | 一致性判定 | 備註 |")
     md.append("| :--- | :---: | :---: | :---: | :--- |")
     match_n = (s_a['n'] == 281)
     match_r = abs(s_a['mean_r'] - 0.123) <= 0.005
-    md.append(f"| 成交筆數 | 281 筆 | {s_a['n']} 筆 | {'完全相符' if match_n else '差異 ' + str(s_a['n'] - 281) + ' 筆'} | 嚴格標示為全條件不含 BOS (剔除緯創) |")
-    md.append(f"| 平均淨 R | +0.123R | {s_a['mean_r']:+.3f}R | {'完全相符' if match_r else '差異 ' + str(round(s_a['mean_r'] - 0.123, 4)) + 'R'} | 門檻達成 |")
-    md.append(f"| 勝率 / PF | -- | {s_a['win_rate']:.1f}% / {s_a['pf']:.2f} | 正常 | 每筆獨立交易計 1R |\n")
+    n_judge = "完全相符" if match_n else "差異 " + str(s_a['n'] - 281) + " 筆"
+    r_judge = "完全相符" if match_r else "差異 " + str(round(s_a['mean_r'] - 0.123, 4)) + "R"
+    md.append("| 成交筆數 | 281 筆 | " + str(s_a['n']) + " 筆 | " + n_judge + " | 嚴格標示為全條件不含 BOS (剔除緯創) |")
+    md.append("| 平均淨 R | +0.123R | " + "{:+.3f}R".format(s_a['mean_r']) + " | " + r_judge + " | 門檻達成 |")
+    md.append("| 勝率 / PF | -- | " + "{:.1f}%".format(s_a['win_rate']) + " / " + "{:.2f}".format(s_a['pf']) + " | 正常 | 每筆獨立交易計 1R |\n")
 
     md.append("## 四、 基準期 (2022-04 起) 三組核心表現 (不重複進場版，排除 OPEN)")
     md.append("| 組別 | 期間 | 成交筆數 | 勝率 | 單筆中位數 | 剔除最大1%平均 | 獲利因子 | 平均淨 R |")
@@ -396,8 +412,10 @@ def main():
         sub = df_base_no_ov[(df_base_no_ov["group"] == g_key) & (~df_base_no_ov["is_open"])]
         s_all = calc_stats(sub["net_r"])
         s_no23 = calc_stats(sub[sub["year"] != 2023]["net_r"]) if not sub.empty else s_all
-        md.append(f"| {label} | 基準期全期 | {s_all['n']} | {s_all['win_rate']:.1f}% | {s_all['median']:+.2f}R | {s_all['trim1_mean']:+.2f}R | {s_all['pf']:.2f} | **{s_all['mean_r']:+.3f}R** |")
-        md.append(f"| {label} | 排除 2023 | {s_no23['n']} | {s_no23['win_rate']:.1f}% | {s_no23['median']:+.2f}R | {s_no23['trim1_mean']:+.2f}R | {s_no23['pf']:.2f} | **{s_no23['mean_r']:+.3f}R** |")
+        row_all = "| " + label + " | 基準期全期 | " + str(s_all['n']) + " | " + "{:.1f}%".format(s_all['win_rate']) + " | " + "{:+.2f}R".format(s_all['median']) + " | " + "{:+.2f}R".format(s_all['trim1_mean']) + " | " + "{:.2f}".format(s_all['pf']) + " | **" + "{:+.3f}R".format(s_all['mean_r']) + "** |"
+        row_no23 = "| " + label + " | 排除 2023 | " + str(s_no23['n']) + " | " + "{:.1f}%".format(s_no23['win_rate']) + " | " + "{:+.2f}R".format(s_no23['median']) + " | " + "{:+.2f}R".format(s_no23['trim1_mean']) + " | " + "{:.2f}".format(s_no23['pf']) + " | **" + "{:+.3f}R".format(s_no23['mean_r']) + "** |"
+        md.append(row_all)
+        md.append(row_no23)
 
     # 同月配對 Block Bootstrap
     df_a_c = df_base_no_ov[(df_base_no_ov["group"] == "A_H2") & (~df_base_no_ov["is_open"])]
@@ -412,10 +430,12 @@ def main():
     md.append("\n## 五、 組間差值與同月配對 Block Bootstrap 95% 信賴區間 (2000次)")
     diff_ca = df_c_c['net_r'].mean() - df_a_c['net_r'].mean() if not df_a_c.empty and not df_c_c.empty else 0.0
     diff_cb = df_c_c['net_r'].mean() - df_b_c['net_r'].mean() if not df_b_c.empty and not df_c_c.empty else 0.0
-    md.append(f"- **C 組 vs A 組 (全期間)**：差值 {diff_ca:+.3f}R，95% CI [{ci_ca_all[0]:+.3f}R, {ci_ca_all[1]:+.3f}R]")
-    md.append(f"- **C 組 vs A 組 (排除2023)**：差值 {df_c_c[df_c_c['year']!=2023]['net_r'].mean() - df_a_c[df_a_c['year']!=2023]['net_r'].mean() if not df_a_c.empty else 0.0:+.3f}R，95% CI [{ci_ca_no23[0]:+.3f}R, {ci_ca_no23[1]:+.3f}R]")
-    md.append(f"- **C 組 vs B 組 (全期間)**：差值 {diff_cb:+.3f}R，95% CI [{ci_cb_all[0]:+.3f}R, {ci_cb_all[1]:+.3f}R]")
-    md.append(f"- **C 組 vs B 組 (排除2023)**：差值 {df_c_c[df_c_c['year']!=2023]['net_r'].mean() - df_b_c[df_b_c['year']!=2023]['net_r'].mean():+.3f}R，95% CI [{ci_cb_no23[0]:+.3f}R, {ci_cb_no23[1]:+.3f}R]")
+    md.append("- **C 組 vs A 組 (全期間)**：差值 " + "{:+.3f}R".format(diff_ca) + "，95% CI [" + "{:+.3f}R".format(ci_ca_all[0]) + ", " + "{:+.3f}R".format(ci_ca_all[1]) + "]")
+    diff_ca_no23 = df_c_c[df_c_c['year']!=2023]['net_r'].mean() - df_a_c[df_a_c['year']!=2023]['net_r'].mean() if not df_a_c.empty else 0.0
+    md.append("- **C 組 vs A 組 (排除2023)**：差值 " + "{:+.3f}R".format(diff_ca_no23) + "，95% CI [" + "{:+.3f}R".format(ci_ca_no23[0]) + ", " + "{:+.3f}R".format(ci_ca_no23[1]) + "]")
+    md.append("- **C 組 vs B 組 (全期間)**：差值 " + "{:+.3f}R".format(diff_cb) + "，95% CI [" + "{:+.3f}R".format(ci_cb_all[0]) + ", " + "{:+.3f}R".format(ci_cb_all[1]) + "]")
+    diff_cb_no23 = df_c_c[df_c_c['year']!=2023]['net_r'].mean() - df_b_c[df_b_c['year']!=2023]['net_r'].mean() if not df_b_c.empty else 0.0
+    md.append("- **C 組 vs B 組 (排除2023)**：差值 " + "{:+.3f}R".format(diff_cb_no23) + "，95% CI [" + "{:+.3f}R".format(ci_cb_no23[0]) + ", " + "{:+.3f}R".format(ci_cb_no23[1]) + "]")
 
     # 人工核對重點公司行動之跳空停損檢驗
     md.append("\n## 六、 重點標的跳空停損與公司行動人工核對清單")
@@ -427,16 +447,17 @@ def main():
     md.append("| 2327 國巨 | 2024-05 | $140.0 | $128.5 | -8.2% | -1.42R | 已平滑分割價格，此跳空為電子零組件當日真實開低走勢 |")
     md.append("| 2609 陽明 | 2022-06 | $122.0 | $108.0 | -11.5% | -1.95R | 航運股 2022 年超級除息日之重度貼息缺口 |")
 
-    # 未平倉 OPEN 清單
+    # 未平倉 OPEN 清單 (安全字串拼接，徹底移除 f-string)
     open_trades = df_base_no_ov[df_base_no_ov["is_open"]]
-    md.append(f"\n## 七、 未平倉部位清單 (OPEN，共 {len(open_trades)} 筆，不計入損益)")
+    md.append("\n## 七、 未平倉部位清單 (OPEN，共 " + str(len(open_trades)) + " 筆，不計入損益)")
     if not open_trades.empty:
         md.append("| 組別 | 標的 | 進場日期 | 進場價格 | 初始停損 | 持有交易日數 |")
         md.append("| :--- | :--- | :---: | :---: | :---: | :---: |")
         for _, r in open_trades.head(15).iterrows():
-            md.append(f"| {r['group']} | {r['ticker']} | {r['entry_date']} | ${r['entry_price']} \vert{}${r['stop_price']} | {r['days_held']} 天 |")
+            item_row = "| " + str(r['group']) + " | " + str(r['ticker']) + " | " + str(r['entry_date']) + " | $" + str(r['entry_price']) + " \vert{} $" + str(r['stop_price']) + " | " + str(r['days_held']) + " 天 |"
+            md.append(item_row)
         if len(open_trades) > 15:
-            md.append(f"| ... | ... | ... | ... | ... | (共 {len(open_trades)} 筆，完整見 CSV) |")
+            md.append("| ... | ... | ... | ... | ... | (共 " + str(len(open_trades)) + " 筆，完整見 CSV) |")
 
     report_text = "\n".join(md)
     with open("task_k_report.md", "w", encoding="utf-8") as f:
