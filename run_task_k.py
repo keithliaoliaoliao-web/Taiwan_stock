@@ -274,7 +274,8 @@ def main():
     ci_c_minus_a = bootstrap_diff(df_a, df_c)
     ci_c_minus_b = bootstrap_diff(df_b, df_c)
 
-    # 生成 Markdown 報表
+    # 生成 Markdown 報表 (改用乾淨字串拼接，避免任何 f-string 逃脫字元錯誤)
+    pipe = " | "
     md = []
     md.append("# 任務 K 嚴格規格檢驗報表\n")
     md.append("## 一、 核心設定原則")
@@ -285,29 +286,35 @@ def main():
     md.append("| 組別 | 期間 | 成交筆數 | 勝率 | 單筆中位數 | 剔除最大1%平均 | 獲利因子 (PF) | 平均淨 R |")
     md.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |")
 
-    for name, df_sub in [("A組 (H2不含BOS/無緯創)", df_a), ("B組 (順勢任意棒)", df_b), ("C組 (任務K 突破20日高)", df_c)]:
+    groups_data = [
+        ("A組 (H2不含BOS/無緯創)", df_a),
+        ("B組 (順勢任意棒)", df_b),
+        ("C組 (任務K 突破20日高)", df_c)
+    ]
+
+    for name, df_sub in groups_data:
         s_all = calc_stats(df_sub["net_r"])
         s_no23 = calc_stats(df_sub[df_sub["year"] != 2023]["net_r"])
-        md.append(f"| {name} | 全期間 (2021-2026) | {s_all['n']} | {s_all['win_rate']:.1f}% | {s_all['median']:+.2f}R | {s_all['trim1_mean']:+.2f}R | {s_all['pf']:.2f} | **{s_all['mean_r']:+.3f}R** |")
-        md.append(f"| {name} | 排除 2023 | {s_no23['n']} | {s_no23['win_rate']:.1f}% | {s_no23['median']:+.2f}R | {s_no23['trim1_mean']:+.2f}R | {s_no23['pf']:.2f} | **{s_no23['mean_r']:+.3f}R** |")
+        
+        row_all = "| " + name + " | 全期間 (2021-2026) | " + str(s_all['n']) + " | " + "{:.1f}%".format(s_all['win_rate']) + " | " + "{:+.2f}R".format(s_all['median']) + " | " + "{:+.2f}R".format(s_all['trim1_mean']) + " | " + "{:.2f}".format(s_all['pf']) + " | **" + "{:+.3f}R".format(s_all['mean_r']) + "** |"
+        row_no23 = "| " + name + " | 排除 2023 | " + str(s_no23['n']) + " | " + "{:.1f}%".format(s_no23['win_rate']) + " | " + "{:+.2f}R".format(s_no23['median']) + " | " + "{:+.2f}R".format(s_no23['trim1_mean']) + " | " + "{:.2f}".format(s_no23['pf']) + " | **" + "{:+.3f}R".format(s_no23['mean_r']) + "** |"
+        md.append(row_all)
+        md.append(row_no23)
+
+    diff_ca = df_c['net_r'].mean() - df_a['net_r'].mean() if len(df_c) > 0 and len(df_a) > 0 else 0.0
+    diff_cb = df_c['net_r'].mean() - df_b['net_r'].mean() if len(df_c) > 0 and len(df_b) > 0 else 0.0
 
     md.append("\n## 三、 組間差值與按月分群 95% 信賴區間 (2000次 Bootstrap, seed=42)")
-    md.append(f"- **C 組 vs A 組 (任務K - H2)**：差值 {df_c['net_r'].mean() - df_a['net_r'].mean():+.3f}R，95% CI [{ci_c_minus_a[0]:+.3f}R, {ci_c_minus_a[1]:+.3f}R]")
-    md.append(f"- **C 組 vs B 組 (任務K - 任意棒)**：差值 {df_c['net_r'].mean() - df_b['net_r'].mean():+.3f}R，95% CI [{ci_c_minus_b[0]:+.3f}R, {ci_c_minus_b[1]:+.3f}R]\n")
+    md.append("- **C 組 vs A 組 (任務K - H2)**：差值 {:+.3f}R，95% CI [{:+.3f}R, {:+.3f}R]".format(diff_ca, ci_c_minus_a[0], ci_c_minus_a[1]))
+    md.append("- **C 組 vs B 組 (任務K - 任意棒)**：差值 {:+.3f}R，95% CI [{:+.3f}R, {:+.3f}R]\n".format(diff_cb, ci_c_minus_b[0], ci_c_minus_b[1]))
 
     md.append("## 四、 各組最大 5 筆獲利交易")
     for name, df_sub in [("A組 (H2)", df_a), ("B組 (順勢任意棒)", df_b), ("C組 (任務K)", df_c)]:
-        md.append(f"### {name}")
+        md.append("### " + name)
         top5 = df_sub.sort_values("net_r", ascending=False).head(5)
         for _, r in top5.iterrows():
-            ticker_val = r['ticker']
-            e_date = r['entry_date']
-            e_p = r['entry_price']
-            x_date = r['exit_date']
-            x_p = r['exit_price']
-            x_reason = r['exit_reason']
-            nr = r['net_r']
-            md.append(f"- {ticker_val} | 進場: {e_date} (${e_p}) \vert{} 出場: {x_date} (${x_p}) | 原因: {x_reason} | **{nr:+.2f}R**")
+            item_str = "- " + str(r['ticker']) + " | 進場: " + str(r['entry_date']) + " ($" + str(r['entry_price']) + ") \vert{} 出場: " + str(r['exit_date']) + " ($" + str(r['exit_price']) + ") | 原因: " + str(r['exit_reason']) + " | **" + "{:+.2f}R".format(r['net_r']) + "**"
+            md.append(item_str)
 
     md.append("\n## 五、 回測核心邏輯程式碼原文")
     md.append("```python")
