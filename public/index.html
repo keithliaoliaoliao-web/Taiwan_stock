@@ -2,46 +2,151 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>臺股價格行為量化選股儀表板</title>
+    <title>臺股量化趨勢選股儀表板</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; font-family: -apple-system, sans-serif; }
         .card { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px; border: none; }
         .header-box { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 22px; border-radius: 12px; margin-bottom: 20px; }
-        .light-box { background-color: #6c757d; color: white; padding: 18px 24px; border-radius: 12px; font-weight: bold; margin-bottom: 20px; }
+        .light-box { background-color: #198754; color: white; padding: 18px 24px; border-radius: 12px; font-weight: bold; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 <div class="container py-4">
     <div class="header-box d-flex justify-content-between align-items-center">
-        <div><h3 class="mb-1">📊 臺股價格行為量化選股系統（Al Brooks H2 ＋ 投信濾網 C）</h3><small>V1 20EMA 趨勢追蹤體系 | 每檔資金 33 萬 | MaxPos=3</small></div>
-        <div class="text-end"><span class="badge bg-light text-dark">更新時間: 2026-10-16 20:40</span></div>
+        <div>
+            <h3 class="mb-1">📊 臺股量化趨勢選股系統（任務 K 突破 ＋ 投信濾網 C）</h3>
+            <small>組別 4 實證架構 | 50% 市場廣度濾網 | 1% 以損定量風控 | V1 20EMA 趨勢追蹤</small>
+        </div>
+        <div class="text-end"><span class="badge bg-light text-dark">更新時間: 2026-10-17 09:05</span></div>
     </div>
 
     <div class="light-box d-flex justify-content-between align-items-center">
-        <div><h4 class="mb-1">⚪ 續抱 / 空手觀望</h4><div>目前無新訊號，持倉狀態健康。</div></div>
-        <div class="text-end"><small>大盤加權指數: 47111.26 (整理)</small></div>
+        <div><h4 class="mb-1">🟢 買進訊號</h4><div>市場廣度健康 (61.3%)，偵測到 11 檔符合「突破 20 日高 ＋ 投信買超」之標的！</div></div>
+        <div class="text-end">
+            <div><small>大盤指數: 47111.26 (跌破20EMA)</small></div>
+            <div><small>市場廣度: 61.3% (通過 >=50%)</small></div>
+        </div>
     </div>
 
     <!-- 資產現況 -->
     <div class="row g-3 mb-4">
         <div class="col-md-4"><div class="card p-3 text-center"><div class="text-muted">持股現值總計</div><h4>0 元</h4></div></div>
         <div class="col-md-4"><div class="card p-3 text-center"><div class="text-muted">未實現浮動損益</div><h4 style="color:#198754;">+0 元</h4></div></div>
-        <div class="col-md-4"><div class="card p-3 text-center"><div class="text-muted">當前持倉檔數</div><h4>0 / 3 檔</h4></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center"><div class="text-muted">當前持倉檔數</div><h4>0 / 5 檔</h4></div></div>
     </div>
 
     <!-- 區塊一：明日掛單進場清單 -->
     <div class="card p-4">
-        <h5 class="text-primary mb-3">🎯 明日掛單進場清單（H2 突破 ＋ 投信買超）</h5>
+        <h5 class="text-primary mb-3">🎯 明日進場候選清單（20日高點突破 ＋ 投信買超 ＋ 1% 以損定量）</h5>
         <div class="table-responsive"><table class="table table-hover align-middle">
-            <thead class="table-light"><tr><th>代號</th><th>名稱</th><th>評級</th><th>最新價</th><th>掛單進場價</th><th>停損防守價</th><th>2R 目標價</th><th>投信籌碼</th><th>建議股數</th></tr></thead>
-            <tbody><tr><td colspan="9" class="text-center py-3 text-muted">今日無符合「H2 突破 ＋ 投信買超」之新訊號</td></tr></tbody>
+            <thead class="table-light"><tr><th>代號</th><th>名稱</th><th>評級</th><th>最新收盤</th><th>參考進場價</th><th>初始停損價 (距離)</th><th>動態防守 (20EMA)</th><th>投信籌碼</th><th>建議買進股數</th></tr></thead>
+            <tbody>
+            <tr>
+                <td><strong>2610.TW</strong></td><td>華航</td>
+                <td><span class="badge bg-primary">A 級</span></td>
+                <td>21.05</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">21.05</td>
+                <td style="color:#dc3545;">20.03 (4.9%)</td>
+                <td style="color:#198754;">20.44 (破線出場)</td>
+                <td>+5818 張 (5日: +9213 張)</td>
+                <td><strong>9,771 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>5880.TW</strong></td><td>合庫金</td>
+                <td><span class="badge bg-primary">A 級</span></td>
+                <td>28.15</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">28.15</td>
+                <td style="color:#dc3545;">26.26 (6.7%)</td>
+                <td style="color:#198754;">26.80 (破線出場)</td>
+                <td>+2066 張 (5日: +4645 張)</td>
+                <td><strong>5,297 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>2027.TW</strong></td><td>大成鋼</td>
+                <td><span class="badge bg-primary">A 級</span></td>
+                <td>50.90</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">50.90</td>
+                <td style="color:#dc3545;">47.44 (6.8%)</td>
+                <td style="color:#198754;">48.41 (破線出場)</td>
+                <td>+3615 張 (5日: +7177 張)</td>
+                <td><strong>2,891 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>5388.TW</strong></td><td>中磊</td>
+                <td><span class="badge bg-primary">A 級</span></td>
+                <td>75.50</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">75.50</td>
+                <td style="color:#dc3545;">72.31 (4.2%)</td>
+                <td style="color:#198754;">73.79 (破線出場)</td>
+                <td>+0 張 (5日: +50 張)</td>
+                <td><strong>3,138 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>8069.TWO</strong></td><td>元太</td>
+                <td><span class="badge bg-primary">A 級</span></td>
+                <td>155.00</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">155.00</td>
+                <td style="color:#dc3545;">143.50 (7.4%)</td>
+                <td style="color:#198754;">148.37 (破線出場)</td>
+                <td>-3 張 (5日: +48 張)</td>
+                <td><strong>869 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>3034.TW</strong></td><td>聯詠</td>
+                <td><span class="badge bg-primary">A 級</span></td>
+                <td>577.00</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">577.00</td>
+                <td style="color:#dc3545;">522.00 (9.5%)</td>
+                <td style="color:#198754;">547.29 (破線出場)</td>
+                <td>+613 張 (5日: +2116 張)</td>
+                <td><strong>181 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>1102.TW</strong></td><td>亞泥</td>
+                <td><span class="badge bg-primary">B 級</span></td>
+                <td>38.20</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">38.20</td>
+                <td style="color:#dc3545;">35.51 (7.0%)</td>
+                <td style="color:#198754;">36.23 (破線出場)</td>
+                <td>+408 張 (5日: +234 張)</td>
+                <td><strong>3,714 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>2885.TW</strong></td><td>元大金</td>
+                <td><span class="badge bg-primary">B 級</span></td>
+                <td>72.90</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">72.90</td>
+                <td style="color:#dc3545;">68.50 (6.0%)</td>
+                <td style="color:#198754;">69.90 (破線出場)</td>
+                <td>-1852 張 (5日: +4058 張)</td>
+                <td><strong>2,274 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>4904.TW</strong></td><td>遠傳</td>
+                <td><span class="badge bg-primary">B 級</span></td>
+                <td>113.50</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">113.50</td>
+                <td style="color:#dc3545;">104.79 (7.7%)</td>
+                <td style="color:#198754;">106.93 (破線出場)</td>
+                <td>+2499 張 (5日: +7283 張)</td>
+                <td><strong>1,148 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>1476.TW</strong></td><td>儒鴻</td>
+                <td><span class="badge bg-primary">B 級</span></td>
+                <td>329.50</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">329.50</td>
+                <td style="color:#dc3545;">295.15 (10.4%)</td>
+                <td style="color:#198754;">301.17 (破線出場)</td>
+                <td>+0 張 (5日: +134 張)</td>
+                <td><strong>291 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr>
+            <tr>
+                <td><strong>6446.TW</strong></td><td>藥華藥</td>
+                <td><span class="badge bg-primary">B 級</span></td>
+                <td>1245.00</td><td style="color:#0d6efd; font-weight:bold; font-size:1.1em;">1245.00</td>
+                <td style="color:#dc3545;">1155.00 (7.2%)</td>
+                <td style="color:#198754;">1210.69 (破線出場)</td>
+                <td>+247 張 (5日: +454 張)</td>
+                <td><strong>111 股</strong> <small class="text-muted">(1%風險)</small></td>
+            </tr></tbody>
         </table></div>
     </div>
 
     <!-- 區塊二：個人真實持倉 20EMA 監控 -->
     <div class="card p-4">
-        <h5 class="text-success mb-3">📈 個人持倉 20EMA 趨勢監控帳本（V1 出場規則）</h5>
+        <h5 class="text-success mb-3">📈 個人持倉 20EMA 趨勢監控帳本（V1 出場規則：破 20EMA 次日開盤出清）</h5>
         <div class="table-responsive"><table class="table table-hover align-middle">
             <thead class="table-light"><tr><th>代號</th><th>名稱</th><th>買進日期</th><th>股數</th><th>成本價</th><th>現價</th><th>20EMA</th><th>未實現損益</th><th>操作指示</th></tr></thead>
             <tbody><tr><td colspan="9" class="text-center py-3 text-muted">目前 portfolio.csv 中無持倉記錄</td></tr></tbody>
