@@ -18,5 +18,13 @@ jobs:
       - name: Install dependencies
         run: pip install pandas numpy requests pytz
 
-      - name: Run Task K
+      - name: Run Task K Strict Verification
         run: python run_task_k.py
+
+      - name: Upload Report & Trades CSV
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-k-artifacts
+          path: |
+            task_k_trades.csv
+            task_k_report.md
