@@ -28,5 +28,4 @@ jobs:
           path: |
             task_k_trades_base_indep.csv
             task_k_trades_base_no_ov.csv
-            task_k_trades_all_2021.csv
             task_k_report.md
