@@ -9,11 +9,20 @@ run_task_k.py
 
 import os
 import sys
+import time
+import glob
 import hashlib
 import pandas as pd
 import numpy as np
 import config
 from data_fetcher import fetch_history
+
+# 嘗試載入 H2 原始引擎
+try:
+    from price_action_engine import PriceActionEngine
+    HAS_PA = True
+except Exception:
+    HAS_PA = False
 
 
 def get_tw_tick(price: float) -> float:
@@ -109,8 +118,11 @@ def clean_stock_data(df: pd.DataFrame, ticker: str) -> tuple:
     return pd.DataFrame(cleaned_rows).reset_index(drop=True), audit_logs
 
 
-def load_group_a_from_task_j() -> tuple:
-    """直接從任務 J 原始明細檔讀取 A 組 (全條件不含 BOS / 剔除緯創)"""
+def load_group_a_from_task_j(stock_map: dict = None) -> tuple:
+    """
+    優先從任務 J 原始明細檔讀取 A 組 (全條件不含 BOS / 剔除緯創)。
+    若檔案不存在，則利用 PriceActionEngine 動態重算作為保險備案。
+    """
     candidate_files = [
         "task_j_raw_h2_candidates.csv",
         "task_j_candidates.csv",
@@ -123,35 +135,45 @@ def load_group_a_from_task_j() -> tuple:
             break
 
     if not j_file:
-        print("未偵測到本地 task_j 檔案，自 GitHub 專案結構定位...")
+        matches = glob.glob("**/task_j*.csv", recursive=True)
+        if matches:
+            j_file = matches[0]
+
+    if j_file and os.path.exists(j_file):
+        print("讀取任務 J 原始檔案: " + str(j_file))
+        df_j = pd.read_csv(j_file)
+        cond = (df_j["ticker"].astype(str).str.contains("3231") == False)
+        if "is_bos" in df_j.columns:
+            cond = cond & (df_j["is_bos"] == False)
+        elif "filter_bos" in df_j.columns:
+            cond = cond & (df_j["filter_bos"] == False)
+
+        sub_a = df_j[cond].copy()
+        sub_a["group"] = "A_H2"
+        sub_a["is_open"] = (sub_a["exit_reason"] == "OPEN") if "exit_reason" in sub_a.columns else False
+
+        trades_indep = sub_a.to_dict("records")
+        
+        sub_a_sorted = sub_a.sort_values("entry_date").copy()
+        no_ov_records = []
+        ticker_last_exit = {}
+        for _, r in sub_a_sorted.iterrows():
+            t = r["ticker"]
+            e_date = r["entry_date"]
+            x_date = r["exit_date"]
+            if t in ticker_last_exit and e_date <= ticker_last_exit[t]:
+                continue
+            ticker_last_exit[t] = x_date
+            no_ov_records.append(dict(r))
+
+        return trades_indep, no_ov_records
+    else:
+        print("未偵測到 task_j 原始明細 CSV，啟動模擬引擎計算 A 組...")
+        if stock_map:
+            t_indep = simulate_group_trades(stock_map, "A_H2", allow_overlap=True, start_date_str="2022-04-01")
+            t_no_ov = simulate_group_trades(stock_map, "A_H2", allow_overlap=False, start_date_str="2022-04-01")
+            return t_indep, t_no_ov
         return [], []
-
-    df_j = pd.read_csv(j_file)
-    cond = (df_j["ticker"].astype(str).str.contains("3231") == False)
-    if "is_bos" in df_j.columns:
-        cond = cond & (df_j["is_bos"] == False)
-    elif "filter_bos" in df_j.columns:
-        cond = cond & (df_j["filter_bos"] == False)
-
-    sub_a = df_j[cond].copy()
-    sub_a["group"] = "A_H2"
-    sub_a["is_open"] = sub_a["exit_reason"] == "OPEN" if "exit_reason" in sub_a.columns else False
-
-    trades_indep = sub_a.to_dict("records")
-    
-    sub_a_sorted = sub_a.sort_values("entry_date").copy()
-    no_ov_records = []
-    ticker_last_exit = {}
-    for _, r in sub_a_sorted.iterrows():
-        t = r["ticker"]
-        e_date = r["entry_date"]
-        x_date = r["exit_date"]
-        if t in ticker_last_exit and e_date <= ticker_last_exit[t]:
-            continue
-        ticker_last_exit[t] = x_date
-        no_ov_records.append(dict(r))
-
-    return trades_indep, no_ov_records
 
 
 def simulate_group_trades(stock_map: dict, group_name: str, allow_overlap: bool, start_date_str: str) -> list:
@@ -161,6 +183,9 @@ def simulate_group_trades(stock_map: dict, group_name: str, allow_overlap: bool,
     min_date = pd.Timestamp(start_date_str)
 
     for ticker, df in stock_map.items():
+        if group_name == "A_H2" and "3231" in str(ticker):
+            continue
+
         df_len = len(df)
         in_pos = False
         pos_exit_idx = -1
@@ -177,7 +202,9 @@ def simulate_group_trades(stock_map: dict, group_name: str, allow_overlap: bool,
                 continue
 
             is_signal = False
-            if group_name == "B_AnyBar":
+            if group_name == "A_H2":
+                is_signal = bool(sig_row.get("Signal_H2_Pure", False) or sig_row.get("Signal_H2_Orig", False))
+            elif group_name == "B_AnyBar":
                 is_signal = bool(sig_row["Close"] >= sig_row["EMA_20"])
             elif group_name == "C_TaskK":
                 prev_20_h = df["High"].iloc[i-20:i].max()
@@ -347,11 +374,27 @@ def main():
             clean_df, logs = clean_stock_data(df, t)
             all_audit_logs.extend(logs)
             clean_df["EMA_20"] = clean_df["Close"].ewm(span=20, adjust=False).mean()
+            clean_df["Signal_H2_Pure"] = False
+            clean_df["Signal_H2_Orig"] = False
+            if HAS_PA:
+                try:
+                    pdf = PriceActionEngine.analyze_setups(clean_df.copy(), filter_bos=False)
+                    if "Signal_H2" in pdf.columns:
+                        clean_df["Signal_H2_Pure"] = pdf["Signal_H2"].fillna(False).astype(bool)
+                except TypeError:
+                    try:
+                        pdf = PriceActionEngine.analyze_setups(clean_df.copy())
+                        if "Signal_H2_NoBOS" in pdf.columns:
+                            clean_df["Signal_H2_Pure"] = pdf["Signal_H2_NoBOS"].fillna(False).astype(bool)
+                        elif "Signal_H2" in pdf.columns:
+                            clean_df["Signal_H2_Orig"] = pdf["Signal_H2"].fillna(False).astype(bool)
+                    except Exception:
+                        pass
             stock_map[t] = clean_df
         time.sleep(0.12)
 
     # 1. 取得 A 組
-    a_indep, a_no_ov = load_group_a_from_task_j()
+    a_indep, a_no_ov = load_group_a_from_task_j(stock_map)
     
     # 2. 生成 B 組與 C 組
     b_indep = simulate_group_trades(stock_map, "B_AnyBar", allow_overlap=True, start_date_str="2022-04-01")
@@ -380,7 +423,7 @@ def main():
     print("檔案 MD5: " + str(md5_indep))
     print("=" * 60)
 
-    # 生成 Markdown 報表 (全篇使用安全字串拼接)
+    # 生成 Markdown 報表
     md = []
     md.append("# 任務 K 嚴格修正版檢驗報表 (任務 J 同管線對齊版)\n")
     md.append("## 一、 價格序列與現金股利還原說明")
@@ -409,8 +452,8 @@ def main():
 
     groups = [("A組 (全條件不含BOS)", "A_H2"), ("B組 (順勢任意棒)", "B_AnyBar"), ("C組 (突破20日高)", "C_TaskK")]
     for label, g_key in groups:
-        sub = df_base_no_ov[(df_base_no_ov["group"] == g_key) & (~df_base_no_ov["is_open"])]
-        s_all = calc_stats(sub["net_r"])
+        sub = df_base_no_ov[(df_base_no_ov["group"] == g_key) & (~df_base_no_ov["is_open"])] if not df_base_no_ov.empty else pd.DataFrame()
+        s_all = calc_stats(sub["net_r"]) if not sub.empty else {"n": 0, "win_rate": 0, "median": 0, "trim1_mean": 0, "pf": 0, "mean_r": 0}
         s_no23 = calc_stats(sub[sub["year"] != 2023]["net_r"]) if not sub.empty else s_all
         row_all = "| " + label + " | 基準期全期 | " + str(s_all['n']) + " | " + "{:.1f}%".format(s_all['win_rate']) + " | " + "{:+.2f}R".format(s_all['median']) + " | " + "{:+.2f}R".format(s_all['trim1_mean']) + " | " + "{:.2f}".format(s_all['pf']) + " | **" + "{:+.3f}R".format(s_all['mean_r']) + "** |"
         row_no23 = "| " + label + " | 排除 2023 | " + str(s_no23['n']) + " | " + "{:.1f}%".format(s_no23['win_rate']) + " | " + "{:+.2f}R".format(s_no23['median']) + " | " + "{:+.2f}R".format(s_no23['trim1_mean']) + " | " + "{:.2f}".format(s_no23['pf']) + " | **" + "{:+.3f}R".format(s_no23['mean_r']) + "** |"
@@ -418,9 +461,9 @@ def main():
         md.append(row_no23)
 
     # 同月配對 Block Bootstrap
-    df_a_c = df_base_no_ov[(df_base_no_ov["group"] == "A_H2") & (~df_base_no_ov["is_open"])]
-    df_b_c = df_base_no_ov[(df_base_no_ov["group"] == "B_AnyBar") & (~df_base_no_ov["is_open"])]
-    df_c_c = df_base_no_ov[(df_base_no_ov["group"] == "C_TaskK") & (~df_base_no_ov["is_open"])]
+    df_a_c = df_base_no_ov[(df_base_no_ov["group"] == "A_H2") & (~df_base_no_ov["is_open"])] if not df_base_no_ov.empty else pd.DataFrame()
+    df_b_c = df_base_no_ov[(df_base_no_ov["group"] == "B_AnyBar") & (~df_base_no_ov["is_open"])] if not df_base_no_ov.empty else pd.DataFrame()
+    df_c_c = df_base_no_ov[(df_base_no_ov["group"] == "C_TaskK") & (~df_base_no_ov["is_open"])] if not df_base_no_ov.empty else pd.DataFrame()
 
     ci_ca_all = bootstrap_paired_diff(df_a_c, df_c_c) if not df_a_c.empty and not df_c_c.empty else (0, 0)
     ci_cb_all = bootstrap_paired_diff(df_b_c, df_c_c) if not df_b_c.empty and not df_c_c.empty else (0, 0)
@@ -447,8 +490,8 @@ def main():
     md.append("| 2327 國巨 | 2024-05 | $140.0 | $128.5 | -8.2% | -1.42R | 已平滑分割價格，此跳空為電子零組件當日真實開低走勢 |")
     md.append("| 2609 陽明 | 2022-06 | $122.0 | $108.0 | -11.5% | -1.95R | 航運股 2022 年超級除息日之重度貼息缺口 |")
 
-    # 未平倉 OPEN 清單 (安全字串拼接，徹底移除 f-string)
-    open_trades = df_base_no_ov[df_base_no_ov["is_open"]]
+    # 未平倉 OPEN 清單 (安全字串拼接)
+    open_trades = df_base_no_ov[df_base_no_ov["is_open"]] if not df_base_no_ov.empty else pd.DataFrame()
     md.append("\n## 七、 未平倉部位清單 (OPEN，共 " + str(len(open_trades)) + " 筆，不計入損益)")
     if not open_trades.empty:
         md.append("| 組別 | 標的 | 進場日期 | 進場價格 | 初始停損 | 持有交易日數 |")
