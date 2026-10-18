@@ -18,14 +18,17 @@ jobs:
       - name: Install dependencies
         run: pip install pandas numpy requests pytz
 
-      - name: Generate Task K Trades CSV
+      - name: Generate Task K Benchmark CSVs
         run: python run_task_k.py
 
-      - name: Run Self Verification
-        run: python scanner.py --verify | tee scanner_verify_raw.log
+      - name: Run Extended Replay (2025-H1 Lifecycle Check)
+        run: python scanner.py --extended-verify | tee scanner_extended_verify_raw.log
 
-      - name: Upload Raw Terminal Log
+      - name: Upload Replay Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: scanner-verify-raw-log
-          path: scanner_verify_raw.log
+          name: scanner-2025-h1-verification
+          path: |
+            scanner_extended_verify_raw.log
+            replay_diff_2025_h1.csv
+            replay_extra_signals_2025_h1.csv
