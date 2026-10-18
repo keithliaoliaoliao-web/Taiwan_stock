@@ -25,14 +25,10 @@ except Exception:
   HAS_FETCHER = False
 
 LEDGER_FILE = "paper_trading_ledger.csv"
-META_FILE = "paper_trading_meta.json"
 COST_RATE = 0.00585
 ACTUAL_FEE_DESC = "稅0.3% + 手續費0.1425%*2 (回測基準，無折扣無低消)"
 
 
-# ==========================================
-# 1. 檔位運算
-# ==========================================
 def get_tw_tick(price: float) -> float:
   if price < 10.0:
     return 0.01
@@ -60,15 +56,11 @@ def get_tick_up(price: float) -> float:
   return round(price + tick, 2)
 
 
-# ==========================================
-# 2. 資料清洗與還原 (嚴格對齊任務 K 原文)
-# ==========================================
-def adjust_corporate_actions(df: pd.DataFrame) -> tuple:
-  """第一步：股票分割回溯平滑 (回傳平滑後 DataFrame 與單日分割事件列表)"""
+def adjust_corporate_actions(df: pd.DataFrame) -> pd.DataFrame:
+  """第一步：股票分割回溯平滑"""
   df = df.copy().sort_values("Date").reset_index(drop=True)
   n = len(df)
   adj_factor = np.ones(n)
-  split_events = {}
 
   for i in range(1, n):
     prev_c = df.loc[i - 1, "Close"]
@@ -76,14 +68,12 @@ def adjust_corporate_actions(df: pd.DataFrame) -> tuple:
     if prev_c > 0 and cur_o > 0 and (cur_o / prev_c) < 0.70:
       ratio = cur_o / prev_c
       adj_factor[:i] *= ratio
-      d_str = str(df.loc[i, "Date"])[:10]
-      split_events[d_str] = ratio
 
   for col in ["Open", "High", "Low", "Close"]:
     if col in df.columns:
       df[col] = (df[col] * adj_factor).round(2)
 
-  return df, split_events
+  return df
 
 
 def clean_stock_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -114,17 +104,17 @@ def clean_stock_data(df: pd.DataFrame) -> pd.DataFrame:
   return pd.DataFrame(cleaned_rows).reset_index(drop=True)
 
 
-def prepare_stock_data(raw_df: pd.DataFrame) -> tuple:
+def prepare_stock_data(raw_df: pd.DataFrame) -> pd.DataFrame:
   """資料前置標準層：先還原、後清洗、計算 EMA20"""
   if raw_df.empty or len(raw_df) < 22:
-    return pd.DataFrame(), {}
-  df, split_events = adjust_corporate_actions(raw_df)
+    return pd.DataFrame()
+  df = adjust_corporate_actions(raw_df)
   df = clean_stock_data(df)
   if len(df) < 22:
-    return pd.DataFrame(), {}
+    return pd.DataFrame()
   df["DateStr"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
   df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
-  return df, split_events
+  return df
 
 
 def get_universe() -> list:
@@ -150,9 +140,6 @@ def get_universe() -> list:
   return []
 
 
-# ==========================================
-# 3. 核心訊號掃描
-# ==========================================
 def scan_signals_for_ticker(
     df: pd.DataFrame, ticker: str, as_of_date: str = None
 ) -> dict:
@@ -201,9 +188,6 @@ def scan_signals_for_ticker(
   }
 
 
-# ==========================================
-# 4. 帳本狀態管理與時序撮合
-# ==========================================
 def load_ledger() -> pd.DataFrame:
   cols = [
       "signal_date",
@@ -237,14 +221,13 @@ def save_ledger(df: pd.DataFrame):
 def update_ledger_single_day(
     ledger: pd.DataFrame,
     stock_map: dict,
-    split_map: dict,
     today_str: str,
     target_ticker: str = None,
 ) -> tuple:
-  """
-  撮合單一交易日之部位：
-  1. 偵測並執行持倉標的之除權/分割價格調整
-  2. 依標的自身的實體 K 棒遞增持有天數，消除全域日曆停牌偏差
+  """撮合單一交易日部位：
+
+  1. 偵測分割事件：若單日開盤相對前日收盤跌幅超過 30%，標記為 NEEDS_REVIEW 並凍結自動撮合
+  2. 正常撮合未分割之部位
   """
   if ledger.empty:
     return ledger, set()
@@ -261,32 +244,34 @@ def update_ledger_single_day(
     status = str(row["status"])
     df = stock_map.get(t, pd.DataFrame())
 
-    if df.empty or status in ["CLOSED", "UNTRIGGERED"]:
+    if df.empty or status in ["CLOSED", "UNTRIGGERED", "NEEDS_REVIEW"]:
       updated_rows.append(row)
       continue
-
-    # 1. 動態分割平滑防護
-    if t in split_map and today_str in split_map[t]:
-      s_ratio = split_map[t][today_str]
-      row["trigger_price"] = round(float(row["trigger_price"]) * s_ratio, 2)
-      row["stop_price"] = round(float(row["stop_price"]) * s_ratio, 2)
-      if pd.notna(row["entry_price"]):
-        row["entry_price"] = round(float(row["entry_price"]) * s_ratio, 2)
-      row["actual_fee_settings"] = (
-          str(row["actual_fee_settings"]) + f" | SPLIT({round(s_ratio, 4)})"
-      )
 
     today_bar_matches = df[df["DateStr"] == today_str]
     if today_bar_matches.empty:
       updated_rows.append(row)
       continue
 
+    today_idx = today_bar_matches.index[0]
     today_bar = today_bar_matches.iloc[0]
     cur_open = float(today_bar["Open"])
     cur_high = float(today_bar["High"])
     cur_low = float(today_bar["Low"])
     cur_close = float(today_bar["Close"])
     cur_ema = float(today_bar["EMA_20"])
+
+    # 1. 偵測分割跳空事件 (相較前一根 K 棒收盤價折減超過 30%)
+    if today_idx > 0:
+      prev_bar = df.iloc[today_idx - 1]
+      prev_c = float(prev_bar["Close"])
+      if prev_c > 0 and cur_open > 0 and (cur_open / prev_c) < 0.70:
+        s_ratio = round(cur_open / prev_c, 4)
+        row["status"] = "NEEDS_REVIEW"
+        row["exit_reason"] = f"SPLIT_DETECTED(ratio={s_ratio})"
+        row["last_processed_date"] = today_str
+        updated_rows.append(row)
+        continue
 
     trigger_price = float(row["trigger_price"])
     stop_price = float(row["stop_price"])
@@ -380,9 +365,6 @@ def update_ledger_single_day(
   return pd.DataFrame(updated_rows), tickers_exited_today
 
 
-# ==========================================
-# 5. 擴充回放自我檢驗模組 (三區間全覆蓋)
-# ==========================================
 def run_extended_verification(
     benchmark_csv: str = "task_k_trades_base_no_ov.csv",
 ) -> bool:
@@ -406,21 +388,15 @@ def run_extended_verification(
     return False
 
   stock_map = {}
-  split_map = {}
   if HAS_FETCHER:
-    print(f"載入觀察池 {len(tickers)} 檔行情 (lookback_days=2200, adjusted=True)...")
+    print(f"載入觀察池 {len(tickers)} 檔行情 (lookback_days=2200)...")
     for t in tickers:
-      try:
-        raw_df = fetch_history(t, lookback_days=2200, adjusted=True)
-      except TypeError:
-        raw_df = fetch_history(t, lookback_days=2200)
-
+      raw_df = fetch_history(t, lookback_days=2200)
       if not raw_df.empty:
-        df_prep, s_events = prepare_stock_data(raw_df)
-        stock_map[t] = df_prep
-        split_map[t] = s_events
+        df_prep = prepare_stock_data(raw_df)
+        if not df_prep.empty:
+          stock_map[t] = df_prep
 
-  # 以聯集取得全市場完整交易日曆
   all_trading_dates = sorted(
       list(
           set.union(
@@ -459,6 +435,8 @@ def run_extended_verification(
         "exit_price",
         "exit_reason",
         "rule_net_r",
+        "slippage_net_r",
+        "actual_fee_settings",
         "status",
         "days_held",
         "pending_ema_exit",
@@ -479,7 +457,7 @@ def run_extended_verification(
         break
 
       sim_ledger, exited_today = update_ledger_single_day(
-          sim_ledger, stock_map, split_map, today_str
+          sim_ledger, stock_map, today_str
       )
       active_tickers = set(
           sim_ledger[sim_ledger["status"].isin(["OPEN", "PENDING"])][
@@ -521,6 +499,8 @@ def run_extended_verification(
                     "exit_price": np.nan,
                     "exit_reason": "",
                     "rule_net_r": np.nan,
+                    "slippage_net_r": np.nan,
+                    "actual_fee_settings": ACTUAL_FEE_DESC,
                     "status": "PENDING",
                     "days_held": 0,
                     "pending_ema_exit": False,
@@ -529,7 +509,6 @@ def run_extended_verification(
             ],
                                    ignore_index=True)
 
-    # 比對區間交易
     bench_sub = c_trades_all[
         (c_trades_all["sig_date"] >= p_start)
         & (c_trades_all["sig_date"] <= p_end)
@@ -614,15 +593,12 @@ def run_extended_verification(
           "match_status": "PASS" if is_p else "FAIL",
       })
 
+    prefix = period_name.lower().replace("-", "_")
     pd.DataFrame(diff_records).to_csv(
-        f"replay_diff_{period_name.lower().replace('-', '_')}.csv",
-        index=False,
-        encoding="utf-8-sig",
+        f"replay_diff_{prefix}.csv", index=False, encoding="utf-8-sig"
     )
     pd.DataFrame(extra_signals).to_csv(
-        f"replay_extra_{period_name.lower().replace('-', '_')}.csv",
-        index=False,
-        encoding="utf-8-sig",
+        f"replay_extra_{prefix}.csv", index=False, encoding="utf-8-sig"
     )
 
     if period_pass and len(scanner_entered) == len(bench_sub):
@@ -634,9 +610,6 @@ def run_extended_verification(
   return total_overall_pass
 
 
-# ==========================================
-# 6. 主程式進入點 (嚴格資料保護與冪等性流程)
-# ==========================================
 def main():
   parser = argparse.ArgumentParser(
       description="Task K Group C Forward Paper Trading Scanner"
@@ -663,26 +636,19 @@ def main():
     success = run_extended_verification()
     sys.exit(0 if success else 1)
 
-  # 資料保護檢驗
   tickers = get_universe()
   if not tickers:
     print("【致命錯誤】觀察池為空，程式終止！")
     sys.exit(1)
 
   stock_map = {}
-  split_map = {}
   if HAS_FETCHER:
     for t in tickers:
-      try:
-        raw_df = fetch_history(t, lookback_days=2200, adjusted=True)
-      except TypeError:
-        raw_df = fetch_history(t, lookback_days=2200)
-
+      raw_df = fetch_history(t, lookback_days=2200)
       if not raw_df.empty:
-        df_prep, s_events = prepare_stock_data(raw_df)
+        df_prep = prepare_stock_data(raw_df)
         if not df_prep.empty:
           stock_map[t] = df_prep
-          split_map[t] = s_events
 
   valid_count = len(stock_map)
   valid_ratio = valid_count / len(tickers)
@@ -696,7 +662,6 @@ def main():
     )
     sys.exit(1)
 
-  # 自動鎖定全市場最新法定交易日
   all_latest_dates = [
       df["DateStr"].iloc[-1] for df in stock_map.values() if not df.empty
   ]
@@ -706,12 +671,13 @@ def main():
 
   ledger = load_ledger()
 
-  # 冪等性防護與漏跑補算邏輯
   last_processed = (
       str(ledger["last_processed_date"].dropna().max())
-      if not ledger.empty
-      and "last_processed_date" in ledger.columns
-      and not ledger["last_processed_date"].dropna().empty
+      if (
+          not ledger.empty
+          and "last_processed_date" in ledger.columns
+          and not ledger["last_processed_date"].dropna().empty
+      )
       else None
   )
 
@@ -726,7 +692,6 @@ def main():
       )
       sys.exit(0)
 
-    # 檢查是否漏跑
     prev_idx = (
         all_dates_union.index(last_processed)
         if last_processed in all_dates_union
@@ -739,24 +704,21 @@ def main():
       missed_dates = all_dates_union[prev_idx + 1 : curr_idx]
       print(f"【漏跑偵測】偵測到未處理之交易日: {missed_dates}，開始循序補算...")
       for m_d in missed_dates:
-        ledger, _ = update_ledger_single_day(ledger, stock_map, split_map, m_d)
+        ledger, _ = update_ledger_single_day(ledger, stock_map, m_d)
 
-  # 1. 當日部位撮合更新
-  ledger, exited_today = update_ledger_single_day(
-      ledger, stock_map, split_map, today_str
-  )
+  ledger, exited_today = update_ledger_single_day(ledger, stock_map, today_str)
 
-  # 2. 取得持倉不可進場之股票 (OPEN + PENDING + 當日剛出場者)
   open_positions = (
       set(
-          ledger[ledger["status"].isin(["OPEN", "PENDING"])]["ticker"].unique()
+          ledger[
+              ledger["status"].isin(["OPEN", "PENDING", "NEEDS_REVIEW"])
+          ]["ticker"].unique()
       )
       if not ledger.empty
       else set()
   )
   ineligible_tickers = open_positions.union(exited_today)
 
-  # 3. 執行當日收盤掃描
   signals = []
   for t in tickers:
     if t in ineligible_tickers:
