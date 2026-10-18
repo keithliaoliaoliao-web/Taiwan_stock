@@ -21,14 +21,18 @@ jobs:
       - name: Generate Task K Benchmark CSVs
         run: python run_task_k.py
 
-      - name: Run Extended Replay (2025-H1 Lifecycle Check)
+      - name: Run Extended Replay (Three Periods Check)
         run: python scanner.py --extended-verify | tee scanner_extended_verify_raw.log
 
       - name: Upload Replay Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: scanner-2025-h1-verification
+          name: scanner-multi-period-verification
           path: |
             scanner_extended_verify_raw.log
+            replay_diff_2023_h2.csv
+            replay_extra_2023_h2.csv
             replay_diff_2025_h1.csv
-            replay_extra_signals_2025_h1.csv
+            replay_extra_2025_h1.csv
+            replay_diff_2026_h1.csv
+            replay_extra_2026_h1.csv
