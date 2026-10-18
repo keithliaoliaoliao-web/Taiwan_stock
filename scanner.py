@@ -103,6 +103,25 @@ def clean_stock_data(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(cleaned_rows).reset_index(drop=True)
 
 
+def prepare_stock_data(raw_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    與任務 K 完全同軌之前置處理：
+    1. 股票分割回溯平滑 (整段歷史先執行)
+    2. 缺值清洗與零棒剔除
+    3. 統一計算 20EMA
+    """
+    if raw_df.empty or len(raw_df) < 22:
+        return pd.DataFrame()
+    df = raw_df.copy().sort_values("Date").reset_index(drop=True)
+    df = adjust_corporate_actions(df)
+    df = clean_stock_data(df)
+    if len(df) < 22:
+        return pd.DataFrame()
+    df["DateStr"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
+    df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
+    return df
+
+
 def get_universe() -> list:
     """載入觀察池標的 (嚴禁在日誌中輸出任何 token)"""
     if HAS_CONFIG:
@@ -129,29 +148,24 @@ def get_universe() -> list:
 
 def scan_signals_for_ticker(df: pd.DataFrame, ticker: str, as_of_date: str = None) -> dict:
     """
-    對單檔股票執行 C 組掃描：
+    對單檔已處理完成的股票執行 C 組掃描：
     1. Close >= 20EMA
     2. High > max(High[t-20 : t-1]) (前 20 根日 K 最高，嚴格不含當日)
     """
     if df.empty or len(df) < 22:
         return None
 
-    df = df.copy().sort_values("Date").reset_index(drop=True)
-    df["DateStr"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
-
     if as_of_date is not None:
-        df = df[df["DateStr"] <= as_of_date].reset_index(drop=True)
-        if df.empty or len(df) < 22:
+        matches = df.index[df["DateStr"] <= as_of_date]
+        if len(matches) < 22:
             return None
+        cur_idx = matches[-1]
+    else:
+        cur_idx = len(df) - 1
 
-    df = clean_stock_data(df)
-    df = adjust_corporate_actions(df)
-    if len(df) < 22:
+    if cur_idx < 20:
         return None
 
-    df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
-
-    cur_idx = len(df) - 1
     cur_bar = df.iloc[cur_idx]
     sig_date = cur_bar["DateStr"]
 
@@ -214,7 +228,6 @@ def update_ledger_with_market_data(ledger: pd.DataFrame, stock_map: dict, today_
             updated_rows.append(row)
             continue
 
-        df["DateStr"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
         today_bar_matches = df[df["DateStr"] == today_str]
         if today_bar_matches.empty:
             updated_rows.append(row)
@@ -331,7 +344,7 @@ def run_self_verification(trades_csv: str = "task_k_trades_base_indep.csv") -> b
     unique_dates = sorted(c_trades["sig_date"].unique().tolist())
     np.random.seed(42)
     sample_size = min(5, len(unique_dates))
-    sampled_dates = sorted(list(np.random.choice(unique_dates, size=sample_size, replace=False)))
+    sampled_dates = [str(d) for d in sorted(list(np.random.choice(unique_dates, size=sample_size, replace=False)))]
 
     print(f"抽樣檢驗的 5 個訊號日期: {sampled_dates}")
 
@@ -342,9 +355,9 @@ def run_self_verification(trades_csv: str = "task_k_trades_base_indep.csv") -> b
     stock_map = {}
     if HAS_FETCHER:
         for t in tickers:
-            df = fetch_history(t, lookback_days=2500)
-            if not df.empty:
-                stock_map[t] = df
+            raw_df = fetch_history(t, lookback_days=2500)
+            if not raw_df.empty:
+                stock_map[t] = prepare_stock_data(raw_df)
 
     for sig_d in sampled_dates:
         expected_trades = c_trades[c_trades["sig_date"] == sig_d]
@@ -378,7 +391,6 @@ def run_self_verification(trades_csv: str = "task_k_trades_base_indep.csv") -> b
                 continue
 
             df_t = stock_map.get(t, pd.DataFrame())
-            df_t["DateStr"] = pd.to_datetime(df_t["Date"]).dt.strftime("%Y-%m-%d")
             next_bars = df_t[df_t["DateStr"] > sig_d].sort_values("DateStr")
             if not next_bars.empty:
                 next_bar = next_bars.iloc[0]
@@ -420,9 +432,9 @@ def main():
     stock_map = {}
     if HAS_FETCHER:
         for t in tickers:
-            df = fetch_history(t, lookback_days=180)
-            if not df.empty:
-                stock_map[t] = df
+            raw_df = fetch_history(t, lookback_days=180)
+            if not raw_df.empty:
+                stock_map[t] = prepare_stock_data(raw_df)
 
     ledger = load_ledger()
     open_positions = set(ledger[ledger["status"].isin(["OPEN", "PENDING"])]["ticker"].unique()) if not ledger.empty else set()
