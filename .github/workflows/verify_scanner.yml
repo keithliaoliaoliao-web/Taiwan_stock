@@ -21,13 +21,27 @@ jobs:
       - name: Generate Task K Benchmark CSVs
         run: python run_task_k.py
 
-      - name: Run Extended Replay (Three Periods Check)
-        run: python scanner.py --extended-verify | tee scanner_extended_verify_raw.log
+      - name: Run Split Unit Test
+        run: python test_split_handling.py
 
-      - name: Upload Replay Artifacts
+      - name: Run Diagnostics on Mismatches and Volume Drops
+        run: python diagnose_mismatches.py
+
+      - name: Run Extended Replay (Three Periods with 2>&1)
+        run: python scanner.py --extended-verify 2>&1 | tee scanner_extended_verify_raw.log
+
+      - name: Compute File Hashes and Package Source Files
+        run: |
+          mkdir -p export_src
+          cp data_fetcher.py run_task_k.py scanner.py export_src/
+          cd export_src
+          md5sum data_fetcher.py run_task_k.py scanner.py > file_hashes.txt
+          cat file_hashes.txt
+
+      - name: Upload All Verification Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: scanner-multi-period-verification
+          name: scanner-full-verification-suite
           path: |
             scanner_extended_verify_raw.log
             replay_diff_2023_h2.csv
@@ -36,3 +50,10 @@ jobs:
             replay_extra_2025_h1.csv
             replay_diff_2026_h1.csv
             replay_extra_2026_h1.csv
+            diag_2308.csv
+            diag_2880.csv
+            diag_dropped_volume_bars.csv
+            export_src/file_hashes.txt
+            export_src/data_fetcher.py
+            export_src/run_task_k.py
+            export_src/scanner.py
