@@ -18,6 +18,9 @@ jobs:
       - name: Install dependencies
         run: pip install pandas numpy requests pytz
 
+      - name: Generate Task K Trades CSV
+        run: python run_task_k.py
+
       - name: Run Self Verification
         run: python scanner.py --verify | tee scanner_verify_raw.log
 
