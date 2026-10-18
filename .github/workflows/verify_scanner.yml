@@ -1,0 +1,28 @@
+name: Verify Scanner Against Task K
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas numpy requests pytz
+
+      - name: Run Self Verification
+        run: python scanner.py --verify | tee scanner_verify_raw.log
+
+      - name: Upload Raw Terminal Log
+        uses: actions/upload-artifact@v4
+        with:
+          name: scanner-verify-raw-log
+          path: scanner_verify_raw.log
