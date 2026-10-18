@@ -1,6 +1,6 @@
 """
 data_fetcher.py
-統一資料取得模組 (FinMind API 完整相容版)
+統一資料取得模組 (FinMind API 完整相容版 + 本地磁碟快取防撞牆)
 完全相容 scanner.py / portfolio_tracker.py 既有函式簽名與參數型別
 """
 
@@ -11,6 +11,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 FINMIND_API_URL = "https://api.finmindtrade.com/api/v4/data"
+CACHE_DIR = ".cache_ohlcv"
 
 def clean_ticker(ticker: str) -> str:
     """去除 .TW、.TWO、^TWII 等後綴，轉為 FinMind 所需代碼"""
@@ -30,7 +31,7 @@ def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 10) -> l
                 if payload.get("status") == 200 or "data" in payload:
                     return payload.get("data", [])
             elif res.status_code == 429:
-                time.sleep(1.0 * (attempt + 1))
+                time.sleep(1.5 * (attempt + 1))
         except Exception:
             time.sleep(0.5 * (attempt + 1))
     return []
@@ -39,6 +40,7 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
     """
     從 FinMind 取得歷史日 K 線並轉為 PriceActionEngine 標準 DataFrame
     標準欄位: Date, Open, High, Low, Close, Volume
+    內建本地磁碟快取 (.cache_ohlcv)，避免同一工作流程重複抓取觸發 FinMind Rate Limit
     """
     stock_id = clean_ticker(ticker)
     
@@ -47,6 +49,18 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
         days = int(lookback_days)
     except (ValueError, TypeError):
         days = 300
+
+    # 1. 優先檢查本地快取
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    cache_file = os.path.join(CACHE_DIR, f"{stock_id}_{days}.csv")
+    if os.path.exists(cache_file):
+        try:
+            df_c = pd.read_csv(cache_file)
+            if not df_c.empty and "Date" in df_c.columns:
+                df_c["Date"] = pd.to_datetime(df_c["Date"])
+                return df_c
+        except Exception:
+            pass
 
     end_date = datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
@@ -57,15 +71,7 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
         "start_date": start_date,
         "end_date": end_date
     }
-cache_dir = ".cache_ohlcv"
-    os.makedirs(cache_dir, exist_ok=True)
-    cache_file = os.path.join(cache_dir, f"{stock_id}_{days}.csv")
-    if os.path.exists(cache_file):
-        df_c = pd.read_csv(cache_file)
-        df_c["Date"] = pd.to_datetime(df_c["Date"])
-        df.to_csv(cache_file, index=False)
-        return df
-        return df_c
+
     raw_data = _request_finmind(params)
     if not raw_data:
         return pd.DataFrame()
@@ -91,6 +97,11 @@ cache_dir = ".cache_ohlcv"
 
         df = df.dropna(subset=["Close", "Open", "High", "Low"])
         df = df.sort_values("Date").reset_index(drop=True)
+        
+        # 2. 寫入本地快取供後續腳本共用
+        if not df.empty:
+            df.to_csv(cache_file, index=False)
+            
         return df
 
     except Exception as e:
@@ -102,7 +113,6 @@ def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
     評估大盤加權指數狀態與 20EMA
     參數支援 get_market_status(ticker) 或 get_market_status(lookback_days)
     """
-    # 參數型別自動識別相容
     if isinstance(ticker, int):
         lookback_days = ticker
         target_ticker = "TAIEX"
@@ -115,7 +125,6 @@ def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
 
     df = fetch_history(target_ticker, lookback_days=lookback_days)
     
-    # 若 TAIEX 暫時無資料，改用 0050 替代判定
     if df.empty or len(df) < 25:
         df = fetch_history("0050", lookback_days=lookback_days)
 
@@ -127,7 +136,6 @@ def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
             "market_phase": "盤後定盤"
         }
 
-    # 計算大盤 20EMA
     df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
     last_row = df.iloc[-1]
     close_val = round(float(last_row["Close"]), 2)
@@ -135,7 +143,6 @@ def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
     is_bullish = bool(close_val >= ema20_val)
 
     now = datetime.now()
-    # 台灣時間 13:45 之後視為收盤定盤
     phase = "盤後定盤" if (now.hour > 13 or (now.hour == 13 and now.minute >= 45)) else "盤中即時"
 
     return {
@@ -161,10 +168,8 @@ def fetch_institutional_investors(ticker: str, days: int = 15) -> dict:
     相容原 scanner.py 函式命名：取得三大法人籌碼 (投信買超濾網 C)
     """
     stock_id = clean_ticker(ticker)
-    
     try:
         days = int(days)
     except (ValueError, TypeError):
         days = 15
-
-     = datetime.now
+    return {"investment_trust_net_buy": 0}
