@@ -365,7 +365,7 @@ def update_ledger_single_day(
   return pd.DataFrame(updated_rows), tickers_exited_today
 
 
-def run_extended_verification(
+def (
     benchmark_csv: str = "task_k_trades_base_no_ov.csv",
 ) -> bool:
   print("====================================================================")
@@ -635,7 +635,18 @@ def main():
   if args.extended_verify:
     success = run_extended_verification()
     sys.exit(0 if success else 1)
+if HAS_FETCHER:
+        print(f"載入觀察池 {len(tickers)} 檔行情 (lookback_days=2200)...")
+        for t in tickers:
+            raw_df = fetch_history(t, lookback_days=2200)
+            if not raw_df.empty:
+                df_prep = prepare_stock_data(raw_df)
+                if not df_prep.empty:
+                    stock_map[t] = df_prep
 
+    if len(stock_map) < 142:
+        print(f"【致命錯誤】有效載入股票數不足 95%: 實測僅載入 {len(stock_map)}/{len(tickers)} 檔，檢驗中止！")
+        return False
   tickers = get_universe()
   if not tickers:
     print("【致命錯誤】觀察池為空，程式終止！")
