@@ -57,7 +57,15 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
         "start_date": start_date,
         "end_date": end_date
     }
-
+cache_dir = ".cache_ohlcv"
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_file = os.path.join(cache_dir, f"{stock_id}_{days}.csv")
+    if os.path.exists(cache_file):
+        df_c = pd.read_csv(cache_file)
+        df_c["Date"] = pd.to_datetime(df_c["Date"])
+        df.to_csv(cache_file, index=False)
+        return df
+        return df_c
     raw_data = _request_finmind(params)
     if not raw_data:
         return pd.DataFrame()
@@ -159,4 +167,4 @@ def fetch_institutional_investors(ticker: str, days: int = 15) -> dict:
     except (ValueError, TypeError):
         days = 15
 
-    end_date = datetime.now
+     = datetime.now
