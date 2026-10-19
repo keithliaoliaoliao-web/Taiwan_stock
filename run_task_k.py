@@ -643,7 +643,7 @@ def main():
         md.append("| 組別 | 標的 | 進場日期 | 進場價格 | 初始停損 | 持有交易日數 |")
         md.append("| :--- | :--- | :---: | :---: | :---: | :---: |")
         for _, r in open_trades.head(15).iterrows():
-            item_row = "| " + str(r["group"]) + " | " + str(r["ticker"]) + " | " + str(r["entry_date"]) + " | $" + str(r["entry_price"]) + " \vert{} $" + str(r["stop_price"]) + " | " + str(r["days_held"]) + " 天 |"
+            item_row = "| " + str(r["group"]) + " | " + str(r["ticker"]) + " | " + str(r["entry_date"]) + " | $" + str(r["entry_price"]) + " | $" + str(r["stop_price"]) + " | " + str(r["days_held"]) + " 天 |"
             md.append(item_row)
         if len(open_trades) > 15:
             md.append("| ... | ... | ... | ... | ... | (共 " + str(len(open_trades)) + " 筆，完整見 CSV) |")

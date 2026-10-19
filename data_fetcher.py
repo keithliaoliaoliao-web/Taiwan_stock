@@ -1,10 +1,10 @@
 """
 data_fetcher.py
-統一資料取得模組 (FinMind API 完整相容版 + 本地磁碟快取防撞牆)
-完全相容 scanner.py / portfolio_tracker.py 既有函式簽名與參數型別
+統一資料取得模組 (FinMind API 完整相容版 + 具備 12 小時時效與日期檢核之本地快取)
 """
 
 import os
+import shutil
 import time
 import requests
 import pandas as pd
@@ -13,12 +13,32 @@ from datetime import datetime, timedelta
 FINMIND_API_URL = "https://api.finmindtrade.com/api/v4/data"
 CACHE_DIR = ".cache_ohlcv"
 
+
+def clear_cache():
+    """清除本地快取資料夾 (.cache_ohlcv)，供即時執行流程在啟動時呼叫"""
+    if os.path.exists(CACHE_DIR):
+        shutil.rmtree(CACHE_DIR, ignore_errors=True)
+
+
+def get_expected_latest_trading_date(now_dt: datetime = None) -> str:
+    """推算預期最新交易日 (扣除週末；若當日早於 16:30 則預期為前一交易日)"""
+    if now_dt is None:
+        now_dt = datetime.now()
+    dt = now_dt
+    if dt.weekday() < 5 and (dt.hour < 16 or (dt.hour == 16 and dt.minute < 30)):
+        dt = dt - timedelta(days=1)
+    while dt.weekday() >= 5:
+        dt = dt - timedelta(days=1)
+    return dt.strftime("%Y-%m-%d")
+
+
 def clean_ticker(ticker: str) -> str:
     """去除 .TW、.TWO、^TWII 等後綴，轉為 FinMind 所需代碼"""
     t = str(ticker).strip()
     if t.upper() in ["^TWII", "0000", "TAIEX"]:
         return "TAIEX"
     return t.split(".")[0].strip()
+
 
 def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 10) -> list:
     """發送請求至 FinMind API 並處理基礎容錯重試"""
@@ -36,29 +56,32 @@ def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 10) -> l
             time.sleep(0.5 * (attempt + 1))
     return []
 
-def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
+
+def fetch_history(ticker: str, lookback_days: int = 300, use_cache: bool = True) -> pd.DataFrame:
     """
-    從 FinMind 取得歷史日 K 線並轉為 PriceActionEngine 標準 DataFrame
-    標準欄位: Date, Open, High, Low, Close, Volume
-    內建本地磁碟快取 (.cache_ohlcv)，避免同一工作流程重複抓取觸發 FinMind Rate Limit
+    從 FinMind 取得歷史日 K 線並轉為標準 DataFrame
+    快取規則：僅在快取檔建立時間 <= 12 小時內，或最後一根日 K 日期 >= 預期最新交易日時才使用快取
     """
     stock_id = clean_ticker(ticker)
-    
-    # 型別防呆：若傳入 str，安全轉為 int
     try:
         days = int(lookback_days)
     except (ValueError, TypeError):
         days = 300
 
-    # 1. 優先檢查本地快取
     os.makedirs(CACHE_DIR, exist_ok=True)
     cache_file = os.path.join(CACHE_DIR, f"{stock_id}_{days}.csv")
-    if os.path.exists(cache_file):
+
+    if use_cache and os.path.exists(cache_file):
         try:
+            mtime = os.path.getmtime(cache_file)
+            age_hours = (time.time() - mtime) / 3600.0
             df_c = pd.read_csv(cache_file)
             if not df_c.empty and "Date" in df_c.columns:
-                df_c["Date"] = pd.to_datetime(df_c["Date"])
-                return df_c
+                last_bar_date = str(df_c["Date"].iloc[-1])[:10]
+                expected_date = get_expected_latest_trading_date()
+                if age_hours <= 12.0 or last_bar_date >= expected_date:
+                    df_c["Date"] = pd.to_datetime(df_c["Date"])
+                    return df_c
         except Exception:
             pass
 
@@ -78,7 +101,6 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
 
     try:
         df = pd.DataFrame(raw_data)
-        
         rename_map = {
             "date": "Date",
             "open": "Open",
@@ -97,22 +119,18 @@ def fetch_history(ticker: str, lookback_days: int = 300) -> pd.DataFrame:
 
         df = df.dropna(subset=["Close", "Open", "High", "Low"])
         df = df.sort_values("Date").reset_index(drop=True)
-        
-        # 2. 寫入本地快取供後續腳本共用
+
         if not df.empty:
             df.to_csv(cache_file, index=False)
-            
+
         return df
 
     except Exception as e:
         print(f"[{ticker}] 轉換日K線資料失敗: {e}")
         return pd.DataFrame()
 
+
 def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
-    """
-    評估大盤加權指數狀態與 20EMA
-    參數支援 get_market_status(ticker) 或 get_market_status(lookback_days)
-    """
     if isinstance(ticker, int):
         lookback_days = ticker
         target_ticker = "TAIEX"
@@ -124,7 +142,6 @@ def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
             lookback_days = 120
 
     df = fetch_history(target_ticker, lookback_days=lookback_days)
-    
     if df.empty or len(df) < 25:
         df = fetch_history("0050", lookback_days=lookback_days)
 
@@ -152,8 +169,8 @@ def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
         "market_phase": phase
     }
 
+
 def fetch_batch_history(tickers: list, lookback_days: int = 300, delay_sec: float = 0.05) -> dict:
-    """批次抓取標的歷史日 K"""
     results = {}
     for t in tickers:
         df = fetch_history(t, lookback_days=lookback_days)
@@ -163,13 +180,6 @@ def fetch_batch_history(tickers: list, lookback_days: int = 300, delay_sec: floa
             time.sleep(delay_sec)
     return results
 
+
 def fetch_institutional_investors(ticker: str, days: int = 15) -> dict:
-    """
-    相容原 scanner.py 函式命名：取得三大法人籌碼 (投信買超濾網 C)
-    """
-    stock_id = clean_ticker(ticker)
-    try:
-        days = int(days)
-    except (ValueError, TypeError):
-        days = 15
     return {"investment_trust_net_buy": 0}
