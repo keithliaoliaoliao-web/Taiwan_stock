@@ -21,14 +21,14 @@ jobs:
       - name: Generate Task K Benchmark CSVs
         run: python run_task_k.py
 
-      - name: Run Split, Idempotency & Freshness Unit Tests
+      - name: Run Split, Backfill, CLI Resolve, Idempotency & Freshness Unit Tests
         run: python test_split_handling.py 2>&1 | tee unit_tests_raw.log
 
       - name: Run Diagnostics on Mismatches and Volume Drops
         run: python diagnose_mismatches.py
 
-      - name: Run Extended Replay (Three Periods with 2>&1)
-        run: python scanner.py --extended-verify 2>&1 | tee scanner_extended_verify_raw.log
+      - name: Run Extended Replay (Three Periods with --replay-auto-resolve-splits)
+        run: python scanner.py --extended-verify --replay-auto-resolve-splits 2>&1 | tee scanner_extended_verify_raw.log
 
       - name: Compute File Hashes and Package Source Files
         run: |
