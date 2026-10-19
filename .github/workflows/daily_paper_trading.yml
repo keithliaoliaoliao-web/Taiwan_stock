@@ -1,0 +1,82 @@
+name: Daily Forward Paper Trading (Task K Group C)
+
+on:
+  schedule:
+    # 台灣時間 (UTC+8) 週一至週五 17:30 自動執行 (確認 FinMind 日K已更新完畢)
+    - cron: '30 9 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      resolve_ticker:
+        description: '欲解除 NEEDS_REVIEW 的股票代號 (例如 2327.TW，日常掃描請留空)'
+        required: false
+        default: ''
+      resolve_action:
+        description: '解除方式 (adjust 或 close，日常掃描請留空)'
+        required: false
+        default: ''
+      resolve_price:
+        description: '搭配 close 的人工出場價格 (日常掃描請留空)'
+        required: false
+        default: ''
+      resolve_date:
+        description: '搭配 close 的人工出場日期 YYYY-MM-DD (日常掃描請留空)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  daily_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas numpy requests pytz
+
+      - name: Run Cross-Day Persistence & NEEDS_REVIEW Alert Test
+        run: python test_cross_day_live.py 2>&1 | tee cross_day_test_raw.log
+
+      - name: Execute Manual Resolve or Daily Real-Data Live Scan
+        run: |
+          if [ -n "${{ github.event.inputs.resolve_ticker }}" ]; then
+            if [ "${{ github.event.inputs.resolve_action }}" = "close" ]; then
+              python scanner.py --resolve "${{ github.event.inputs.resolve_ticker }}" --action close --price "${{ github.event.inputs.resolve_price }}" --date "${{ github.event.inputs.resolve_date }}" 2>&1 | tee live_trial_raw.log
+            else
+              python scanner.py --resolve "${{ github.event.inputs.resolve_ticker }}" --action adjust 2>&1 | tee live_trial_raw.log
+            fi
+          else
+            python scanner.py 2>&1 | tee live_trial_raw.log
+          fi
+          echo "=== 執行後 paper_trading_ledger.csv 完整內容 ===" | tee -a live_trial_raw.log
+          cat paper_trading_ledger.csv | tee -a live_trial_raw.log
+
+      - name: Backup Ledger Snapshot & Commit Back to Repository
+        run: |
+          mkdir -p ledger_backups
+          TODAY_UTC=$(date -u +"%Y-%m-%d")
+          if [ -f paper_trading_ledger.csv ]; then
+            cp paper_trading_ledger.csv "ledger_backups/paper_trading_ledger_${TODAY_UTC}.csv"
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add paper_trading_ledger.csv ledger_backups/
+          git diff --staged --quiet || git commit -m "chore(ledger): update paper trading ledger (${TODAY_UTC})"
+          git push
+
+      - name: Upload Live Trial & Backup Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-trading-live-run-logs
+          path: |
+            cross_day_test_raw.log
+            live_trial_raw.log
+            paper_trading_ledger.csv
+            ledger_backups/
