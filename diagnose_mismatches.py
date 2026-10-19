@@ -16,13 +16,17 @@ def run_diagnostics():
     
     # 1. 診斷 2308.TW (2025-05-08 至 2025-10-31)
     raw_2308 = fetch_history("2308.TW", lookback_days=2200)
+    
+    # 任務 K 處理
     k_df_2308 = k_adj(raw_2308)
     k_df_2308, _ = k_clean(k_df_2308, "2308.TW")
     k_df_2308["DateStr"] = pd.to_datetime(k_df_2308["Date"]).dt.strftime("%Y-%m-%d")
     k_df_2308["EMA_20"] = k_df_2308["Close"].ewm(span=20, adjust=False).mean()
     
-    s_df_2308 = s_prep(raw_2308)
+    # 掃描器處理 (拆包回傳之 (df, split_events))
+    s_df_2308, _ = s_prep(raw_2308)
     
+    # 切片 2025-05-08 至 2025-10-31
     k_sub_2308 = k_df_2308[(k_df_2308["DateStr"] >= "2025-05-08") & (k_df_2308["DateStr"] <= "2025-10-31")].copy()
     s_sub_2308 = s_df_2308[(s_df_2308["DateStr"] >= "2025-05-08") & (s_df_2308["DateStr"] <= "2025-10-31")].copy()
     
@@ -43,7 +47,8 @@ def run_diagnostics():
     k_df_2880["DateStr"] = pd.to_datetime(k_df_2880["Date"]).dt.strftime("%Y-%m-%d")
     k_df_2880["EMA_20"] = k_df_2880["Close"].ewm(span=20, adjust=False).mean()
     
-    s_df_2880 = s_prep(raw_2880)
+    # 掃描器處理 (拆包回傳之 (df, split_events))
+    s_df_2880, _ = s_prep(raw_2880)
     
     k_sub_2880 = k_df_2880[(k_df_2880["DateStr"] >= "2025-08-08") & (k_df_2880["DateStr"] <= "2025-08-15")].copy()
     s_sub_2880 = s_df_2880[(s_df_2880["DateStr"] >= "2025-08-08") & (s_df_2880["DateStr"] <= "2025-08-15")].copy()
