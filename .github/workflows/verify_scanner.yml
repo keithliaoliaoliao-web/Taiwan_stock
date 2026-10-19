@@ -21,8 +21,8 @@ jobs:
       - name: Generate Task K Benchmark CSVs
         run: python run_task_k.py
 
-      - name: Run Split Unit Test
-        run: python test_split_handling.py
+      - name: Run Split, Idempotency & Freshness Unit Tests
+        run: python test_split_handling.py 2>&1 | tee unit_tests_raw.log
 
       - name: Run Diagnostics on Mismatches and Volume Drops
         run: python diagnose_mismatches.py
@@ -33,9 +33,9 @@ jobs:
       - name: Compute File Hashes and Package Source Files
         run: |
           mkdir -p export_src
-          cp data_fetcher.py run_task_k.py scanner.py export_src/
+          cp data_fetcher.py run_task_k.py scanner.py test_split_handling.py export_src/
           cd export_src
-          md5sum data_fetcher.py run_task_k.py scanner.py > file_hashes.txt
+          md5sum data_fetcher.py run_task_k.py scanner.py test_split_handling.py > file_hashes.txt
           cat file_hashes.txt
 
       - name: Upload All Verification Artifacts
@@ -43,6 +43,7 @@ jobs:
         with:
           name: scanner-full-verification-suite
           path: |
+            unit_tests_raw.log
             scanner_extended_verify_raw.log
             replay_diff_2023_h2.csv
             replay_extra_2023_h2.csv
@@ -57,3 +58,4 @@ jobs:
             export_src/data_fetcher.py
             export_src/run_task_k.py
             export_src/scanner.py
+            export_src/test_split_handling.py
