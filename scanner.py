@@ -243,9 +243,20 @@ def load_ledger(filepath: str = LEDGER_FILE) -> pd.DataFrame:
         "rule_net_r", "slippage_net_r", "actual_fee_settings", "status",
         "days_held", "pending_ema_exit", "last_processed_date"
     ]
+    str_cols = [
+        "signal_date", "ticker", "entry_date", "exit_date",
+        "exit_reason", "actual_fee_settings", "status", "last_processed_date"
+    ]
     if os.path.exists(filepath):
-        return pd.read_csv(filepath)
-    return pd.DataFrame(columns=cols)
+        df = pd.read_csv(filepath, dtype={c: object for c in str_cols})
+        for c in str_cols:
+            if c in df.columns:
+                df[c] = df[c].astype(object).fillna("")
+        return df
+    df_empty = pd.DataFrame(columns=cols)
+    for c in str_cols:
+        df_empty[c] = df_empty[c].astype(object)
+    return df_empty
 
 
 def save_ledger(df: pd.DataFrame, filepath: str = LEDGER_FILE):
