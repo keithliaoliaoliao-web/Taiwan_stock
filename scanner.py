@@ -1,6 +1,6 @@
 """
 scanner.py
-任務 K - C 組 (突破 20 日高) 前瞻紙上交易掃描器
+任務 K - C 組 (突破 20 日高) 前瞻紙上交易掃描器 (規格凍結正式版)
 版面標註：【觀察用，未經實證驗證】
 """
 
@@ -19,20 +19,55 @@ except Exception:
     HAS_CONFIG = False
 
 try:
-    from data_fetcher import fetch_history, clear_cache
+    from data_fetcher import fetch_history, clear_cache, get_expected_latest_trading_date
     HAS_FETCHER = True
 except Exception:
     HAS_FETCHER = False
     def clear_cache():
         pass
+    def get_expected_latest_trading_date(now_dt=None):
+        return datetime.now().strftime("%Y-%m-%d")
 
 LEDGER_FILE = "paper_trading_ledger.csv"
-COST_RATE = 0.00585
-ACTUAL_FEE_DESC = "稅0.3% + 手續費0.1425%*2 (回測基準，無折扣無低消)"
+COST_RATE = 0.00585  # 回測基準：稅 0.003 + 手續費 0.001425 * 2
+BASE_FEE_RATE = 0.001425
+TAX_RATE = 0.003
+
+
+def get_actual_fee_params() -> dict:
+    """從 config 讀取實際券商費率參數，若無則預設為回測基準 (無折扣、無低消)"""
+    discount = float(getattr(config, "BROKER_FEE_DISCOUNT", 1.0)) if HAS_CONFIG else 1.0
+    min_fee = float(getattr(config, "BROKER_MIN_FEE_TWD", 0.0)) if HAS_CONFIG else 0.0
+    shares = int(getattr(config, "POSITION_SHARES", 1000)) if HAS_CONFIG else 1000
+    if discount == 1.0 and min_fee == 0.0:
+        desc = "稅0.3% + 手續費0.1425%*2 (回測基準，無折扣無低消)"
+    else:
+        desc = f"稅0.3% + 手續費0.1425%*{discount}折 (低消{min_fee}元, 股數{shares})"
+    return {
+        "discount": discount,
+        "min_fee": min_fee,
+        "shares": shares,
+        "desc": desc
+    }
+
+
+def calc_actual_net_r(entry_price: float, exit_price: float, risk_per_share: float) -> float:
+    """計算實際券商成本設定下的淨 R"""
+    params = get_actual_fee_params()
+    discount = params["discount"]
+    min_fee = params["min_fee"]
+    shares = max(1, params["shares"])
+
+    buy_fee_per_share = max(entry_price * BASE_FEE_RATE * discount, min_fee / shares)
+    sell_fee_per_share = max(exit_price * BASE_FEE_RATE * discount, min_fee / shares)
+    sell_tax_per_share = exit_price * TAX_RATE
+
+    net_pnl_per_share = (exit_price - entry_price) - (buy_fee_per_share + sell_fee_per_share + sell_tax_per_share)
+    return round(net_pnl_per_share / risk_per_share, 3)
 
 
 # ==========================================
-# 1. 檔位運算
+# 1. 檔位運算 (凍結規格)
 # ==========================================
 def get_tw_tick(price: float) -> float:
     if price < 10.0:
@@ -62,13 +97,9 @@ def get_tick_up(price: float) -> float:
 
 
 # ==========================================
-# 2. 資料清洗與還原 (在原始資料偵測分割事件，對齊任務 K 原文)
+# 2. 資料清洗與還原 (凍結規格)
 # ==========================================
 def adjust_corporate_actions(df: pd.DataFrame) -> tuple:
-    """
-    第一步：在還原之前的原始資料上偵測分割事件 (cur_o / prev_c < 0.70)，
-    回傳 (平滑後 DataFrame, 原始分割事件字典 {date_str: ratio})
-    """
     df = df.copy().sort_values("Date").reset_index(drop=True)
     n = len(df)
     adj_factor = np.ones(n)
@@ -91,7 +122,6 @@ def adjust_corporate_actions(df: pd.DataFrame) -> tuple:
 
 
 def clean_stock_data(df: pd.DataFrame) -> pd.DataFrame:
-    """第二步：清洗異常棒 (容錯保護：無 Volume 欄位不誤殺)"""
     df = df.copy().sort_values("Date").reset_index(drop=True)
     cleaned_rows = []
 
@@ -119,13 +149,6 @@ def clean_stock_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def prepare_stock_data(raw_df: pd.DataFrame) -> tuple:
-    """
-    資料前置標準層：
-    1. 先在原始資料偵測分割事件並平滑還原
-    2. 後清洗異常棒
-    3. 計算 EMA20
-    回傳: (df, split_events)
-    """
     if raw_df.empty or len(raw_df) < 22:
         return pd.DataFrame(), {}
     df, split_events = adjust_corporate_actions(raw_df)
@@ -138,10 +161,6 @@ def prepare_stock_data(raw_df: pd.DataFrame) -> tuple:
 
 
 def check_latest_date_freshness(latest_date_str: str, ref_date_str: str = None) -> tuple:
-    """
-    檢查最新 K 棒日期新鮮度：
-    若最新 K 棒日期比目前日期早超過 3 個日曆日 (扣除週末假日)，回傳 (False, 錯誤訊息)
-    """
     latest_dt = pd.to_datetime(latest_date_str).date()
     ref_dt = pd.to_datetime(ref_date_str).date() if ref_date_str else datetime.now().date()
 
@@ -185,7 +204,7 @@ def get_universe() -> list:
 
 
 # ==========================================
-# 3. 核心訊號掃描
+# 3. 核心訊號掃描 (凍結規格)
 # ==========================================
 def scan_signals_for_ticker(df: pd.DataFrame, ticker: str, as_of_date: str = None) -> dict:
     if df.empty or len(df) < 22:
@@ -240,7 +259,7 @@ def load_ledger(filepath: str = LEDGER_FILE) -> pd.DataFrame:
     cols = [
         "signal_date", "ticker", "trigger_price", "stop_price", "risk_pct",
         "triggered", "entry_price", "entry_date", "exit_date", "exit_price", "exit_reason",
-        "rule_net_r", "slippage_net_r", "actual_fee_settings", "status",
+        "rule_net_r", "actual_net_r", "slippage_net_r", "actual_fee_settings", "status",
         "days_held", "pending_ema_exit", "last_processed_date"
     ]
     str_cols = [
@@ -249,10 +268,12 @@ def load_ledger(filepath: str = LEDGER_FILE) -> pd.DataFrame:
     ]
     if os.path.exists(filepath):
         df = pd.read_csv(filepath, dtype={c: object for c in str_cols})
+        if "actual_net_r" not in df.columns:
+            df["actual_net_r"] = df.get("rule_net_r", np.nan)
         for c in str_cols:
             if c in df.columns:
                 df[c] = df[c].astype(object).fillna("")
-        return df
+        return df[cols] if all(c in df.columns for c in cols) else df
     df_empty = pd.DataFrame(columns=cols)
     for c in str_cols:
         df_empty[c] = df_empty[c].astype(object)
@@ -263,6 +284,34 @@ def save_ledger(df: pd.DataFrame, filepath: str = LEDGER_FILE):
     df.to_csv(filepath, index=False, encoding="utf-8-sig")
 
 
+def print_needs_review_alert(ledger: pd.DataFrame, ledger_path: str = LEDGER_FILE):
+    """每日輸出明確列出所有 NEEDS_REVIEW 的部位與解除指令範例 (指令 4)"""
+    print("\n" + "=" * 68)
+    print("【需人工處理部位 (NEEDS_REVIEW) 檢查區塊】")
+    print("=" * 68)
+    if ledger.empty or "status" not in ledger.columns:
+        print("目前無任何 NEEDS_REVIEW 部位。")
+        return
+
+    nr_df = ledger[ledger["status"].astype(str) == "NEEDS_REVIEW"]
+    if nr_df.empty:
+        print("目前無任何 NEEDS_REVIEW 部位。")
+        return
+
+    print(f"!!! 警告：共有 {len(nr_df)} 筆部位因偵測到分割/減資事件處於 NEEDS_REVIEW 凍結狀態 !!!")
+    cols_show = ["ticker", "signal_date", "entry_date", "entry_price", "stop_price", "days_held", "exit_reason"]
+    avail_cols = [c for c in cols_show if c in nr_df.columns]
+    print(nr_df[avail_cols].to_string(index=False))
+    print("\n請選擇以下任一指令進行人工解除：")
+    for _, r in nr_df.iterrows():
+        tk = r["ticker"]
+        print(f"  [選項 A - 依分割比例調整後繼續持有]:")
+        print(f"    python scanner.py --resolve {tk} --action adjust --ledger {ledger_path}")
+        print(f"  [選項 B - 以人工填入價格結案出場]:")
+        print(f"    python scanner.py --resolve {tk} --action close --price <出場價> --date <YYYY-MM-DD> --ledger {ledger_path}")
+    print("=" * 68)
+
+
 def resolve_needs_review_position(
     ticker: str,
     action: str,
@@ -271,12 +320,6 @@ def resolve_needs_review_position(
     ledger_path: str = LEDGER_FILE,
     scale_prices_on_adjust: bool = True
 ) -> bool:
-    """
-    處理帳本中標為 NEEDS_REVIEW 的部位：
-    1. action == 'close': 以人工填入的價格與日期結束部位，依規則公式計算淨 R，並註記 MANUAL_RESOLVE。
-    2. action == 'adjust': 依記錄的分割比例調整進場價、停損價、觸發價後恢復為 OPEN (或 PENDING)，並註記 MANUAL_RESOLVE_ADJUST。
-    兩者皆嚴格保持 last_processed_date 不變。
-    """
     ledger = load_ledger(ledger_path)
     if ledger.empty:
         print(f"【解除失敗】帳本為空: {ledger_path}")
@@ -292,9 +335,9 @@ def resolve_needs_review_position(
     orig_last_processed = row["last_processed_date"]
     reason_str = str(row.get("exit_reason", ""))
 
-    # 解析記錄的分割比例
     m = re.search(r"ratio=([0-9.]+)", reason_str)
     ratio = float(m.group(1)) if m else 1.0
+    fee_desc = get_actual_fee_params()["desc"]
 
     if action == "close":
         if exit_price is None or not exit_date:
@@ -310,6 +353,7 @@ def resolve_needs_review_position(
             return False
 
         rule_r = round(((exit_p * (1.0 - COST_RATE)) - entry_p) / risk_per_share, 3)
+        act_r = calc_actual_net_r(entry_p, exit_p, risk_per_share)
         slip_entry = get_tick_up(entry_p)
         slip_exit = get_tick_down(exit_p)
         slip_r = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
@@ -319,12 +363,13 @@ def resolve_needs_review_position(
         ledger.loc[idx, "exit_price"] = exit_p
         ledger.loc[idx, "exit_reason"] = f"MANUAL_RESOLVE({reason_str})" if reason_str else "MANUAL_RESOLVE"
         ledger.loc[idx, "rule_net_r"] = rule_r
+        ledger.loc[idx, "actual_net_r"] = act_r
         ledger.loc[idx, "slippage_net_r"] = slip_r
-        ledger.loc[idx, "actual_fee_settings"] = str(row.get("actual_fee_settings", ACTUAL_FEE_DESC)) + " | MANUAL_RESOLVE"
+        ledger.loc[idx, "actual_fee_settings"] = str(row.get("actual_fee_settings", fee_desc)) + " | MANUAL_RESOLVE"
         ledger.loc[idx, "last_processed_date"] = orig_last_processed
 
         save_ledger(ledger, ledger_path)
-        print(f"【手動解除成功 - CLOSE】{ticker} 已於 {exit_date} 以 ${exit_p} 結案 | 淨R: {rule_r:+.3f}R | last_processed_date 維持: {orig_last_processed}")
+        print(f"【手動解除成功 - CLOSE】{ticker} 已於 {exit_date} 以 ${exit_p} 結案 | 淨R: {rule_r:+.3f}R (實際成本淨R: {act_r:+.3f}R) | last_processed_date 維持: {orig_last_processed}")
         return True
 
     elif action == "adjust":
@@ -337,7 +382,7 @@ def resolve_needs_review_position(
         was_triggered = bool(row.get("triggered", True)) and pd.notna(row.get("entry_price"))
         ledger.loc[idx, "status"] = "OPEN" if was_triggered else "PENDING"
         ledger.loc[idx, "exit_reason"] = ""
-        ledger.loc[idx, "actual_fee_settings"] = str(row.get("actual_fee_settings", ACTUAL_FEE_DESC)) + f" | MANUAL_RESOLVE_ADJUST(ratio={ratio})"
+        ledger.loc[idx, "actual_fee_settings"] = str(row.get("actual_fee_settings", fee_desc)) + f" | MANUAL_RESOLVE_ADJUST(ratio={ratio})"
         ledger.loc[idx, "last_processed_date"] = orig_last_processed
 
         save_ledger(ledger, ledger_path)
@@ -362,14 +407,6 @@ def update_ledger_single_day(
     replay_auto_resolve_splits: bool = False,
     target_ticker: str = None
 ) -> tuple:
-    """
-    撮合單一交易日部位：
-    1. 依據原始資料偵測到的 split_map (日期、比例)，若 OPEN 或 PENDING 標的在 today_str 發生分割，
-       立即標為 NEEDS_REVIEW 並凍結。
-    2. 若為驗證回放專用模式 (replay_auto_resolve_splits=True)，遇到 NEEDS_REVIEW 時自動以 adjust 解除凍結並繼續持有，
-       僅供歷史回放對齊任務 K 基準，嚴禁用於即時執行。
-    3. 正常撮合未凍結之部位。
-    """
     if ledger.empty:
         return ledger, set()
 
@@ -378,6 +415,7 @@ def update_ledger_single_day(
 
     updated_rows = []
     tickers_exited_today = set()
+    fee_desc = get_actual_fee_params()["desc"]
 
     for _, row in ledger.iterrows():
         t = str(row["ticker"])
@@ -392,7 +430,6 @@ def update_ledger_single_day(
             updated_rows.append(row)
             continue
 
-        # 1. 檢查原始資料中偵測到的分割事件 (支援當日或漏跑補算：即時模式下只要載入序列含晚於訊號日之分割，即防禦回溯平滑污染；回放模式下於分割日當日觸發)
         if freeze_on_split and status in ["OPEN", "PENDING"]:
             t_splits = split_map.get(t, {})
             sig_d_str = str(row.get("signal_date", ""))
@@ -405,11 +442,10 @@ def update_ledger_single_day(
                 row["last_processed_date"] = today_str
 
                 if replay_auto_resolve_splits:
-                    # 驗證回放模式：遇到 NEEDS_REVIEW 自動以 adjust 處理恢復持有 (回放序列已預先平滑至同尺度)
                     was_trig = bool(row.get("triggered", True)) and pd.notna(row.get("entry_price"))
                     row["status"] = "OPEN" if was_trig else "PENDING"
                     row["exit_reason"] = ""
-                    row["actual_fee_settings"] = str(row.get("actual_fee_settings", ACTUAL_FEE_DESC)) + f" | AUTO_RESOLVE_ADJUST(date={s_date},ratio={s_ratio})"
+                    row["actual_fee_settings"] = str(row.get("actual_fee_settings", fee_desc)) + f" | AUTO_RESOLVE_ADJUST(date={s_date},ratio={s_ratio})"
                     status = str(row["status"])
                 else:
                     updated_rows.append(row)
@@ -430,7 +466,6 @@ def update_ledger_single_day(
         trigger_price = float(row["trigger_price"])
         stop_price = float(row["stop_price"])
 
-        # 2. 處理 PENDING 掛單
         if status == "PENDING":
             if cur_high >= trigger_price:
                 entry_price = max(trigger_price, cur_open)
@@ -447,6 +482,7 @@ def update_ledger_single_day(
                     row["exit_reason"] = "SAME_DAY_STOP"
                     row["status"] = "CLOSED"
                     row["rule_net_r"] = round(((exit_price * (1.0 - COST_RATE)) - entry_price) / risk_per_share, 3)
+                    row["actual_net_r"] = calc_actual_net_r(entry_price, exit_price, risk_per_share)
                     slip_entry = get_tick_up(entry_price)
                     slip_exit = get_tick_down(exit_price)
                     row["slippage_net_r"] = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
@@ -463,7 +499,6 @@ def update_ledger_single_day(
             updated_rows.append(row)
             continue
 
-        # 3. 處理 OPEN 持倉部位
         if status == "OPEN":
             days_held = int(row["days_held"]) + 1
             row["days_held"] = days_held
@@ -485,7 +520,7 @@ def update_ledger_single_day(
                 exit_reason = "INITIAL_STOP"
             elif days_held >= 120:
                 is_closed = True
-                exit_price = cur_close  # 原文規則：持有滿 120 交易日以當日收盤價出場
+                exit_price = cur_close
                 exit_reason = "MAX_120D"
 
             if is_closed:
@@ -494,6 +529,7 @@ def update_ledger_single_day(
                 row["exit_price"] = exit_price
                 row["exit_reason"] = exit_reason
                 row["rule_net_r"] = round(((exit_price * (1.0 - COST_RATE)) - entry_price) / risk_per_share, 3)
+                row["actual_net_r"] = calc_actual_net_r(entry_price, exit_price, risk_per_share)
                 slip_entry = get_tick_up(entry_price)
                 slip_exit = get_tick_down(exit_price)
                 row["slippage_net_r"] = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
@@ -511,7 +547,7 @@ def update_ledger_single_day(
 
 
 # ==========================================
-# 5. 擴充回放自我檢驗模組 (三區間全覆蓋)
+# 5. 擴充回放自我檢驗模組
 # ==========================================
 def run_extended_verification(
     benchmark_csv: str = "task_k_trades_base_no_ov.csv",
@@ -564,6 +600,7 @@ def run_extended_verification(
     ]
 
     total_overall_pass = True
+    fee_desc = get_actual_fee_params()["desc"]
 
     for period_name, p_start, p_end in eval_periods:
         print(f"\n" + "=" * 68)
@@ -573,7 +610,7 @@ def run_extended_verification(
         sim_ledger = pd.DataFrame(columns=[
             "signal_date", "ticker", "trigger_price", "stop_price", "risk_pct",
             "triggered", "entry_price", "entry_date", "exit_date", "exit_price", "exit_reason",
-            "rule_net_r", "slippage_net_r", "actual_fee_settings", "status",
+            "rule_net_r", "actual_net_r", "slippage_net_r", "actual_fee_settings", "status",
             "days_held", "pending_ema_exit", "last_processed_date"
         ])
 
@@ -628,8 +665,9 @@ def run_extended_verification(
                             "exit_price": np.nan,
                             "exit_reason": "",
                             "rule_net_r": np.nan,
+                            "actual_net_r": np.nan,
                             "slippage_net_r": np.nan,
-                            "actual_fee_settings": ACTUAL_FEE_DESC,
+                            "actual_fee_settings": fee_desc,
                             "status": "PENDING",
                             "days_held": 0,
                             "pending_ema_exit": False,
@@ -773,12 +811,15 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
     last_processed = str(ledger["last_processed_date"].dropna().max()) if (
         not ledger.empty and "last_processed_date" in ledger.columns and not ledger["last_processed_date"].dropna().empty
     ) else None
+    if last_processed == "":
+        last_processed = None
 
     all_dates_union = sorted(list(set.union(*[set(df["DateStr"]) for df in stock_map.values()])))
 
     if last_processed:
         if today_str <= last_processed:
             print(f"【冪等防護】今日 ({today_str}) 已於先前處理完成 (last_processed: {last_processed})，帳本維持完全不變。")
+            print_needs_review_alert(ledger, ledger_path)
             return True
 
         prev_idx = all_dates_union.index(last_processed) if last_processed in all_dates_union else -1
@@ -791,16 +832,13 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
                     ledger, stock_map, m_d, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False
                 )
 
-    # 1. 當日部位撮合更新 (即時模式嚴格禁止 auto_resolve，固定為 False)
     ledger, exited_today = update_ledger_single_day(
         ledger, stock_map, today_str, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False
     )
 
-    # 2. 取得持倉不可進場之股票 (OPEN + PENDING + 當日剛出場者 + NEEDS_REVIEW)
     open_positions = set(ledger[ledger["status"].isin(["OPEN", "PENDING", "NEEDS_REVIEW"])]["ticker"].unique()) if not ledger.empty else set()
     ineligible_tickers = open_positions.union(exited_today)
 
-    # 3. 執行當日收盤掃描
     signals = []
     for t in tickers:
         if t in ineligible_tickers:
@@ -811,6 +849,7 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
             signals.append(sig)
 
     sig_df = pd.DataFrame(signals)
+    fee_desc = get_actual_fee_params()["desc"]
     print(f"\n【{today_str} 當日新觸發訊號清單 (排除持倉與今日出場)】共 {len(sig_df)} 檔")
     if not sig_df.empty:
         print(sig_df[["ticker", "signal_date", "trigger_price", "stop_price", "risk_pct"]].to_string(index=False))
@@ -833,8 +872,9 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
                 "exit_price": np.nan,
                 "exit_reason": "",
                 "rule_net_r": np.nan,
+                "actual_net_r": np.nan,
                 "slippage_net_r": np.nan,
-                "actual_fee_settings": ACTUAL_FEE_DESC,
+                "actual_fee_settings": fee_desc,
                 "status": "PENDING",
                 "days_held": 0,
                 "pending_ema_exit": False,
@@ -850,6 +890,9 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
 
     save_ledger(ledger, ledger_path)
     print(f"\n已同步寫入更新紙上交易帳本: {ledger_path}")
+
+    # 每日輸出最後強制列印 NEEDS_REVIEW 檢查區塊 (指令 4)
+    print_needs_review_alert(ledger, ledger_path)
     return True
 
 
@@ -860,7 +903,6 @@ def main():
     parser.add_argument("--replay-auto-resolve-splits", action="store_true", help="僅限驗證回放使用：遇到 NEEDS_REVIEW 自動以 adjust 處理")
     parser.add_argument("--keep-cache", action="store_true", help="保留本地快取不清除 (預設即時執行會先清除 .cache_ohlcv)")
 
-    # 手動解除 NEEDS_REVIEW 指令參數
     parser.add_argument("--resolve", type=str, default=None, help="指定要解除 NEEDS_REVIEW 狀態的股票代號 (例如 2327.TW)")
     parser.add_argument("--action", type=str, choices=["close", "adjust"], default=None, help="解除方式: close (人工結案) 或 adjust (依分割比例調整繼續持有)")
     parser.add_argument("--price", type=float, default=None, help="搭配 --action close 指定人工出場價格")
