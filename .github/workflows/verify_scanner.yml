@@ -18,6 +18,20 @@ jobs:
       - name: Install dependencies
         run: pip install pandas numpy requests pytz
 
+      - name: Verify Updated Source Hashes Before Running
+        run: |
+          echo "=== Run Timestamp (UTC) ===" | tee build_meta.txt
+          date -u +"%Y-%m-%d %H:%M:%S UTC" | tee -a build_meta.txt
+          echo "=== Git Commit Hash ===" | tee -a build_meta.txt
+          git rev-parse HEAD | tee -a build_meta.txt
+          echo "=== Current File MD5 ===" | tee -a build_meta.txt
+          md5sum data_fetcher.py run_task_k.py scanner.py test_split_handling.py | tee -a build_meta.txt
+          # 防呆檢查：若 scanner.py 仍是舊版 19a01005... 則直接報錯中止，避免打包舊檔
+          if md5sum scanner.py | grep -q "19a0100554e8f27912a26b506e8eda66"; then
+            echo "【致命錯誤】scanner.py 仍是舊版 (19a01005...)，尚未更新為 object 型態修正版！"
+            exit 1
+          fi
+
       - name: Generate Task K Benchmark CSVs
         run: python run_task_k.py
 
@@ -33,7 +47,7 @@ jobs:
       - name: Compute File Hashes and Package Source Files
         run: |
           mkdir -p export_src
-          cp data_fetcher.py run_task_k.py scanner.py test_split_handling.py export_src/
+          cp data_fetcher.py run_task_k.py scanner.py test_split_handling.py build_meta.txt export_src/
           cd export_src
           md5sum data_fetcher.py run_task_k.py scanner.py test_split_handling.py > file_hashes.txt
           cat file_hashes.txt
@@ -55,6 +69,7 @@ jobs:
             diag_2880.csv
             diag_dropped_volume_bars.csv
             export_src/file_hashes.txt
+            export_src/build_meta.txt
             export_src/data_fetcher.py
             export_src/run_task_k.py
             export_src/scanner.py
