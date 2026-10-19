@@ -1,6 +1,6 @@
 """
 data_fetcher.py
-統一資料取得模組 (FinMind API 完整相容版 + 具備 12 小時時效與日期檢核之本地快取)
+統一資料取得模組 (FinMind API 完整相容版 + 嚴格以預期最新交易日檢核之本地快取)
 """
 
 import os
@@ -60,7 +60,7 @@ def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 10) -> l
 def fetch_history(ticker: str, lookback_days: int = 300, use_cache: bool = True) -> pd.DataFrame:
     """
     從 FinMind 取得歷史日 K 線並轉為標準 DataFrame
-    快取規則：僅在快取檔建立時間 <= 12 小時內，或最後一根日 K 日期 >= 預期最新交易日時才使用快取
+    快取規則：僅在「最後一根 K 棒日期 >= 預期最新交易日」時才使用快取 (不使用 12 小時替代條件)
     """
     stock_id = clean_ticker(ticker)
     try:
@@ -73,13 +73,11 @@ def fetch_history(ticker: str, lookback_days: int = 300, use_cache: bool = True)
 
     if use_cache and os.path.exists(cache_file):
         try:
-            mtime = os.path.getmtime(cache_file)
-            age_hours = (time.time() - mtime) / 3600.0
             df_c = pd.read_csv(cache_file)
             if not df_c.empty and "Date" in df_c.columns:
                 last_bar_date = str(df_c["Date"].iloc[-1])[:10]
                 expected_date = get_expected_latest_trading_date()
-                if age_hours <= 12.0 or last_bar_date >= expected_date:
+                if last_bar_date >= expected_date:
                     df_c["Date"] = pd.to_datetime(df_c["Date"])
                     return df_c
         except Exception:

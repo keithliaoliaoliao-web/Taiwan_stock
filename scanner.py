@@ -5,6 +5,7 @@ scanner.py
 """
 
 import os
+import re
 import sys
 import argparse
 from datetime import datetime, timedelta
@@ -147,7 +148,6 @@ def check_latest_date_freshness(latest_date_str: str, ref_date_str: str = None) 
     if latest_dt > ref_dt:
         return True, "OK"
 
-    # 計算 (latest_dt, ref_dt] 區間內扣除週末後的日數
     non_weekend_days = 0
     cur_d = latest_dt + timedelta(days=1)
     while cur_d <= ref_dt:
@@ -234,7 +234,7 @@ def scan_signals_for_ticker(df: pd.DataFrame, ticker: str, as_of_date: str = Non
 
 
 # ==========================================
-# 4. 帳本狀態管理與時序撮合
+# 4. 帳本狀態管理、時序撮合與手動解除指令
 # ==========================================
 def load_ledger(filepath: str = LEDGER_FILE) -> pd.DataFrame:
     cols = [
@@ -252,19 +252,112 @@ def save_ledger(df: pd.DataFrame, filepath: str = LEDGER_FILE):
     df.to_csv(filepath, index=False, encoding="utf-8-sig")
 
 
+def resolve_needs_review_position(
+    ticker: str,
+    action: str,
+    exit_price: float = None,
+    exit_date: str = None,
+    ledger_path: str = LEDGER_FILE,
+    scale_prices_on_adjust: bool = True
+) -> bool:
+    """
+    處理帳本中標為 NEEDS_REVIEW 的部位：
+    1. action == 'close': 以人工填入的價格與日期結束部位，依規則公式計算淨 R，並註記 MANUAL_RESOLVE。
+    2. action == 'adjust': 依記錄的分割比例調整進場價、停損價、觸發價後恢復為 OPEN (或 PENDING)，並註記 MANUAL_RESOLVE_ADJUST。
+    兩者皆嚴格保持 last_processed_date 不變。
+    """
+    ledger = load_ledger(ledger_path)
+    if ledger.empty:
+        print(f"【解除失敗】帳本為空: {ledger_path}")
+        return False
+
+    mask = (ledger["ticker"].astype(str) == str(ticker)) & (ledger["status"].astype(str) == "NEEDS_REVIEW")
+    if not mask.any():
+        print(f"【解除失敗】找不到標的 {ticker} 處於 NEEDS_REVIEW 狀態的部位！")
+        return False
+
+    idx = ledger[mask].index[-1]
+    row = ledger.loc[idx].copy()
+    orig_last_processed = row["last_processed_date"]
+    reason_str = str(row.get("exit_reason", ""))
+
+    # 解析記錄的分割比例
+    m = re.search(r"ratio=([0-9.]+)", reason_str)
+    ratio = float(m.group(1)) if m else 1.0
+
+    if action == "close":
+        if exit_price is None or not exit_date:
+            print("【解除失敗】--action close 必須同時指定 --price 與 --date！")
+            return False
+
+        entry_p = float(row["entry_price"])
+        stop_p = float(row["stop_price"])
+        exit_p = float(exit_price)
+        risk_per_share = entry_p - stop_p
+        if risk_per_share <= 0:
+            print(f"【解除失敗】每股風險異常 (entry={entry_p}, stop={stop_p})！")
+            return False
+
+        rule_r = round(((exit_p * (1.0 - COST_RATE)) - entry_p) / risk_per_share, 3)
+        slip_entry = get_tick_up(entry_p)
+        slip_exit = get_tick_down(exit_p)
+        slip_r = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
+
+        ledger.loc[idx, "status"] = "CLOSED"
+        ledger.loc[idx, "exit_date"] = str(exit_date)
+        ledger.loc[idx, "exit_price"] = exit_p
+        ledger.loc[idx, "exit_reason"] = f"MANUAL_RESOLVE({reason_str})" if reason_str else "MANUAL_RESOLVE"
+        ledger.loc[idx, "rule_net_r"] = rule_r
+        ledger.loc[idx, "slippage_net_r"] = slip_r
+        ledger.loc[idx, "actual_fee_settings"] = str(row.get("actual_fee_settings", ACTUAL_FEE_DESC)) + " | MANUAL_RESOLVE"
+        ledger.loc[idx, "last_processed_date"] = orig_last_processed
+
+        save_ledger(ledger, ledger_path)
+        print(f"【手動解除成功 - CLOSE】{ticker} 已於 {exit_date} 以 ${exit_p} 結案 | 淨R: {rule_r:+.3f}R | last_processed_date 維持: {orig_last_processed}")
+        return True
+
+    elif action == "adjust":
+        if scale_prices_on_adjust and ratio > 0 and ratio != 1.0:
+            ledger.loc[idx, "trigger_price"] = round(float(row["trigger_price"]) * ratio, 2)
+            ledger.loc[idx, "stop_price"] = round(float(row["stop_price"]) * ratio, 2)
+            if pd.notna(row["entry_price"]) and str(row["entry_price"]) != "":
+                ledger.loc[idx, "entry_price"] = round(float(row["entry_price"]) * ratio, 2)
+
+        was_triggered = bool(row.get("triggered", True)) and pd.notna(row.get("entry_price"))
+        ledger.loc[idx, "status"] = "OPEN" if was_triggered else "PENDING"
+        ledger.loc[idx, "exit_reason"] = ""
+        ledger.loc[idx, "actual_fee_settings"] = str(row.get("actual_fee_settings", ACTUAL_FEE_DESC)) + f" | MANUAL_RESOLVE_ADJUST(ratio={ratio})"
+        ledger.loc[idx, "last_processed_date"] = orig_last_processed
+
+        save_ledger(ledger, ledger_path)
+        print(
+            f"【手動解除成功 - ADJUST】{ticker} 已依分割比例 ({ratio}) 調整價格並恢復為 {ledger.loc[idx, 'status']} | "
+            f"新進場價: {ledger.loc[idx, 'entry_price']} | 新停損價: {ledger.loc[idx, 'stop_price']} | 新觸發價: {ledger.loc[idx, 'trigger_price']} | "
+            f"last_processed_date 維持: {orig_last_processed}"
+        )
+        return True
+
+    else:
+        print(f"【解除失敗】不支援的 action: {action} (請使用 close 或 adjust)")
+        return False
+
+
 def update_ledger_single_day(
     ledger: pd.DataFrame,
     stock_map: dict,
     today_str: str,
     split_map: dict = None,
     freeze_on_split: bool = True,
+    replay_auto_resolve_splits: bool = False,
     target_ticker: str = None
 ) -> tuple:
     """
     撮合單一交易日部位：
     1. 依據原始資料偵測到的 split_map (日期、比例)，若 OPEN 或 PENDING 標的在 today_str 發生分割，
-       立即標為 NEEDS_REVIEW 並凍結，不自動撮合、不計算出場價與淨 R。
-    2. 正常撮合未分割之部位。
+       立即標為 NEEDS_REVIEW 並凍結。
+    2. 若為驗證回放專用模式 (replay_auto_resolve_splits=True)，遇到 NEEDS_REVIEW 時自動以 adjust 解除凍結並繼續持有，
+       僅供歷史回放對齊任務 K 基準，嚴禁用於即時執行。
+    3. 正常撮合未凍結之部位。
     """
     if ledger.empty:
         return ledger, set()
@@ -288,16 +381,28 @@ def update_ledger_single_day(
             updated_rows.append(row)
             continue
 
-        # 1. 檢查原始資料中偵測到的分割事件 (支援當日或漏跑補算之任一日)
+        # 1. 檢查原始資料中偵測到的分割事件 (支援當日或漏跑補算：即時模式下只要載入序列含晚於訊號日之分割，即防禦回溯平滑污染；回放模式下於分割日當日觸發)
         if freeze_on_split and status in ["OPEN", "PENDING"]:
             t_splits = split_map.get(t, {})
-            if today_str in t_splits:
-                s_ratio = t_splits[today_str]
+            sig_d_str = str(row.get("signal_date", ""))
+            triggered_splits = [(sd, sr) for sd, sr in sorted(t_splits.items()) if sd > sig_d_str]
+            is_split_hit = (today_str in t_splits) if replay_auto_resolve_splits else (today_str in t_splits or bool(triggered_splits))
+            if is_split_hit:
+                s_date, s_ratio = (today_str, t_splits[today_str]) if today_str in t_splits else triggered_splits[0]
                 row["status"] = "NEEDS_REVIEW"
-                row["exit_reason"] = f"SPLIT_DETECTED(date={today_str},ratio={s_ratio})"
+                row["exit_reason"] = f"SPLIT_DETECTED(date={s_date},ratio={s_ratio})"
                 row["last_processed_date"] = today_str
-                updated_rows.append(row)
-                continue
+
+                if replay_auto_resolve_splits:
+                    # 驗證回放模式：遇到 NEEDS_REVIEW 自動以 adjust 處理恢復持有 (回放序列已預先平滑至同尺度)
+                    was_trig = bool(row.get("triggered", True)) and pd.notna(row.get("entry_price"))
+                    row["status"] = "OPEN" if was_trig else "PENDING"
+                    row["exit_reason"] = ""
+                    row["actual_fee_settings"] = str(row.get("actual_fee_settings", ACTUAL_FEE_DESC)) + f" | AUTO_RESOLVE_ADJUST(date={s_date},ratio={s_ratio})"
+                    status = str(row["status"])
+                else:
+                    updated_rows.append(row)
+                    continue
 
         today_bar_matches = df[df["DateStr"] == today_str]
         if today_bar_matches.empty:
@@ -397,9 +502,13 @@ def update_ledger_single_day(
 # ==========================================
 # 5. 擴充回放自我檢驗模組 (三區間全覆蓋)
 # ==========================================
-def run_extended_verification(benchmark_csv: str = "task_k_trades_base_no_ov.csv") -> bool:
+def run_extended_verification(
+    benchmark_csv: str = "task_k_trades_base_no_ov.csv",
+    replay_auto_resolve_splits: bool = False
+) -> bool:
     print("====================================================================")
     print("【執行擴充自我檢驗：涵蓋 2023-H2, 2025-H1, 2026-H1 三區間全流程回放】")
+    print(f"【回放分割處理模式】replay_auto_resolve_splits = {replay_auto_resolve_splits}")
     print("====================================================================")
 
     if not os.path.exists(benchmark_csv):
@@ -466,9 +575,13 @@ def run_extended_verification(benchmark_csv: str = "task_k_trades_base_no_ov.csv
             if today_str > p_end and sim_ledger[sim_ledger["status"] == "OPEN"].empty:
                 break
 
-            # 回放驗證已對全序列預先回溯平滑，持倉與價格同屬還原尺度，傳入 split_map 檢驗
             sim_ledger, exited_today = update_ledger_single_day(
-                sim_ledger, stock_map, today_str, split_map=split_map, freeze_on_split=True
+                sim_ledger,
+                stock_map,
+                today_str,
+                split_map=split_map,
+                freeze_on_split=True,
+                replay_auto_resolve_splits=replay_auto_resolve_splits
             )
             active_tickers = set(sim_ledger[sim_ledger["status"].isin(["OPEN", "PENDING", "NEEDS_REVIEW"])]["ticker"].unique())
             ineligible_tickers = active_tickers.union(exited_today)
@@ -636,7 +749,6 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
     latest_market_date = max(set(all_latest_dates), key=all_latest_dates.count)
     today_str = target_date if target_date else latest_market_date
 
-    # 即時模式最新日期檢查 (若未指定歷史 target_date，檢查 latest_market_date 是否過舊)
     ref_check_date = target_date if target_date else datetime.now().strftime("%Y-%m-%d")
     is_fresh, fresh_msg = check_latest_date_freshness(latest_market_date if not target_date else today_str, ref_check_date)
     if not is_fresh:
@@ -664,10 +776,14 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
             missed_dates = all_dates_union[prev_idx + 1 : curr_idx]
             print(f"【漏跑偵測】偵測到未處理之交易日: {missed_dates}，開始循序補算 (含分割事件檢查)...")
             for m_d in missed_dates:
-                ledger, _ = update_ledger_single_day(ledger, stock_map, m_d, split_map=split_map, freeze_on_split=True)
+                ledger, _ = update_ledger_single_day(
+                    ledger, stock_map, m_d, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False
+                )
 
-    # 1. 當日部位撮合更新 (含當日分割事件檢查)
-    ledger, exited_today = update_ledger_single_day(ledger, stock_map, today_str, split_map=split_map, freeze_on_split=True)
+    # 1. 當日部位撮合更新 (即時模式嚴格禁止 auto_resolve，固定為 False)
+    ledger, exited_today = update_ledger_single_day(
+        ledger, stock_map, today_str, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False
+    )
 
     # 2. 取得持倉不可進場之股票 (OPEN + PENDING + 當日剛出場者 + NEEDS_REVIEW)
     open_positions = set(ledger[ledger["status"].isin(["OPEN", "PENDING", "NEEDS_REVIEW"])]["ticker"].unique()) if not ledger.empty else set()
@@ -730,7 +846,14 @@ def main():
     parser = argparse.ArgumentParser(description="Task K Group C Forward Paper Trading Scanner")
     parser.add_argument("--date", type=str, default=None, help="指定掃描日期 (YYYY-MM-DD)，預設為最新交易日")
     parser.add_argument("--extended-verify", action="store_true", help="執行三區間擴充全生命週期比對回放")
+    parser.add_argument("--replay-auto-resolve-splits", action="store_true", help="僅限驗證回放使用：遇到 NEEDS_REVIEW 自動以 adjust 處理")
     parser.add_argument("--keep-cache", action="store_true", help="保留本地快取不清除 (預設即時執行會先清除 .cache_ohlcv)")
+
+    # 手動解除 NEEDS_REVIEW 指令參數
+    parser.add_argument("--resolve", type=str, default=None, help="指定要解除 NEEDS_REVIEW 狀態的股票代號 (例如 2327.TW)")
+    parser.add_argument("--action", type=str, choices=["close", "adjust"], default=None, help="解除方式: close (人工結案) 或 adjust (依分割比例調整繼續持有)")
+    parser.add_argument("--price", type=float, default=None, help="搭配 --action close 指定人工出場價格")
+    parser.add_argument("--ledger", type=str, default=LEDGER_FILE, help="指定帳本檔案路徑")
     args = parser.parse_args()
 
     print("********************************************************************")
@@ -738,11 +861,32 @@ def main():
     print("任務 K - C 組 (突破 20 日高) 前瞻紙上交易掃描器")
     print("********************************************************************")
 
+    if args.resolve:
+        if not args.action:
+            print("【錯誤】使用 --resolve 時必須指定 --action (close 或 adjust)！")
+            sys.exit(1)
+        ok = resolve_needs_review_position(
+            ticker=args.resolve,
+            action=args.action,
+            exit_price=args.price,
+            exit_date=args.date,
+            ledger_path=args.ledger
+        )
+        sys.exit(0 if ok else 1)
+
+    if args.replay_auto_resolve_splits and not args.extended_verify:
+        print("【錯誤】--replay-auto-resolve-splits 僅能搭配 --extended-verify 用於歷史驗證回放，不得用於即時執行！")
+        sys.exit(1)
+
     if args.extended_verify:
-        success = run_extended_verification()
+        success = run_extended_verification(replay_auto_resolve_splits=args.replay_auto_resolve_splits)
         sys.exit(0 if success else 1)
 
-    ok = run_daily_scan_workflow(target_date=args.date, clear_cache_on_start=(not args.keep_cache))
+    ok = run_daily_scan_workflow(
+        target_date=args.date,
+        clear_cache_on_start=(not args.keep_cache),
+        ledger_path=args.ledger
+    )
     sys.exit(0 if ok else 1)
 
 
