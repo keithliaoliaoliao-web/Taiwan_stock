@@ -2,7 +2,7 @@ name: Daily Forward Paper Trading (Task K Group C)
 
 on:
   schedule:
-    # 台灣時間 (UTC+8) 週一至週五 17:30 自動執行 (FinMind 日 K 已確認更新完畢)
+    # 台灣時間 (UTC+8) 週一至週五 17:30 自動執行 (UTC 09:30，確認 FinMind 日 K 已更新完畢)
     - cron: '30 9 * * 1-5'
   workflow_dispatch:
     inputs:
@@ -41,42 +41,83 @@ jobs:
       - name: Install dependencies
         run: pip install pandas numpy requests pytz
 
-      - name: Run Synthetic State Machine Logic Test
+      - name: Record Build Meta, FinMind Update Check & Fee Params
+        run: |
+          python -c "
+          import datetime, pytz
+          from data_fetcher import fetch_history, clear_cache
+          from scanner import get_actual_fee_params
+          clear_cache()
+          tz_tw = pytz.timezone('Asia/Taipei')
+          now_tw = datetime.datetime.now(tz_tw).strftime('%Y-%m-%d %H:%M:%S %Z')
+          df_test = fetch_history('2330.TW', lookback_days=30, use_cache=False)
+          last_d = str(df_test['Date'].iloc[-1])[:10] if not df_test.empty else 'EMPTY'
+          print('=== FinMind 實測抓取時間與最新 K 棒日期 ===')
+          print(f'執行時間 (台灣時間): {now_tw}')
+          print(f'2330.TW FinMind 回傳最新日 K 日期: {last_d}')
+          print(f'排程設定: 週一至週五 17:30 TST (UTC 09:30, cron: 30 9 * * 1-5)')
+          print('=== actual_net_r 費率參數設定 ===')
+          print(get_actual_fee_params())
+          " 2>&1 | tee finmind_and_fee_check.log
+
+      - name: Run Synthetic State Machine Logic Test (Day 1 to Day 3)
         run: python test_cross_day_live.py 2>&1 | tee synthetic_test_raw.log
+
+      - name: Run Split & Idempotency Unit Tests
+        run: python test_split_handling.py 2>&1 | tee unit_tests_raw.log
 
       - name: Execute Manual Resolve or Daily Real-Data Live Scan
         run: |
+          echo "=== 執行前 paper_trading_ledger.csv 狀態 (證明跨次執行讀取) ===" | tee live_trial_raw.log
+          if [ -f paper_trading_ledger.csv ]; then
+            head -n 5 paper_trading_ledger.csv | tee -a live_trial_raw.log
+            tail -n 5 paper_trading_ledger.csv | tee -a live_trial_raw.log
+            wc -l paper_trading_ledger.csv | tee -a live_trial_raw.log
+          fi
+          echo "=== 開始執行今日 scanner.py ===" | tee -a live_trial_raw.log
           if [ -n "${{ github.event.inputs.resolve_ticker }}" ]; then
             if [ "${{ github.event.inputs.resolve_action }}" = "close" ]; then
-              python scanner.py --resolve "${{ github.event.inputs.resolve_ticker }}" --action close --price "${{ github.event.inputs.resolve_price }}" --date "${{ github.event.inputs.resolve_date }}" 2>&1 | tee live_trial_raw.log
+              python scanner.py --resolve "${{ github.event.inputs.resolve_ticker }}" --action close --price "${{ github.event.inputs.resolve_price }}" --date "${{ github.event.inputs.resolve_date }}" 2>&1 | tee -a live_trial_raw.log
             else
-              python scanner.py --resolve "${{ github.event.inputs.resolve_ticker }}" --action adjust 2>&1 | tee live_trial_raw.log
+              python scanner.py --resolve "${{ github.event.inputs.resolve_ticker }}" --action adjust 2>&1 | tee -a live_trial_raw.log
             fi
           else
-            python scanner.py 2>&1 | tee live_trial_raw.log
+            python scanner.py 2>&1 | tee -a live_trial_raw.log
           fi
           echo "=== 執行後 paper_trading_ledger.csv 完整內容 ===" | tee -a live_trial_raw.log
           cat paper_trading_ledger.csv | tee -a live_trial_raw.log
 
+      - name: Package Source Files, Workflow YAML & Hashes
+        run: |
+          mkdir -p export_src
+          cp data_fetcher.py run_task_k.py scanner.py test_split_handling.py test_cross_day_live.py .github/workflows/daily_paper_trading.yml export_src/
+          cd export_src
+          md5sum data_fetcher.py run_task_k.py scanner.py test_split_handling.py test_cross_day_live.py daily_paper_trading.yml > file_hashes.txt
+          git rev-parse HEAD > commit_hash.txt
+
       - name: Backup Ledger Snapshot & Commit Back to Repository
         run: |
           mkdir -p ledger_backups
-          TODAY_UTC=$(date -u +"%Y-%m-%d")
+          TODAY_TW=$(TZ=Asia/Taipei date +"%Y-%m-%d")
           if [ -f paper_trading_ledger.csv ]; then
-            cp paper_trading_ledger.csv "ledger_backups/paper_trading_ledger_${TODAY_UTC}.csv"
+            cp paper_trading_ledger.csv "ledger_backups/paper_trading_ledger_${TODAY_TW}.csv"
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add paper_trading_ledger.csv ledger_backups/
-          git diff --staged --quiet || git commit -m "chore(ledger): update paper trading ledger (${TODAY_UTC})"
+          git diff --staged --quiet || git commit -m "chore(ledger): update paper trading ledger (${TODAY_TW})"
           git push
 
-      - name: Upload Live Trial & Backup Artifacts
+      - name: Upload All Live Trial & Source Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: paper-trading-live-run-logs
           path: |
+            finmind_and_fee_check.log
             synthetic_test_raw.log
+            unit_tests_raw.log
             live_trial_raw.log
             paper_trading_ledger.csv
             ledger_backups/
+            export_src/
