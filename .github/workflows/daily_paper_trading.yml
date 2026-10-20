@@ -2,7 +2,7 @@ name: Daily Forward Paper Trading (Task K Group C)
 
 on:
   schedule:
-    # 台灣時間 (UTC+8) 週一至週五 17:30 自動執行 (確認 FinMind 日K已更新完畢)
+    # 台灣時間 (UTC+8) 週一至週五 17:30 自動執行 (FinMind 日 K 已確認更新完畢)
     - cron: '30 9 * * 1-5'
   workflow_dispatch:
     inputs:
@@ -41,8 +41,8 @@ jobs:
       - name: Install dependencies
         run: pip install pandas numpy requests pytz
 
-      - name: Run Cross-Day Persistence & NEEDS_REVIEW Alert Test
-        run: python test_cross_day_live.py 2>&1 | tee cross_day_test_raw.log
+      - name: Run Synthetic State Machine Logic Test
+        run: python test_cross_day_live.py 2>&1 | tee synthetic_test_raw.log
 
       - name: Execute Manual Resolve or Daily Real-Data Live Scan
         run: |
@@ -76,7 +76,7 @@ jobs:
         with:
           name: paper-trading-live-run-logs
           path: |
-            cross_day_test_raw.log
+            synthetic_test_raw.log
             live_trial_raw.log
             paper_trading_ledger.csv
             ledger_backups/
