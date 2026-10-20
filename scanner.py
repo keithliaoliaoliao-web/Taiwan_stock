@@ -30,32 +30,51 @@ except Exception:
 
 LEDGER_FILE = "paper_trading_ledger.csv"
 COST_RATE = 0.00585  # 回測基準：稅 0.003 + 手續費 0.001425 * 2
+ACTUAL_FEE_DESC = "稅0.3% + 手續費0.1425%*2 (回測基準，無折扣無低消)"
 BASE_FEE_RATE = 0.001425
 TAX_RATE = 0.003
 
 
 def get_actual_fee_params() -> dict:
-    """從 config 讀取實際券商費率參數，若無則預設為回測基準 (無折扣、無低消)"""
-    discount = float(getattr(config, "BROKER_FEE_DISCOUNT", 1.0)) if HAS_CONFIG else 1.0
-    min_fee = float(getattr(config, "BROKER_MIN_FEE_TWD", 0.0)) if HAS_CONFIG else 0.0
+    """
+    從 config.py 讀取自訂券商費率參數：
+      - config.BROKER_FEE_DISCOUNT: 手續費折數 (浮點數，例如 2.8 折設為 0.28，預設為 None)
+      - config.BROKER_MIN_FEE_TWD: 單筆最低手續費 (浮點數，例如低消 20 元設為 20.0，預設為 None)
+      - config.POSITION_SHARES: 每筆交易股數 (整數，用於分攤低消至每股，預設為 1000)
+    未設定時維持預設回測基準 (無折扣無低消)。
+    """
+    discount = getattr(config, "BROKER_FEE_DISCOUNT", None) if HAS_CONFIG else None
+    min_fee = getattr(config, "BROKER_MIN_FEE_TWD", None) if HAS_CONFIG else None
     shares = int(getattr(config, "POSITION_SHARES", 1000)) if HAS_CONFIG else 1000
-    if discount == 1.0 and min_fee == 0.0:
+    is_custom = (discount is not None and discount != 1.0) or (min_fee is not None and min_fee > 0.0)
+
+    if not is_custom:
         desc = "稅0.3% + 手續費0.1425%*2 (回測基準，無折扣無低消)"
     else:
-        desc = f"稅0.3% + 手續費0.1425%*{discount}折 (低消{min_fee}元, 股數{shares})"
+        d_val = discount if discount is not None else 1.0
+        m_val = min_fee if min_fee is not None else 0.0
+        desc = f"稅0.3% + 手續費0.1425%*{d_val}折 (低消{m_val}元, 股數{shares})"
+
     return {
         "discount": discount,
         "min_fee": min_fee,
         "shares": shares,
+        "is_custom": is_custom,
         "desc": desc
     }
 
 
-def calc_actual_net_r(entry_price: float, exit_price: float, risk_per_share: float) -> float:
-    """計算實際券商成本設定下的淨 R"""
+def calc_actual_net_r(entry_price: float, exit_price: float, risk_per_share: float, rule_net_r: float) -> float:
+    """
+    未設定自訂券商費率時，actual_net_r 必須嚴格等於 rule_net_r；
+    僅在 config 明確設定自訂券商條件 (如折數或低消) 時，才依實際券商公式計算。
+    """
     params = get_actual_fee_params()
-    discount = params["discount"]
-    min_fee = params["min_fee"]
+    if not params["is_custom"]:
+        return rule_net_r
+
+    discount = params["discount"] if params["discount"] is not None else 1.0
+    min_fee = params["min_fee"] if params["min_fee"] is not None else 0.0
     shares = max(1, params["shares"])
 
     buy_fee_per_share = max(entry_price * BASE_FEE_RATE * discount, min_fee / shares)
@@ -260,20 +279,25 @@ def load_ledger(filepath: str = LEDGER_FILE) -> pd.DataFrame:
         "signal_date", "ticker", "trigger_price", "stop_price", "risk_pct",
         "triggered", "entry_price", "entry_date", "exit_date", "exit_price", "exit_reason",
         "rule_net_r", "actual_net_r", "slippage_net_r", "actual_fee_settings", "status",
-        "days_held", "pending_ema_exit", "last_processed_date"
+        "days_held", "pending_ema_exit", "last_processed_date", "source"
     ]
     str_cols = [
         "signal_date", "ticker", "entry_date", "exit_date",
-        "exit_reason", "actual_fee_settings", "status", "last_processed_date"
+        "exit_reason", "actual_fee_settings", "status", "last_processed_date", "source"
     ]
     if os.path.exists(filepath):
         df = pd.read_csv(filepath, dtype={c: object for c in str_cols})
         if "actual_net_r" not in df.columns:
             df["actual_net_r"] = df.get("rule_net_r", np.nan)
+        if "source" not in df.columns:
+            df["source"] = "LIVE"
         for c in str_cols:
             if c in df.columns:
                 df[c] = df[c].astype(object).fillna("")
-        return df[cols] if all(c in df.columns for c in cols) else df
+        for col in cols:
+            if col not in df.columns:
+                df[col] = "" if col in str_cols else np.nan
+        return df[cols]
     df_empty = pd.DataFrame(columns=cols)
     for c in str_cols:
         df_empty[c] = df_empty[c].astype(object)
@@ -285,7 +309,6 @@ def save_ledger(df: pd.DataFrame, filepath: str = LEDGER_FILE):
 
 
 def print_needs_review_alert(ledger: pd.DataFrame, ledger_path: str = LEDGER_FILE):
-    """每日輸出明確列出所有 NEEDS_REVIEW 的部位與解除指令範例 (指令 4)"""
     print("\n" + "=" * 68)
     print("【需人工處理部位 (NEEDS_REVIEW) 檢查區塊】")
     print("=" * 68)
@@ -353,7 +376,7 @@ def resolve_needs_review_position(
             return False
 
         rule_r = round(((exit_p * (1.0 - COST_RATE)) - entry_p) / risk_per_share, 3)
-        act_r = calc_actual_net_r(entry_p, exit_p, risk_per_share)
+        act_r = calc_actual_net_r(entry_p, exit_p, risk_per_share, rule_r)
         slip_entry = get_tick_up(entry_p)
         slip_exit = get_tick_down(exit_p)
         slip_r = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
@@ -481,8 +504,9 @@ def update_ledger_single_day(
                     row["exit_price"] = exit_price
                     row["exit_reason"] = "SAME_DAY_STOP"
                     row["status"] = "CLOSED"
-                    row["rule_net_r"] = round(((exit_price * (1.0 - COST_RATE)) - entry_price) / risk_per_share, 3)
-                    row["actual_net_r"] = calc_actual_net_r(entry_price, exit_price, risk_per_share)
+                    r_rule = round(((exit_price * (1.0 - COST_RATE)) - entry_price) / risk_per_share, 3)
+                    row["rule_net_r"] = r_rule
+                    row["actual_net_r"] = calc_actual_net_r(entry_price, exit_price, risk_per_share, r_rule)
                     slip_entry = get_tick_up(entry_price)
                     slip_exit = get_tick_down(exit_price)
                     row["slippage_net_r"] = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
@@ -528,8 +552,9 @@ def update_ledger_single_day(
                 row["exit_date"] = today_str
                 row["exit_price"] = exit_price
                 row["exit_reason"] = exit_reason
-                row["rule_net_r"] = round(((exit_price * (1.0 - COST_RATE)) - entry_price) / risk_per_share, 3)
-                row["actual_net_r"] = calc_actual_net_r(entry_price, exit_price, risk_per_share)
+                r_rule = round(((exit_price * (1.0 - COST_RATE)) - entry_price) / risk_per_share, 3)
+                row["rule_net_r"] = r_rule
+                row["actual_net_r"] = calc_actual_net_r(entry_price, exit_price, risk_per_share, r_rule)
                 slip_entry = get_tick_up(entry_price)
                 slip_exit = get_tick_down(exit_price)
                 row["slippage_net_r"] = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
@@ -611,7 +636,7 @@ def run_extended_verification(
             "signal_date", "ticker", "trigger_price", "stop_price", "risk_pct",
             "triggered", "entry_price", "entry_date", "exit_date", "exit_price", "exit_reason",
             "rule_net_r", "actual_net_r", "slippage_net_r", "actual_fee_settings", "status",
-            "days_held", "pending_ema_exit", "last_processed_date"
+            "days_held", "pending_ema_exit", "last_processed_date", "source"
         ])
 
         extra_signals = []
@@ -671,7 +696,8 @@ def run_extended_verification(
                             "status": "PENDING",
                             "days_held": 0,
                             "pending_ema_exit": False,
-                            "last_processed_date": today_str
+                            "last_processed_date": today_str,
+                            "source": "BACKFILL"
                         }])], ignore_index=True)
 
         bench_sub = c_trades_all[
@@ -760,7 +786,13 @@ def run_extended_verification(
 # ==========================================
 # 6. 主程式單次執行核心 (供 CLI 與重跑測試呼叫)
 # ==========================================
-def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool = True, ledger_path: str = LEDGER_FILE, preloaded_raw_map: dict = None) -> bool:
+def run_daily_scan_workflow(
+    target_date: str = None,
+    clear_cache_on_start: bool = True,
+    ledger_path: str = LEDGER_FILE,
+    preloaded_raw_map: dict = None,
+    source_tag: str = "LIVE"
+) -> bool:
     if clear_cache_on_start and preloaded_raw_map is None:
         print("【即時模式啟動】清除本地舊快取 (.cache_ohlcv)...")
         clear_cache()
@@ -803,6 +835,14 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
     if not is_fresh:
         print(f"【致命錯誤】資料日期過舊：{fresh_msg}，程式強制中止！")
         return False
+
+    # 若未指定 target_date 且當前為盤後 (16:30後)，檢查市場資料是否少一天
+    if target_date is None:
+        now_dt = datetime.now()
+        expected_date = get_expected_latest_trading_date(now_dt)
+        if latest_market_date < expected_date:
+            print(f"【致命錯誤】今日 ({expected_date}) 收盤資料尚未更新到位 (最新資料停留在: {latest_market_date})，終止執行！")
+            return False
 
     print(f"確認執行交易日: {today_str} (最新日期檢查通過)")
 
@@ -878,7 +918,8 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
                 "status": "PENDING",
                 "days_held": 0,
                 "pending_ema_exit": False,
-                "last_processed_date": today_str
+                "last_processed_date": today_str,
+                "source": source_tag
             })
         if new_records:
             ledger = pd.concat([ledger, pd.DataFrame(new_records)], ignore_index=True)
@@ -891,7 +932,6 @@ def run_daily_scan_workflow(target_date: str = None, clear_cache_on_start: bool 
     save_ledger(ledger, ledger_path)
     print(f"\n已同步寫入更新紙上交易帳本: {ledger_path}")
 
-    # 每日輸出最後強制列印 NEEDS_REVIEW 檢查區塊 (指令 4)
     print_needs_review_alert(ledger, ledger_path)
     return True
 
@@ -902,7 +942,9 @@ def main():
     parser.add_argument("--extended-verify", action="store_true", help="執行三區間擴充全生命週期比對回放")
     parser.add_argument("--replay-auto-resolve-splits", action="store_true", help="僅限驗證回放使用：遇到 NEEDS_REVIEW 自動以 adjust 處理")
     parser.add_argument("--keep-cache", action="store_true", help="保留本地快取不清除 (預設即時執行會先清除 .cache_ohlcv)")
+    parser.add_argument("--backfill", action="store_true", help="將本次產生的新訊號標記為 BACKFILL (預設即時執行標記為 LIVE)")
 
+    # 手動解除 NEEDS_REVIEW 指令參數
     parser.add_argument("--resolve", type=str, default=None, help="指定要解除 NEEDS_REVIEW 狀態的股票代號 (例如 2327.TW)")
     parser.add_argument("--action", type=str, choices=["close", "adjust"], default=None, help="解除方式: close (人工結案) 或 adjust (依分割比例調整繼續持有)")
     parser.add_argument("--price", type=float, default=None, help="搭配 --action close 指定人工出場價格")
@@ -935,10 +977,13 @@ def main():
         success = run_extended_verification(replay_auto_resolve_splits=args.replay_auto_resolve_splits)
         sys.exit(0 if success else 1)
 
+    source_tag = "BACKFILL" if (args.backfill or args.date is not None) else "LIVE"
+
     ok = run_daily_scan_workflow(
         target_date=args.date,
         clear_cache_on_start=(not args.keep_cache),
-        ledger_path=args.ledger
+        ledger_path=args.ledger,
+        source_tag=source_tag
     )
     sys.exit(0 if ok else 1)
 
