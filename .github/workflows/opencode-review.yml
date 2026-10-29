@@ -31,7 +31,7 @@ jobs:
         run: |
           set -o pipefail
           opencode run --standalone \
-            --model groq/openai/gpt-oss-120b \
+            --model groq/gpt-oss-120b \
             "Review the changes in this pull request for correctness and regressions. \
              Summarize findings by severity with file and line references. \
              Only report issues you are confident about; do not nitpick style." \
