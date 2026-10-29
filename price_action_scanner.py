@@ -9,7 +9,7 @@ import math
 import os
 import numpy as np
 import pandas as pd
-import pytz
+from zoneinfo import ZoneInfo
 import requests
 
 import config
@@ -129,7 +129,7 @@ def evaluate_holdings(current_prices: dict, dfs: dict) -> list:
 
 
 def run_scanner():
-    tz = pytz.timezone(config.TIMEZONE)
+    tz = ZoneInfo(config.TIMEZONE)
     now = datetime.now(tz)
     scan_date = now.strftime("%Y-%m-%d")
     scan_time = now.strftime("%H:%M")
