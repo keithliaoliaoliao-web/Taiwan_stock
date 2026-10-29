@@ -1,9 +1,16 @@
 node_modules/
 node.exe
+data_cache/
+signal_cache/
+chip_cache/
 __pycache__/
 *.pyc
+*.pkl
+*.dll
+*.lib
 .cache/
 .gemini/
 *.zip
 .DS_Store
 *.log
+

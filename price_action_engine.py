@@ -2,6 +2,8 @@
 price_action_engine.py
 Strategy Freeze v1 - Al Brooks-inspired Price Action Engine
 包含 H2 突破訊號判定、A/B 評級、醞釀中 (Setup Forming) 追蹤與 Always In 狀態量化。
+(嚴格保持所有策略判斷邏輯與參數 100% 不變，僅將內部迴圈陣列存取加速以支援高速滾動窗口回測，
+並新增 GRADE_A_MODE 與 Exit_Mode 診斷資訊支援)
 
 H1/H2 Structural Detection Redesign:
 Turned into an explicit, transparent, auditable, deterministic state machine
@@ -118,11 +120,17 @@ class PriceActionSwingEngine:
 
         actual_start = max(0, min(start_idx, n - 1))
 
+        open_arr = df["Open"].to_numpy(dtype=float)
+        high_arr = df["High"].to_numpy(dtype=float)
+        low_arr = df["Low"].to_numpy(dtype=float)
+        close_arr = df["Close"].to_numpy(dtype=float)
+        ema_arr = df[ema_col].to_numpy(dtype=float) if ema_col else None
+
         # Initial bar
         state = SwingState.SWING_UP
-        tentative_high = float(df["High"].iloc[actual_start])
+        tentative_high = float(high_arr[actual_start])
         tentative_high_idx = actual_start
-        tentative_low = float(df["Low"].iloc[actual_start])
+        tentative_low = float(low_arr[actual_start])
         tentative_low_idx = actual_start
 
         major_high: Optional[SwingNode] = None
@@ -135,31 +143,24 @@ class PriceActionSwingEngine:
         ema_pierced_in_pb = False
 
         # Fill any bars before actual_start with default
-        for b in range(actual_start):
-            results.append(SwingStructureResult(
-                state=state,
-                tentative_high=tentative_high,
-                tentative_high_idx=tentative_high_idx,
-                tentative_low=tentative_low,
-                tentative_low_idx=tentative_low_idx
-            ))
-
-        results.append(SwingStructureResult(
+        default_res = SwingStructureResult(
             state=state,
             tentative_high=tentative_high,
             tentative_high_idx=tentative_high_idx,
             tentative_low=tentative_low,
             tentative_low_idx=tentative_low_idx
-        ))
+        )
+        for _ in range(actual_start + 1):
+            results.append(default_res)
 
         for b in range(actual_start + 1, n):
-            cur_o = float(df["Open"].iloc[b])
-            cur_h = float(df["High"].iloc[b])
-            cur_l = float(df["Low"].iloc[b])
-            cur_c = float(df["Close"].iloc[b])
-            prev_h = float(df["High"].iloc[b - 1])
-            prev_l = float(df["Low"].iloc[b - 1])
-            cur_ema = float(df[ema_col].iloc[b]) if ema_col and pd.notna(df[ema_col].iloc[b]) else None
+            cur_o = float(open_arr[b])
+            cur_h = float(high_arr[b])
+            cur_l = float(low_arr[b])
+            cur_c = float(close_arr[b])
+            prev_h = float(high_arr[b - 1])
+            prev_l = float(low_arr[b - 1])
+            cur_ema = float(ema_arr[b]) if (ema_arr is not None and not np.isnan(ema_arr[b])) else None
 
             # 3.C: Inside Bar / Congestion Absorption
             is_inside = (cur_h <= prev_h) and (cur_l >= prev_l)
@@ -274,6 +275,7 @@ class PriceActionSwingEngine:
     ) -> SwingStructureResult:
         series = cls.evaluate_series(df.iloc[: up_to_idx + 1], start_idx=start_idx)
         return series[-1] if series else SwingStructureResult()
+
 
 class H1H2State(str, Enum):
     """
@@ -446,11 +448,15 @@ class H1H2StateMachine:
         pullback_low: Optional[float] = None
         leg2_bar_count = 0
 
+        high_arr = df["High"].to_numpy(dtype=float)
+        low_arr = df["Low"].to_numpy(dtype=float)
+        min_leg2_bars = int(getattr(config, "MIN_LEG2_PULLBACK_BARS", 1))
+
         for b in range(peak_idx + 1, eval_idx + 1):
-            cur_high = float(df["High"].iloc[b])
-            cur_low = float(df["Low"].iloc[b])
-            prev_high = float(df["High"].iloc[b - 1])
-            prev_low = float(df["Low"].iloc[b - 1])
+            cur_high = float(high_arr[b])
+            cur_low = float(low_arr[b])
+            prev_high = float(high_arr[b - 1])
+            prev_low = float(low_arr[b - 1])
 
             pullback_low = cur_low if pullback_low is None else min(pullback_low, cur_low)
 
@@ -515,7 +521,6 @@ class H1H2StateMachine:
                     leg2_bar_count += 1
 
                 # Rule 10 [A]: Second bar whose High > previous bar High during pullback is High 2 (H2)
-                min_leg2_bars = int(getattr(config, "MIN_LEG2_PULLBACK_BARS", 1))
                 if cur_high > prev_high and leg2_bar_count >= min_leg2_bars:
                     current_state = H1H2State.H2_CONFIRMED
                     h2_idx = b
@@ -687,21 +692,22 @@ class PriceActionEngine:
             }
 
         # 真正連續 EMA 向上計數 (EMA[i] > EMA[i-1] 連續 N 根)
+        ema_series = df["EMA_20"].to_numpy(dtype=float)
         consecutive_up = True
         for k in range(min_up_bars):
             idx1 = signal_index - k
             idx2 = signal_index - k - 1
             if idx2 >= 0:
-                val1 = df.iloc[idx1].get("EMA_20")
-                val2 = df.iloc[idx2].get("EMA_20")
-                if pd.isna(val1) or pd.isna(val2) or val1 <= val2:
+                val1 = ema_series[idx1]
+                val2 = ema_series[idx2]
+                if np.isnan(val1) or np.isnan(val2) or val1 <= val2:
                     consecutive_up = False
                     break
             else:
                 consecutive_up = False
                 break
 
-        ema_prev_n = df.iloc[signal_index - slope_period].get("EMA_20") if signal_index >= slope_period else np.nan
+        ema_prev_n = ema_series[signal_index - slope_period] if signal_index >= slope_period else np.nan
         cond1_slope = bool(ema > ema_prev_n) if (pd.notna(ema) and pd.notna(ema_prev_n)) else False
         cond3_above_ema = bool(sig["Close"] >= ema)
         always_in = str(sig.get("Always_In", "LONG"))
@@ -823,17 +829,28 @@ class PriceActionEngine:
             details["max_allowed"] = max_allowed_dist
             return False, details
 
-        # 訊號評級判定 (A 級 vs B 級) [Frozen Layer]
+        # 訊號評級判定 (支援 LEGACY 原定義與任務 E 實證 OPTIMIZED 定義)
         grade_a_close_ratio = float(getattr(config, "GRADE_A_BAR_CLOSE_RATIO", 70.0))
         grade_a_max_bars = int(getattr(config, "GRADE_A_MAX_PULLBACK_BARS", 4))
         grade_a_ema_dist = float(getattr(config, "GRADE_A_EMA_DISTANCE_ATR", 0.5))
 
-        cond_a_body = body_ratio > grade_a_close_ratio
-        cond_a_bars = bar_count <= grade_a_max_bars
-        cond_a_ema = (distance_to_ema <= grade_a_ema_dist * atr) if (pd.notna(atr) and atr > 0) else True
+        cond_a_body = bool(body_ratio > grade_a_close_ratio)
+        cond_a_bars = bool(bar_count <= grade_a_max_bars)
+        cond_a_ema = bool((distance_to_ema <= grade_a_ema_dist * atr) if (pd.notna(atr) and atr > 0) else True)
 
-        signal_grade = "A" if (cond_a_body and cond_a_bars and cond_a_ema) else "B"
+        grade_legacy = "A" if (cond_a_body and cond_a_bars and cond_a_ema) else "B"
+        # 任務 E 實證最佳兩組：強實體 + (高空強勢淺拉回 [Bars<=4 & EMA>0.5] 或 充分橫盤貼線 [Bars>4 & EMA<=0.5])
+        grade_optimized = "A" if (cond_a_body and (cond_a_bars != cond_a_ema)) else "B"
+
+        grade_mode = str(getattr(config, "GRADE_A_MODE", "LEGACY")).upper()
+        signal_grade = grade_optimized if grade_mode == "OPTIMIZED" else grade_legacy
+
         details["signal_grade"] = signal_grade
+        details["signal_grade_legacy"] = grade_legacy
+        details["signal_grade_optimized"] = grade_optimized
+        details["cond_a_body"] = cond_a_body
+        details["cond_a_bars"] = cond_a_bars
+        details["cond_a_ema"] = cond_a_ema
         details["reason"] = "H2_CONFIRMED"
 
         return True, details
@@ -901,6 +918,7 @@ class PriceActionEngine:
         out["Target_Price"] = np.nan
         out["Risk_Pct"] = np.nan
         out["Net_RR"] = np.nan
+        out["Exit_Mode"] = str(getattr(config, "EXIT_MODE", "V1")).upper()
 
         out["Suggested_Shares"] = 0
         out["H2_Status"] = NOT_YET_QUANTIFIED

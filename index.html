@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台股量化趨勢選股系統 - 監控儀表板</title>
+  <title>台股價格行為選股系統 - 監控儀表板</title>
   <!-- 外部依賴函式庫 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
@@ -18,7 +18,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen font-sans antialiased">
 
   <!-- ========================================== -->
-  <!-- 1. 頁首導航區 (Header) -->
+  <!-- 1. 頁首導航區 (Header) - 固定單行不折行排版 -->
   <!-- ========================================== -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3">
@@ -28,12 +28,12 @@
           📈
         </div>
         <div>
-          <h1 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">台股量化趨勢選股系統</h1>
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">台股價格行為選股系統</h1>
           <p class="text-[11px] text-slate-500" id="header-update-time">載入中...</p>
         </div>
       </div>
 
-      <!-- 右側監控徽章與按鈕群 -->
+      <!-- 右側監控徽章與按鈕群 (強制橫向單行，不被擠落換行) -->
       <div class="flex items-center gap-2 overflow-x-auto py-1 shrink-0">
         <!-- 運作中燈號與倒數計時器 -->
         <div class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs whitespace-nowrap">
@@ -68,7 +68,7 @@
   <!-- 主內容容器 -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
 
-    <!-- 快速分類標籤列 -->
+    <!-- 快速分類標籤列 (Quick Filter Tabs) -->
     <div class="sticky top-16 z-20 bg-slate-50/90 backdrop-blur-md py-3 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-slate-200 mb-2">
       <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold">
         <button onclick="scrollToSection('all', this)" id="tab-all" class="px-4 py-2 rounded-full bg-blue-600 text-white shadow-sm transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
@@ -94,29 +94,29 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- 2. 本月可用預算輸入區 (1% 以損定量體系) -->
+    <!-- 2. 本月可用預算輸入區 (MaxPos=3 均分風控體系) -->
     <!-- ========================================== -->
     <section id="section-budget" class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-6 text-white shadow-lg">
       <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 class="text-lg font-bold flex items-center gap-2">
-            <span>🛡️</span> 組別 4 風控體系（1% 以損定量 ＋ 50% 市場廣度濾網）
+            <span>💰</span> 本月動態投資預算控管
           </h2>
           <p class="text-xs text-blue-200 mt-1">
-            單筆最大停損嚴格鎖定於總資金的 1%（單檔上限 25%），由停損距離倒推買進股數，徹底規避重倉暴跌風險。
+            依據風控規範（MaxPos=3，最多同時持有 3 檔），系統自動將總預算均分（每檔 33.3%）計算建議進場股數。
           </p>
         </div>
 
         <div class="flex items-center gap-2 w-full md:w-auto">
           <div class="relative flex-1 md:w-64">
             <span class="absolute left-3 top-2.5 text-slate-400 text-sm font-semibold">NT$</span>
-            <input type="number" id="monthly-budget-input" min="10000" step="10000" placeholder="例如：100000"
+            <input type="number" id="monthly-budget-input" min="1000" step="1000" placeholder="例如：1000000"
               class="w-full pl-12 pr-4 py-2 bg-white text-slate-900 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-inner">
           </div>
-          <button onclick="applyBudget()" class="px-5 py-2 bg-blue-500 hover:bg-blue-400 text-white text-sm font-semibold rounded-xl shadow-md transition active:scale-95 cursor-pointer">
+          <button onclick="applyBudget()" class="px-5 py-2 bg-blue-500 hover:bg-blue-400 text-white text-sm font-semibold rounded-xl shadow-md transition active:scale-95">
             套用
           </button>
-          <button onclick="clearBudget()" class="px-3 py-2 bg-blue-950/60 hover:bg-blue-950 text-blue-200 text-xs rounded-xl border border-blue-700/50 transition cursor-pointer">
+          <button onclick="clearBudget()" class="px-3 py-2 bg-blue-950/60 hover:bg-blue-950 text-blue-200 text-xs rounded-xl border border-blue-700/50 transition">
             重設
           </button>
         </div>
@@ -124,9 +124,9 @@
 
       <!-- 當前預算狀態摘要 -->
       <div id="budget-summary-banner" class="mt-4 pt-4 border-t border-blue-800/60 flex flex-wrap gap-4 text-xs text-blue-100">
-        <div>總資產預算：<span id="current-budget-display" class="font-bold text-yellow-300">NT$ 1,000,000 (預設)</span></div>
-        <div>單筆容許停損虧損：<span id="budget-risk-display" class="font-semibold text-emerald-300">1% (約 NT$ 10,000)</span></div>
-        <div>出場防守規範：<span class="font-semibold text-white">收盤跌破 20EMA 隔日開盤市價出清 (V1)</span></div>
+        <div>當前套用預算：<span id="current-budget-display" class="font-bold text-yellow-300">尚未輸入</span></div>
+        <div>單檔部位上限：<span class="font-semibold text-white">33.3% (總預算 / 3)</span></div>
+        <div>最大持倉檔數限制：<span class="font-semibold text-white">MaxPos = 3 檔</span></div>
       </div>
     </section>
 
@@ -142,7 +142,7 @@
         </div>
         
         <div class="flex items-center gap-3">
-          <button onclick="openManualRegisterModal()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5 active:scale-95 cursor-pointer">
+          <button onclick="openManualRegisterModal()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5 active:scale-95">
             <span class="text-sm">➕</span>
             <span>手動新增持股</span>
           </button>
@@ -157,7 +157,7 @@
 
       <!-- 已平倉歷史交易紀錄折疊專區 -->
       <div class="mt-4 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <button type="button" onclick="toggleTradeHistory()" class="w-full px-5 py-3.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-700 transition cursor-pointer">
+        <button type="button" onclick="toggleTradeHistory()" class="w-full px-5 py-3.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-700 transition">
           <div class="flex items-center gap-2">
             <span>📜</span>
             <span>已平倉歷史交易紀錄</span>
@@ -189,7 +189,7 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- 4. 明日進場候選清單 (組別 4: 任務 K 突破 ＋ 投信買超) -->
+    <!-- 4. 明日進場候選清單 (Signals - H2 + 投信濾網) -->
     <!-- ========================================== -->
     <section id="section-signals">
       <div class="flex items-center justify-between mb-4">
@@ -198,7 +198,7 @@
           <h2 class="text-lg font-bold text-slate-900">明日進場候選清單</h2>
           <span id="signals-count-badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">0 檔</span>
         </div>
-        <div class="text-xs text-slate-500">任務 K (突破20日高點) ＋ 投信買超 ＋ 1% 以損定量</div>
+        <div class="text-xs text-slate-500">Al Brooks H2 第二腿突破 ＋ 投信買超雙重驗證</div>
       </div>
 
       <!-- 訊號卡片網格 -->
@@ -217,7 +217,7 @@
           <h2 class="text-lg font-bold text-slate-900">醞釀中標的名單 (Forming)</h2>
           <span id="forming-count-badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">0 檔</span>
         </div>
-        <p class="text-xs text-slate-500">站上 20EMA 且距前 20 日高點 2% 以內，隨時可能突破</p>
+        <p class="text-xs text-slate-500">均線多頭排列且拉回接近 20EMA 支撐區，等待訊號棒確認</p>
       </div>
 
       <div id="forming-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
@@ -238,10 +238,12 @@
 
         <!-- 篩選列 -->
         <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <!-- 產業篩選 -->
           <select id="sector-filter" onchange="filterUniverseTable()" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="ALL">全部產業</option>
           </select>
 
+          <!-- 關鍵字搜尋 -->
           <input type="text" id="universe-search-input" onkeyup="filterUniverseTable()" placeholder="搜尋代號或名稱..."
             class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-40">
         </div>
@@ -277,7 +279,7 @@
           <h3 class="text-base font-bold text-slate-900">登記賣出平倉結算</h3>
           <p class="text-xs text-slate-500">結算已實現損益並歸檔至歷史交易紀錄</p>
         </div>
-        <button onclick="closeSellModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">✕</button>
+        <button onclick="closeSellModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">✕</button>
       </div>
 
       <form id="sell-form" onsubmit="submitSellHolding(event)" class="p-6 space-y-4 text-xs">
@@ -330,14 +332,14 @@
         </div>
 
         <div class="pt-3 flex items-center justify-end gap-3">
-          <button type="button" onclick="closeSellModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition cursor-pointer">取消</button>
-          <button type="submit" id="btn-submit-sell" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition cursor-pointer">確認平倉結算</button>
+          <button type="button" onclick="closeSellModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">取消</button>
+          <button type="submit" id="btn-submit-sell" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition">確認平倉結算</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- K線圖彈窗 (已依 V1 規範移除固定停利線) -->
+  <!-- K線圖彈窗 (Lightweight Charts Modal) -->
   <div id="chart-modal" onclick="if(event.target === this) closeChartModal()" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-[4px] flex items-center justify-center p-3">
     <div class="bg-white rounded-[14px] shadow-2xl w-full max-w-[750px] overflow-hidden border border-slate-200 relative">
       <button onclick="closeChartModal()" class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition shadow-xs z-20 cursor-pointer" title="關閉">✕</button>
@@ -345,14 +347,14 @@
       <div class="px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50 pr-12">
         <div>
           <h3 id="modal-chart-title" class="text-sm font-bold text-slate-900">個股技術圖表</h3>
-          <p id="modal-chart-subtitle" class="text-[11px] text-slate-500">日線圖 + 20EMA 動態防守線</p>
+          <p id="modal-chart-subtitle" class="text-[11px] text-slate-500">日線圖 + 20EMA + 關鍵進場停損區間</p>
         </div>
         <div class="flex items-center gap-2">
           <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs text-xs font-semibold">
-            <button type="button" id="btn-range-1m" onclick="setChartRange(20, '1m')" class="px-2 py-0.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">1個月</button>
-            <button type="button" id="btn-range-3m" onclick="setChartRange(60, '3m')" class="px-2 py-0.5 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition cursor-pointer">3個月</button>
-            <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">半年</button>
-            <button type="button" id="btn-range-1y" onclick="setChartRange(250, '1y')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">1年</button>
+            <button type="button" id="btn-range-1m" onclick="setChartRange(20, '1m')" class="px-2 py-0.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1個月</button>
+            <button type="button" id="btn-range-3m" onclick="setChartRange(60, '3m')" class="px-2 py-0.5 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition">3個月</button>
+            <button type="button" id="btn-range-6m" onclick="setChartRange(120, '6m')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">半年</button>
+            <button type="button" id="btn-range-1y" onclick="setChartRange(250, '1y')" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">1年</button>
           </div>
         </div>
       </div>
@@ -361,9 +363,10 @@
         <div id="tv-chart-container" class="w-full h-[320px]"></div>
         <div class="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-600 gap-2">
           <div class="flex items-center gap-3">
-            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-500 inline-block"></span> 20EMA 均線 (波段動態出場線)</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-500 inline-block"></span> 20EMA 均線</span>
             <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-t-2 border-dashed border-emerald-500 inline-block"></span> 觸發進場價</span>
-            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-t-2 border-dashed border-rose-500 inline-block"></span> 初始停損價</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-t-2 border-dashed border-rose-500 inline-block"></span> 停損防守價</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 border-t-2 border-dashed border-indigo-500 inline-block"></span> 停利目標價</span>
           </div>
           <div class="text-slate-400">台股慣用色：紅漲 綠跌</div>
         </div>
@@ -379,7 +382,7 @@
           <h3 id="reg-modal-title" class="text-base font-bold text-slate-900">納入個人持股登記</h3>
           <p class="text-xs text-slate-500">登記買進紀錄，系統將透過 GitHub API 寫入 holdings.json</p>
         </div>
-        <button onclick="closeRegisterModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">✕</button>
+        <button onclick="closeRegisterModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">✕</button>
       </div>
 
       <form id="register-form" onsubmit="submitHoldingRegistration(event)" class="p-6 space-y-4 text-xs">
@@ -401,8 +404,8 @@
           <div>
             <label class="block text-slate-600 font-semibold mb-1">訊號等級</label>
             <select id="reg-grade" class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500">
-              <option value="A">A 級訊號 (爆量突破)</option>
-              <option value="B">B 級訊號 (標準突破)</option>
+              <option value="A">A 級訊號</option>
+              <option value="B">B 級訊號</option>
               <option value="自選/手動">自選/手動</option>
             </select>
           </div>
@@ -418,7 +421,7 @@
             <input type="number" step="0.01" id="reg-entry-price" oninput="calculateTotalAmount()" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-900">
           </div>
           <div>
-            <label class="block text-slate-600 font-semibold mb-1">買進股數 (建議依損定量)</label>
+            <label class="block text-slate-600 font-semibold mb-1">買進股數 (Shares)</label>
             <input type="number" min="1" step="1" id="reg-shares" oninput="calculateTotalAmount()" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-900">
           </div>
         </div>
@@ -430,23 +433,20 @@
 
         <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
           <div>
-            <label class="block text-slate-600 font-semibold mb-1">初始停損價 (元)</label>
+            <label class="block text-slate-600 font-semibold mb-1">停損價格 (元)</label>
             <input type="number" step="0.01" id="reg-stop-loss" required class="w-full px-3 py-2 bg-white border border-rose-300 text-rose-700 font-bold rounded-lg focus:ring-2 focus:ring-rose-500">
           </div>
           <div>
-            <label class="block text-slate-600 font-semibold mb-1">出場機制說明</label>
-            <div class="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg font-medium text-[11px]">
-              V1 規則：收盤跌破 20EMA 隔日開盤市價出清
-            </div>
-            <input type="hidden" id="reg-target-price" value="0">
+            <label class="block text-slate-600 font-semibold mb-1">停利目標 (元)</label>
+            <input type="number" step="0.01" id="reg-target-price" required class="w-full px-3 py-2 bg-white border border-blue-300 text-blue-700 font-bold rounded-lg focus:ring-2 focus:ring-blue-500">
           </div>
         </div>
 
         <div id="github-api-status" class="hidden text-xs py-2 px-3 rounded-lg"></div>
 
         <div class="pt-4 flex items-center justify-end gap-3">
-          <button type="button" onclick="closeRegisterModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition cursor-pointer">取消</button>
-          <button type="submit" id="btn-submit-registration" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition cursor-pointer">確認登記寫入</button>
+          <button type="button" onclick="closeRegisterModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">取消</button>
+          <button type="submit" id="btn-submit-registration" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-md transition">確認登記寫入</button>
         </div>
       </form>
     </div>
@@ -457,7 +457,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200">
       <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <h3 class="text-base font-bold text-slate-900">GitHub API 連線設定</h3>
-        <button onclick="closeGithubModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">✕</button>
+        <button onclick="closeGithubModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">✕</button>
       </div>
 
       <div class="p-6 space-y-4 text-xs">
@@ -481,10 +481,10 @@
         </div>
 
         <div class="pt-2 flex items-center justify-between">
-          <button onclick="clearGithubSettings()" class="text-rose-600 hover:underline cursor-pointer">清除設定</button>
+          <button onclick="clearGithubSettings()" class="text-rose-600 hover:underline">清除設定</button>
           <div class="flex gap-2">
-            <button onclick="closeGithubModal()" class="px-3.5 py-1.5 bg-slate-100 text-slate-700 rounded-lg cursor-pointer">關閉</button>
-            <button onclick="saveGithubSettings()" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-500 cursor-pointer">儲存設定</button>
+            <button onclick="closeGithubModal()" class="px-3.5 py-1.5 bg-slate-100 text-slate-700 rounded-lg">關閉</button>
+            <button onclick="saveGithubSettings()" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-500">儲存設定</button>
           </div>
         </div>
       </div>
@@ -500,34 +500,38 @@
     let currentSignalCandlesCount = 0;
     let countdownTimerInterval = null;
 
-    // 絕對時鐘倒數計時器
+    // ==============================================================================
+    // 絕對時鐘倒數計時器（依據 12分/42分 排程對齊，F5 絕不重置）
+    // ==============================================================================
     function startMarketSessionTimer() {
       if (countdownTimerInterval) clearInterval(countdownTimerInterval);
 
       function tick() {
         const now = new Date();
         const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        const tw = new Date(utc + (3600000 * 8));
+        const tw = new Date(utc + (3600000 * 8)); // 台灣時間 UTC+8
 
-        const day = tw.getDay();
+        const day = tw.getDay(); // 0: 日, 6: 六
         const h = tw.getHours();
         const m = tw.getMinutes();
         const s = tw.getSeconds();
         const currentSecs = h * 3600 + m * 60 + s;
 
-        const openSecs = 9 * 3600;
-        const closeSecs = 13 * 3600 + 45 * 60;
-        const postScanSecs = 15 * 3600 + 48 * 60; // 對齊 15:48 盤後定盤排程
+        const openSecs = 9 * 3600;                 // 09:00:00
+        const closeSecs = 13 * 3600 + 45 * 60;     // 13:45:00
+        const postScanSecs = 15 * 3600 + 35 * 60;  // 15:35:00
 
         const statusEl = document.getElementById('session-status-text');
         const timerEl = document.getElementById('countdown-timer');
 
+        // 週末非交易日
         if (day === 0 || day === 6) {
           if (statusEl) statusEl.innerText = "⚪ 週末休市中";
           if (timerEl) timerEl.innerText = "週末不執行排程";
           return;
         }
 
+        // 1. 盤前等待 (09:00 前)
         if (currentSecs < openSecs) {
           if (statusEl) statusEl.innerText = "💤 盤前等待開盤";
           const rem = openSecs - currentSecs;
@@ -537,24 +541,43 @@
           return;
         }
 
+        // 2. 盤中監控時段 (09:00 ~ 13:45，每小時 12分 與 42分 觸發)
         if (currentSecs >= openSecs && currentSecs <= closeSecs) {
           if (statusEl) statusEl.innerText = "🟢 盤中監控中";
-          const rem = closeSecs - currentSecs;
+          
+          const targetMinutes = [12, 42];
+          let nextTargetMin = targetMinutes.find(target => target > m);
+          let targetHour = h;
+
+          if (nextTargetMin === undefined) {
+            nextTargetMin = targetMinutes[0];
+            targetHour = h + 1;
+          }
+
+          const targetSecs = targetHour * 3600 + nextTargetMin * 60;
+          let diff = targetSecs - currentSecs;
+          if (diff <= 0) diff = 1800;
+
+          const mins = Math.floor(diff / 60);
+          const secs = diff % 60;
+          if (timerEl) {
+            timerEl.innerText = `下次更新倒數：${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          }
+          return;
+        }
+
+        // 3. 等待 15:35 盤後定盤 (13:45 ~ 15:35)
+        if (currentSecs > closeSecs && currentSecs < postScanSecs) {
+          if (statusEl) statusEl.innerText = "⏳ 等待盤後法人籌碼定盤";
+          const rem = postScanSecs - currentSecs;
           const hrs = Math.floor(rem / 3600);
           const mins = Math.floor((rem % 3600) / 60);
-          if (timerEl) timerEl.innerText = `收盤倒數：${hrs}時${String(mins).padStart(2, '0')}分`;
-          return;
-        }
-
-        if (currentSecs > closeSecs && currentSecs < postScanSecs) {
-          if (statusEl) statusEl.innerText = "⏳ 等待 15:48 盤後法人籌碼定盤";
-          const rem = postScanSecs - currentSecs;
-          const mins = Math.floor(rem / 60);
           const secs = rem % 60;
-          if (timerEl) timerEl.innerText = `定盤倒數：${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          if (timerEl) timerEl.innerText = `定盤掃描倒數：${hrs}時${String(mins).padStart(2, '0')}分${String(secs).padStart(2, '0')}秒`;
           return;
         }
 
+        // 4. 盤後定盤完成 (15:35 後)
         if (statusEl) statusEl.innerText = "🏁 今日收盤定盤完成";
         if (timerEl) timerEl.innerText = "明日 09:00 開盤再行監控";
       }
@@ -633,6 +656,12 @@
           console.error('載入 scan_result.json 失敗:', err);
           document.getElementById('header-update-time').innerText = '載入資料失敗，請確認已執行 scanner.py';
           document.getElementById('market-status-badge').innerHTML = '❌ 載入失敗';
+          document.getElementById('signals-grid').innerHTML = `
+            <div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-500">
+              <p class="text-base font-semibold">無法讀取 scan_result.json</p>
+              <p class="text-xs mt-1">請先執行 python scanner.py 產生最新掃描資料。</p>
+            </div>
+          `;
         });
     }
 
@@ -660,7 +689,7 @@
 
       const scanDate = data.scan_date || '';
       const scanTime = data.scan_time || '';
-      document.getElementById('header-update-time').innerText = scanDate ? `最後掃描時間：${scanDate} ${scanTime}` : '等待首次掃描執行中...';
+      document.getElementById('header-update-time').innerText = scanDate ? `最後掃描時間：${scanDate} ${scanTime}` : '等待 GitHub Actions 首次掃描執行中...';
 
       const sigBadge = document.getElementById('tab-badge-signals');
       const formBadge = document.getElementById('tab-badge-forming');
@@ -675,15 +704,13 @@
 
       const ms = data.market_status || {};
       const badge = document.getElementById('market-status-badge');
-      const breadthPct = ms.breadth_pct !== undefined ? ms.breadth_pct : 0.0;
-      const breadthPass = ms.breadth_pass !== undefined ? ms.breadth_pass : (breadthPct >= 50.0);
-
-      if (breadthPass) {
+      const phaseStr = ms.market_phase ? `[${ms.market_phase}]` : '';
+      if (ms.bullish) {
         badge.className = "px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs whitespace-nowrap";
-        badge.innerHTML = `🟢 <span>市場廣度: ${breadthPct}% (放行買進) | 大盤: ${ms.close || 0}</span>`;
+        badge.innerHTML = `🟢 <span>大盤多頭 ${phaseStr} (收盤: ${ms.close || 0} / 20EMA: ${ms.ema20 || 0})</span>`;
       } else {
         badge.className = "px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs whitespace-nowrap";
-        badge.innerHTML = `⚠️ <span>市場廣度: ${breadthPct}% (低於50%防禦中) | 大盤: ${ms.close || 0}</span>`;
+        badge.innerHTML = `⚠️ <span>大盤震盪警戒 ${phaseStr} (收盤: ${ms.close || 0} / 20EMA: ${ms.ema20 || 0})</span>`;
       }
 
       let combinedHoldings = [...(data.holdings_status || [])];
@@ -761,20 +788,16 @@
 
     function updateBudgetDisplay(budget) {
       const display = document.getElementById('current-budget-display');
-      const riskDisplay = document.getElementById('budget-risk-display');
       if (budget && budget > 0) {
         display.innerText = `NT$ ${budget.toLocaleString()}`;
-        const risk1Pct = Math.round(budget * 0.01);
-        riskDisplay.innerText = `1% (約 NT$ ${risk1Pct.toLocaleString()})`;
       } else {
-        display.innerText = 'NT$ 1,000,000 (預設)';
-        riskDisplay.innerText = '1% (約 NT$ 10,000)';
+        display.innerText = '尚未輸入';
       }
     }
 
     function getBudget() {
       const val = sessionStorage.getItem('monthly_budget');
-      return val ? Number(val) : 1000000;
+      return val ? Number(val) : null;
     }
 
     // ==========================================
@@ -801,8 +824,10 @@
         const currentClose = Number(h.current_close) || entryPrice;
         const shares = Number(h.shares) || 0;
         const stopLoss = Number(h.stop_loss) || 0;
+        const targetPrice = Number(h.target_price) || 0;
 
         const totalCost = entryPrice * shares;
+        const currentMarketVal = currentClose * shares;
         const pnl = Math.round((currentClose - entryPrice) * shares);
         const pct = entryPrice > 0 ? Math.round(((currentClose - entryPrice) / entryPrice) * 10000) / 100 : 0;
         const pnlColor = pnl >= 0 ? "text-emerald-600 font-black" : "text-rose-600 font-black";
@@ -810,6 +835,8 @@
 
         const stopDist = stopLoss > 0 ? (currentClose - stopLoss) : 0;
         const stopDistPct = currentClose > 0 ? ((stopDist / currentClose) * 100).toFixed(2) : 0;
+        const targetDist = targetPrice > 0 ? (targetPrice - currentClose) : 0;
+        const targetDistPct = currentClose > 0 ? ((targetDist / currentClose) * 100).toFixed(2) : 0;
 
         let daysHeld = h.holding_days || 1;
         if (!h.holding_days && h.entry_date) {
@@ -863,21 +890,26 @@
                 <div>${statusBadge}</div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2 text-xs mb-3">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
                 <div class="bg-white/70 rounded-xl p-2.5 border border-slate-200/60">
                   <span class="text-slate-500 text-[10px] block">買進成本 (總額)</span>
                   <div class="font-bold text-slate-800 mt-0.5 text-sm">$${entryPrice}</div>
                   <div class="text-[10px] text-slate-500 mt-0.5 font-medium">NT$ ${Math.round(totalCost).toLocaleString()}</div>
                 </div>
                 <div class="bg-white/70 rounded-xl p-2.5 border border-slate-200/60">
-                  <span class="text-slate-500 text-[10px] block">當前收盤價</span>
+                  <span class="text-slate-500 text-[10px] block">當前收盤 (20EMA)</span>
                   <div class="font-bold text-slate-900 mt-0.5 text-sm">$${currentClose}</div>
-                  <div class="text-[10px] text-slate-500 mt-0.5 font-medium">現值 NT$ ${Math.round(currentClose * shares).toLocaleString()}</div>
+                  <div class="text-[10px] text-blue-600 mt-0.5 font-medium">EMA: $${ema20Val}</div>
                 </div>
                 <div class="bg-white/70 rounded-xl p-2.5 border border-slate-200/60">
-                  <span class="text-slate-500 text-[10px] block">動態防守 (20EMA)</span>
-                  <div class="font-bold text-blue-600 mt-0.5 text-sm">$${ema20Val}</div>
-                  <div class="text-[10px] text-rose-600 mt-0.5 font-medium">停損底線: $${stopLoss}</div>
+                  <span class="text-slate-500 text-[10px] block">停損防守 (距停損)</span>
+                  <div class="font-bold text-rose-600 mt-0.5 text-sm">$${stopLoss}</div>
+                  <div class="text-[10px] text-rose-600 mt-0.5 font-medium">${stopDist > 0 ? '-' : '+'}${Math.abs(stopDist).toFixed(1)}元 (${stopDistPct}%)</div>
+                </div>
+                <div class="bg-white/70 rounded-xl p-2.5 border border-slate-200/60">
+                  <span class="text-slate-500 text-[10px] block">目標停利 (距目標)</span>
+                  <div class="font-bold text-blue-600 mt-0.5 text-sm">$${targetPrice}</div>
+                  <div class="text-[10px] text-blue-600 mt-0.5 font-medium">${targetDist > 0 ? '+' : '-'}${Math.abs(targetDist).toFixed(1)}元 (${targetDistPct}%)</div>
                 </div>
               </div>
 
@@ -893,10 +925,10 @@
             </div>
 
             <div class="flex items-center gap-2 pt-2 border-t border-slate-200/50">
-              <button onclick="openSellModal('${h.ticker}', '${h.name}', ${entryPrice}, ${shares}, ${currentClose}, '${h.entry_date}')" class="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1 cursor-pointer">
+              <button onclick="openSellModal('${h.ticker}', '${h.name}', ${entryPrice}, ${shares}, ${currentClose}, '${h.entry_date}')" class="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1">
                 <span>💰</span> 登記賣出
               </button>
-              <button onclick="handleDeleteHolding('${h.ticker}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer">
+              <button onclick="handleDeleteHolding('${h.ticker}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition">
                 刪除
               </button>
             </div>
@@ -906,7 +938,7 @@
     }
 
     // ==========================================
-    // 渲染明日進場訊號 (1% 以損定量風控)
+    // 渲染明日進場訊號 (MaxPos=3 均分)
     // ==========================================
     function renderSignals(signals) {
       const grid = document.getElementById('signals-grid');
@@ -918,7 +950,7 @@
           <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400">
             <span class="text-3xl block mb-2">🏖️</span>
             <p class="text-sm font-semibold text-slate-600">今日無符合條件之標的</p>
-            <p class="text-xs text-slate-400 mt-1">目前無標的同時滿足「任務 K 突破 ＋ 投信買超 ＋ 市場廣度 >= 50%」。</p>
+            <p class="text-xs text-slate-400 mt-1">目前無標的同時滿足「H2 突破 ＋ 投信買超」之高勝率條件。</p>
           </div>
         `;
         return;
@@ -929,47 +961,42 @@
       grid.innerHTML = signals.map(sig => {
         const isGradeA = sig.grade === 'A';
         const gradeBadge = isGradeA
-          ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">A 級 (爆量突破)</span>`
-          : `<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">B 級 (標準突破)</span>`;
+          ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">A 級訊號</span>`
+          : `<span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">B 級訊號</span>`;
 
-        // 1. 修復 NaN%：優先抓取 stop_pct，若無則依進場價與停損價自動算
-        const stopDist = (sig.trigger_price - sig.stop_loss);
-        let riskPctVal = 0.0;
-        if (sig.stop_pct !== undefined && !isNaN(Number(sig.stop_pct))) {
-          riskPctVal = Number(sig.stop_pct);
-        } else if (sig.risk_pct !== undefined && !isNaN(Number(sig.risk_pct))) {
-          riskPctVal = Number(sig.risk_pct);
-        } else if (sig.trigger_price > 0) {
-          riskPctVal = (stopDist / sig.trigger_price) * 100.0;
+        let sharesText = `<span class="text-amber-600 font-semibold">請先輸入本月預算</span>`;
+        let maxLossText = `<span class="text-slate-400">-</span>`;
+        let maxProfitText = `<span class="text-slate-400">-</span>`;
+        let calculatedShares = sig.suggested_shares || 0;
+
+        // MaxPos=3 均分配置 (單檔投入 = 預算 / 3)
+        if (budget && budget > 0) {
+          const targetAmount = budget / 3.0;
+          calculatedShares = Math.floor(targetAmount / sig.trigger_price);
+
+          if (calculatedShares > 0) {
+            const totalAlloc = calculatedShares * sig.trigger_price;
+            sharesText = `<span class="text-slate-900 font-bold">${calculatedShares} 股</span> <span class="text-[11px] text-slate-500">(約 $${Math.round(totalAlloc).toLocaleString()})</span>`;
+            
+            const maxLoss = Math.round((sig.trigger_price - sig.stop_loss) * calculatedShares);
+            const maxProfit = Math.round((sig.target_price - sig.trigger_price) * calculatedShares);
+            
+            maxLossText = `<span class="text-rose-600 font-bold">-$${maxLoss.toLocaleString()}</span>`;
+            maxProfitText = `<span class="text-emerald-600 font-bold">+$${maxProfit.toLocaleString()}</span>`;
+          } else {
+            sharesText = `<span class="text-slate-400 text-xs">預算不足以買進 1 股</span>`;
+          }
         }
-        const riskPctFormatted = Math.max(0, riskPctVal).toFixed(2);
-
-        // 2. 核心修正：強制依據使用者即時輸入的 budget 動態算 1% 以損定量股數
-        let calculatedShares = 0;
-        if (stopDist > 0 && budget > 0) {
-          const riskBudget = budget * 0.01;              // 單筆最大損失鎖定總本金 1%
-          const maxCap = budget * 0.25;                  // 單一標的最高上限 25% 總資金
-          const sharesByRisk = riskBudget / stopDist;
-          const sharesByCap = maxCap / sig.trigger_price;
-          calculatedShares = Math.max(1, Math.floor(Math.min(sharesByRisk, sharesByCap)));
-        } else {
-          calculatedShares = sig.suggested_shares || 1000;
-        }
-
-        const totalAlloc = calculatedShares * sig.trigger_price;
-        const maxLoss = Math.round(stopDist * calculatedShares);
-
-        const sharesText = `<span class="text-slate-900 font-bold">${calculatedShares.toLocaleString()} 股</span> <span class="text-[11px] text-slate-500">(約 NT$ ${Math.round(totalAlloc).toLocaleString()})</span>`;
-        const maxLossText = `<span class="text-rose-600 font-bold">-NT$ ${maxLoss.toLocaleString()}</span> <span class="text-[10px] text-slate-400">(總資產 1% 風控)</span>`;
 
         const distDiff = (sig.trigger_price - sig.close);
+        const distPct = sig.close > 0 ? ((distDiff / sig.close) * 100) : 0;
         let distBadge = '';
         if (distDiff > 0) {
-          distBadge = `<span class="inline-flex items-center text-xs font-bold text-blue-700 bg-white px-2.5 py-0.5 rounded-md border border-blue-200 shadow-2xs">差 +${distDiff.toFixed(2)} 元</span>`;
+          distBadge = `<span class="inline-flex items-center text-xs font-bold text-blue-700 bg-white px-2.5 py-0.5 rounded-md border border-blue-200 shadow-2xs">差 +${distDiff.toFixed(1)} 元 (+${distPct.toFixed(2)}%)</span>`;
         } else if (distDiff === 0) {
-          distBadge = `<span class="inline-flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 shadow-2xs">已達突破價</span>`;
+          distBadge = `<span class="inline-flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 shadow-2xs">已達觸發價</span>`;
         } else {
-          distBadge = `<span class="inline-flex items-center text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200 shadow-2xs">已突破 +${Math.abs(distDiff).toFixed(2)} 元</span>`;
+          distBadge = `<span class="inline-flex items-center text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200 shadow-2xs">已突破 +${Math.abs(distDiff).toFixed(1)} 元</span>`;
         }
 
         return `
@@ -992,52 +1019,56 @@
                   <span class="text-base font-extrabold text-slate-900">$${sig.close}</span>
                 </div>
                 <div class="text-right flex items-center gap-1.5">
-                  <span class="text-xs text-slate-500 font-medium">突破狀態:</span>
+                  <span class="text-xs text-slate-500 font-medium">距突破觸發價:</span>
                   ${distBadge}
                 </div>
               </div>
 
-              <div class="grid grid-cols-3 gap-1.5 text-center text-xs mb-3">
+              <div class="grid grid-cols-4 gap-1.5 text-center text-xs mb-3">
+                <div class="bg-slate-100/80 p-2 rounded-xl border border-slate-200">
+                  <span class="text-slate-500 text-[10px] block font-medium">當前市價</span>
+                  <span class="font-bold text-slate-900 text-sm">$${sig.close}</span>
+                </div>
                 <div class="bg-emerald-50/70 p-2 rounded-xl border border-emerald-200">
-                  <span class="text-emerald-700 text-[10px] block font-medium">參考進場價</span>
+                  <span class="text-emerald-700 text-[10px] block font-medium">觸發進場</span>
                   <span class="font-bold text-emerald-600 text-sm">$${sig.trigger_price}</span>
                 </div>
                 <div class="bg-rose-50/70 p-2 rounded-xl border border-rose-200">
-                  <span class="text-rose-700 text-[10px] block font-medium">初始停損價</span>
+                  <span class="text-rose-700 text-[10px] block font-medium">停損防守</span>
                   <span class="font-bold text-rose-600 text-sm">$${sig.stop_loss}</span>
                 </div>
                 <div class="bg-blue-50/70 p-2 rounded-xl border border-blue-200">
-                  <span class="text-blue-700 text-[10px] block font-medium">動態防守 (20EMA)</span>
-                  <span class="font-bold text-blue-600 text-sm">$${sig.ema20 || sig.close}</span>
+                  <span class="text-blue-700 text-[10px] block font-medium">停利目標</span>
+                  <span class="font-bold text-blue-600 text-sm">$${sig.target_price}</span>
                 </div>
               </div>
 
-              <div class="flex items-center justify-between text-xs text-slate-600 px-2 py-1.5 bg-slate-50/80 rounded-lg mb-3">
-                <span>停損距離幅度：<strong class="text-rose-600 font-bold">${riskPctFormatted}%</strong></span>
-                <span>投信籌碼：<strong class="text-blue-600 font-bold">${sig.trust_net_lots !== undefined ? (sig.trust_net_lots > 0 ? '+' : '') + sig.trust_net_lots + '張' : '--'}</strong></span>
+              <div class="flex items-center justify-between text-xs text-slate-600 px-1 py-1.5 bg-slate-50/60 rounded-lg mb-3">
+                <span>風險幅度：<strong class="text-slate-800">${Number(sig.risk_pct).toFixed(2)}%</strong></span>
+                <span>投信籌碼：<strong class="text-blue-600">${sig.trust_net_lots !== undefined ? sig.trust_net_lots + '張' : '--'}</strong></span>
               </div>
 
               <div class="bg-blue-50/50 rounded-xl p-3 border border-blue-100/60 mb-4 text-xs space-y-1.5">
                 <div class="flex justify-between items-center">
-                  <span class="text-slate-500 font-medium">1% 以損定量建議買進：</span>
+                  <span class="text-slate-500">建議買進股數：</span>
                   <div>${sharesText}</div>
                 </div>
                 <div class="flex justify-between items-center">
-                  <span class="text-slate-500 font-medium">觸及停損預計虧損：</span>
+                  <span class="text-slate-500">預期最大虧損：</span>
                   <div>${maxLossText}</div>
                 </div>
-                <div class="flex justify-between items-center text-[11px] pt-0.5 border-t border-blue-100/80 text-slate-500">
-                  <span>V1 出場規範：</span>
-                  <span class="font-semibold text-blue-700">收盤跌破 20EMA 隔日開盤市價出清</span>
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-500">預期最大獲利：</span>
+                  <div>${maxProfitText}</div>
                 </div>
               </div>
             </div>
 
             <div class="flex items-center gap-2">
-              <button onclick="openChartModal('${sig.ticker}')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1 cursor-pointer">
+              <button onclick="openChartModal('${sig.ticker}')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1">
                 <span>📈</span> 檢視K線
               </button>
-              <button onclick="openRegisterModal('${sig.ticker}', ${calculatedShares})" class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1 cursor-pointer">
+              <button onclick="openRegisterModal('${sig.ticker}', ${calculatedShares})" class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1">
                 <span>➕</span> 納入我的持股
               </button>
             </div>
@@ -1097,14 +1128,14 @@
 
       tbody.innerHTML = list.map(u => {
         const trendBadge = u.trend_up
-          ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">🟢 站上20EMA</span>`
-          : `<span class="inline-flex items-center gap-1 text-slate-400">⚪ 跌破20EMA</span>`;
+          ? `<span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">🟢 多頭</span>`
+          : `<span class="inline-flex items-center gap-1 text-slate-400">⚪ 整理/空頭</span>`;
 
         let signalBadge = `<span class="text-slate-400">無</span>`;
         if (u.has_signal) {
           signalBadge = u.grade === 'A'
-            ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">A級突破</span>`
-            : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">B級突破</span>`;
+            ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">A級進場</span>`
+            : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">B級進場</span>`;
         }
 
         return `
@@ -1151,13 +1182,9 @@
         dateRangeInfo = ` | 資料區間: ${firstD} ~ ${lastD} (共 ${candles.length} 根真實日K)`;
       }
 
-      let stopDist = (item.trigger_price - item.stop_loss);
-      let riskPctVal = (item.stop_pct !== undefined ? Number(item.stop_pct) : ((stopDist / item.trigger_price) * 100));
-      const riskStr = Math.max(0, riskPctVal).toFixed(2);
-
       document.getElementById('modal-chart-title').innerText = `${item.ticker} ${item.name} - 技術結構圖 ${isSignal ? '(突破訊號)' : '(真實日K線圖)'}`;
       document.getElementById('modal-chart-subtitle').innerText = isSignal
-        ? `最新收盤: $${item.close} | 觸發進場: $${item.trigger_price} | 停損防守: $${item.stop_loss} (-${riskStr}%) | 動態防守: 20EMA ($${item.ema20 || '--'})${dateRangeInfo}`
+        ? `最新收盤: $${item.close} | 觸發進場: $${item.trigger_price} | 停損: $${item.stop_loss} | 目標: $${item.target_price} | 風險: ${item.risk_pct || '--'}%${dateRangeInfo}`
         : `最新收盤: $${item.close} | 20EMA: $${item.ema20 || '--'}${item.turnover_ma20 ? ' | 20日均成交: ' + item.turnover_ma20 + '億' : ''}${dateRangeInfo}`;
 
       const modal = document.getElementById('chart-modal');
@@ -1208,13 +1235,15 @@
         emaSeries.setData(item.ema);
       }
 
-      // 依 V1 規範：僅繪製進場價與停損價，廢除會造成干擾與圖表縮放異常的固定目標價線
       if (isSignal) {
         if (item.trigger_price) {
           candleSeries.createPriceLine({ price: item.trigger_price, color: '#10b981', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '觸發進場價' });
         }
         if (item.stop_loss) {
-          candleSeries.createPriceLine({ price: item.stop_loss, color: '#ef4444', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '停損防守價' });
+          candleSeries.createPriceLine({ price: item.stop_loss, color: '#ef4444', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '停損價' });
+        }
+        if (item.target_price) {
+          candleSeries.createPriceLine({ price: item.target_price, color: '#3b82f6', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: '目標停利' });
         }
       }
 
@@ -1226,8 +1255,8 @@
         const btn = document.getElementById('btn-range-' + k);
         if (btn) {
           btn.className = (k === rangeKey)
-            ? "px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition cursor-pointer"
-            : "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer";
+            ? "px-2.5 py-1 rounded-md bg-blue-600 text-white shadow-2xs font-bold transition"
+            : "px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition";
         }
       });
 
@@ -1267,6 +1296,7 @@
       document.getElementById('reg-entry-price').value = sig.trigger_price;
       document.getElementById('reg-shares').value = suggestedShares > 0 ? suggestedShares : 1000;
       document.getElementById('reg-stop-loss').value = sig.stop_loss;
+      document.getElementById('reg-target-price').value = sig.target_price;
 
       calculateTotalAmount();
       document.getElementById('github-api-status').classList.add('hidden');
@@ -1290,10 +1320,15 @@
         const sig = (globalScanData.signals || []).find(s => s.ticker === matched.ticker);
         if (sig) {
           document.getElementById('reg-stop-loss').value = sig.stop_loss;
+          document.getElementById('reg-target-price').value = sig.target_price;
           document.getElementById('reg-grade').value = sig.grade;
         } else {
           const stopPrice = Math.round(matched.close * 0.95 * 100) / 100;
+          const risk = matched.close - stopPrice;
+          const targetPrice = Math.round((matched.close + risk * 2) * 100) / 100;
+
           document.getElementById('reg-stop-loss').value = stopPrice;
+          document.getElementById('reg-target-price').value = targetPrice;
           document.getElementById('reg-grade').value = '自選/手動';
         }
 
@@ -1314,6 +1349,7 @@
       document.getElementById('reg-entry-price').value = "";
       document.getElementById('reg-shares').value = "1000";
       document.getElementById('reg-stop-loss').value = "";
+      document.getElementById('reg-target-price').value = "";
 
       calculateTotalAmount();
       document.getElementById('github-api-status').classList.add('hidden');
@@ -1353,7 +1389,7 @@
         entry_price: Number(document.getElementById('reg-entry-price').value),
         shares: Number(document.getElementById('reg-shares').value),
         stop_loss: Number(document.getElementById('reg-stop-loss').value),
-        target_price: 0
+        target_price: Number(document.getElementById('reg-target-price').value)
       };
 
       let localList = getLocalHoldings();
@@ -1574,7 +1610,7 @@
               </span>
             </td>
             <td class="py-2.5 px-3 text-center">
-              <button onclick="deleteTradeHistoryItem(${idx})" class="text-slate-400 hover:text-rose-600 text-xs cursor-pointer">✕</button>
+              <button onclick="deleteTradeHistoryItem(${idx})" class="text-slate-400 hover:text-rose-600 text-xs">✕</button>
             </td>
           </tr>
         `;
