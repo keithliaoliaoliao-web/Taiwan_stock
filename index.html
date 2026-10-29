@@ -821,7 +821,7 @@
 
       grid.innerHTML = holdings.map(h => {
         const entryPrice = Number(h.entry_price) || 0;
-        const currentClose = Number(h.current_close) || entryPrice;
+        const currentClose = Number(h.current_close || h.current_price) || entryPrice;
         const shares = Number(h.shares) || 0;
         const stopLoss = Number(h.stop_loss) || 0;
         const targetPrice = Number(h.target_price) || 0;
