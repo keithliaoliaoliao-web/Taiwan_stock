@@ -349,7 +349,19 @@ def update_ledger_single_day(
         status = str(row["status"])
         df = stock_map.get(t, pd.DataFrame())
 
-        if df.empty or status in ["CLOSED", "UNTRIGGERED", "NEEDS_REVIEW"]:
+        if status in ["CLOSED", "UNTRIGGERED", "NEEDS_REVIEW"]:
+            updated_rows.append(row)
+            continue
+        if df.empty:
+            # 股票不在 stock_map 中（無資料）→ 視為缺棒
+            missing_out.append(t)
+            if status == "PENDING":
+                row["status"] = "UNTRIGGERED"
+                row["exit_reason"] = "NO_BAR_ON_TARGET_DAY"
+                row["last_processed_date"] = today_str
+                updated_rows.append(row)
+                continue
+            # OPEN 遇到無 K 棒：跳過但記錄
             updated_rows.append(row)
             continue
 
@@ -774,6 +786,7 @@ def run_daily_scan_workflow(target_date=None, clear_cache_on_start=False, ledger
                 stock_map[ticker] = df
                 split_map[ticker] = ev
 
+    print(f"DEBUG stock_map keys: {list(stock_map.keys())}")
     # universe
     universe = sorted(set(stock_map.keys()))
 
@@ -795,8 +808,10 @@ def run_daily_scan_workflow(target_date=None, clear_cache_on_start=False, ledger
     new_rows = []
     for t in universe:
         if t in ineligible or t not in stock_map:
+            print(f"DEBUG skip {t}: ineligible={t in ineligible}, not_in_stock_map={t not in stock_map}")
             continue
         sig = scan_today(stock_map[t], t, target_date)
+        print(f"DEBUG {t}: sig={sig['signal_date'] if sig else None}, target_date={target_date}, in_stock_map={t in stock_map}")
         if not sig or (target_date, t) in existing:
             continue
         new_rows.append({

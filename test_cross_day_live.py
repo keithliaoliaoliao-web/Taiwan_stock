@@ -85,5 +85,80 @@ def test_synthetic_cross_day_state_logic():
         shutil.rmtree(backup_dir, ignore_errors=True)
 
 
+
+def test_missing_bar_handling():
+    """合成測試：缺棒處理 (PENDING -> UNTRIGGERED, OPEN -> skip + log)"""
+    print("=" * 68)
+    print("【合成測試：缺棒處理】")
+    print("=" * 68)
+
+    import os
+    from scanner import update_ledger_single_day, load_ledger, save_ledger, ACTIVE_STATUSES
+    import pandas as pd
+    import numpy as np
+
+    ledger_path = "test_missing_bar_ledger.csv"
+    if os.path.exists(ledger_path):
+        os.remove(ledger_path)
+
+    # 建立一個有 PENDING 和 OPEN 的帳本
+    cols = ["signal_date", "ticker", "trigger_price", "stop_price", "risk_pct",
+            "triggered", "entry_price", "entry_date", "exit_date", "exit_price", "exit_reason",
+            "rule_net_r", "actual_net_r", "slippage_net_r", "actual_fee_settings", "status",
+            "days_held", "pending_ema_exit", "last_processed_date", "source", "avg_turnover_20d"]
+    ledger = pd.DataFrame([
+        {"signal_date": "2026-10-20", "ticker": "2330.TW", "trigger_price": 926.0, "stop_price": 907.0,
+         "risk_pct": 2.05, "triggered": False, "entry_price": np.nan, "entry_date": "", "exit_date": "",
+         "exit_price": np.nan, "exit_reason": "", "rule_net_r": np.nan, "actual_net_r": np.nan,
+         "slippage_net_r": np.nan, "actual_fee_settings": "test", "status": "PENDING", "days_held": 0,
+         "pending_ema_exit": False, "last_processed_date": "2026-10-20", "source": "BACKFILL",
+         "avg_turnover_20d": 9519500.0},
+        {"signal_date": "2026-10-20", "ticker": "6669.TW", "trigger_price": 6005.0, "stop_price": 5905.0,
+         "risk_pct": 1.67, "triggered": True, "entry_price": 6010.0, "entry_date": "2026-10-21", "exit_date": "",
+         "exit_price": np.nan, "exit_reason": "", "rule_net_r": np.nan, "actual_net_r": np.nan,
+         "slippage_net_r": np.nan, "actual_fee_settings": "test", "status": "OPEN", "days_held": 1,
+         "pending_ema_exit": False, "last_processed_date": "2026-10-21", "source": "BACKFILL",
+         "avg_turnover_20d": 5000000.0},
+    ], columns=cols)
+    for c in ["triggered", "pending_ema_exit"]:
+        ledger[c] = ledger[c].astype(bool)
+    for c in ["entry_price", "exit_price", "rule_net_r", "actual_net_r", "slippage_net_r", "avg_turnover_20d"]:
+        ledger[c] = pd.to_numeric(ledger[c], errors="coerce")
+    save_ledger(ledger, ledger_path)
+
+    # Day 2: 2330 missing (no K-bar), 6669 has data
+    stock_map = {
+        "6669.TW": pd.DataFrame([{"Date": pd.Timestamp("2026-10-23"), "DateStr": "2026-10-23",
+                                    "Open": 6010.0, "High": 6050.0, "Low": 5980.0, "Close": 6000.0,
+                                    "Volume": 9000, "EMA_20": 5950.0}])
+    }
+    split_map = {}
+
+    missing_out = []
+    ledger = load_ledger(ledger_path)
+    ledger, exited = update_ledger_single_day(
+        ledger, stock_map, "2026-10-23", split_map=split_map,
+        freeze_on_split=True, replay_auto_resolve_splits=False,
+        missing_out=missing_out
+    )
+    ledger = ledger.reset_index(drop=True)
+    save_ledger(ledger, ledger_path)
+
+    print(f"[Day 2] 2330 status: {ledger[ledger['ticker']=='2330.TW']['status'].values[0]}")
+    print(f"[Day 2] 2330 exit_reason: {ledger[ledger['ticker']=='2330.TW']['exit_reason'].values[0]}")
+    print(f"[Day 2] missing_out: {missing_out}")
+    print(f"[Day 2] 6669 status: {ledger[ledger['ticker']=='6669.TW']['status'].values[0]}")
+
+    assert ledger[ledger["ticker"] == "2330.TW"]["status"].values[0] == "UNTRIGGERED"
+    assert "NO_BAR_ON_TARGET_DAY" in str(ledger[ledger["ticker"] == "2330.TW"]["exit_reason"].values[0])
+    assert "2330.TW" in missing_out
+
+    if os.path.exists(ledger_path):
+        os.remove(ledger_path)
+    print("\n>>> [PASS] 缺棒處理測試通過！\n")
+
+
+
 if __name__ == "__main__":
     test_synthetic_cross_day_state_logic()
+    test_missing_bar_handling()
