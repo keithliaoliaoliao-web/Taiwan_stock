@@ -45,9 +45,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run scanner
+        continue-on-error: true
         env:
           FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
-          # 18:30 那次不是最終嘗試；21:30 與手動執行都算最終嘗試
           IS_FINAL: ${{ github.event.schedule != '30 10 * * 1-5' }}
           RESOLVE_TICKER: ${{ github.event.inputs.resolve_ticker }}
           RESOLVE_ACTION: ${{ github.event.inputs.resolve_action }}
@@ -63,11 +63,13 @@ jobs:
           fi
 
       - name: Run price action scanner
+        continue-on-error: true
         env:
           FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
         run: python price_action_scanner.py
 
       - name: Commit results
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -76,6 +78,6 @@ jobs:
           if [ -f scan_result.json ]; then git add scan_result.json; fi
           if [ -f public/scan_result.json ]; then git add public/scan_result.json; fi
           if [ -f holdings.json ]; then git add holdings.json; fi
-          git diff --staged --quiet || git commit -m "chore: update scan results ($(TZ=Asia/Taipei date +%F))"
+          git diff --staged --quiet || git commit -m "chore: update scan results ($(TZ=Asia/Taipei date +%F)) [skip ci]"
           git pull --rebase
           git push
