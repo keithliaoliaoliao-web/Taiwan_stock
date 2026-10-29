@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "providers": {
+    "groq": {
+      "name": "Groq",
+      "env": ["GROQ_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": { "baseURL": "https://api.groq.com/openai/v1" },
+      "models": {
+        "gpt-oss-120b": { "modelID": "openai/gpt-oss-120b" },
+        "gpt-oss-20b": { "modelID": "openai/gpt-oss-20b" }
+      }
+    }
+  }
+}
