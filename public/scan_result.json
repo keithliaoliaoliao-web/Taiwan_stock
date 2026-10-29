@@ -1,9 +1,10 @@
 {
   "scan_date": "2026-10-29",
-  "scan_time": "11:43",
+  "scan_time": "12:32",
   "market_status": {
     "ticker": "^TWII",
-    "status": "no_data",
+    "status": "index_not_available",
+    "note": "大盤指數不在 FinMind 資料集中",
     "market_phase": "盤中即時"
   },
   "signals": [],
