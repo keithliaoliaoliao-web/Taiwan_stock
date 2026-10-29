@@ -786,7 +786,6 @@ def run_daily_scan_workflow(target_date=None, clear_cache_on_start=False, ledger
                 stock_map[ticker] = df
                 split_map[ticker] = ev
 
-    print(f"DEBUG stock_map keys: {list(stock_map.keys())}")
     # universe
     universe = sorted(set(stock_map.keys()))
 
@@ -808,10 +807,8 @@ def run_daily_scan_workflow(target_date=None, clear_cache_on_start=False, ledger
     new_rows = []
     for t in universe:
         if t in ineligible or t not in stock_map:
-            print(f"DEBUG skip {t}: ineligible={t in ineligible}, not_in_stock_map={t not in stock_map}")
-            continue
+                continue
         sig = scan_today(stock_map[t], t, target_date)
-        print(f"DEBUG {t}: sig={sig['signal_date'] if sig else None}, target_date={target_date}, in_stock_map={t in stock_map}")
         if not sig or (target_date, t) in existing:
             continue
         new_rows.append({
