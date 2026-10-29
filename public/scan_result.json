@@ -1,6 +1,6 @@
 {
   "scan_date": "2026-10-29",
-  "scan_time": "16:54",
+  "scan_time": "23:10",
   "market_status": {
     "ticker": "^TWII",
     "status": "index_not_available",
@@ -11168,7 +11168,7 @@
           "high": 18.1,
           "low": 17.9,
           "close": 18.0,
-          "volume": 14426621.0,
+          "volume": 15576621.0,
           "color": "#ef4444"
         }
       ],
@@ -13785,7 +13785,7 @@
       "sector": "半導體",
       "close": 2415.0,
       "ema20": 2446.97,
-      "turnover_ma20": 696.55,
+      "turnover_ma20": 696.72,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -15137,7 +15137,7 @@
           "high": 2425.0,
           "low": 2390.0,
           "close": 2415.0,
-          "volume": 18257916.0,
+          "volume": 18403916.0,
           "color": "#22c55e"
         }
       ],
@@ -17715,7 +17715,7 @@
       "sector": "電子零組件",
       "close": 1480.0,
       "ema20": 1688.02,
-      "turnover_ma20": 210.73,
+      "turnover_ma20": 210.81,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -19067,7 +19067,7 @@
           "high": 1525.0,
           "low": 1430.0,
           "close": 1480.0,
-          "volume": 17552692.0,
+          "volume": 17661692.0,
           "color": "#22c55e"
         }
       ],
@@ -25575,7 +25575,7 @@
       "sector": "電子零組件",
       "close": 5010.0,
       "ema20": 5196.2,
-      "turnover_ma20": 159.17,
+      "turnover_ma20": 159.7,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -26927,7 +26927,7 @@
           "high": 5295.0,
           "low": 4935.0,
           "close": 5010.0,
-          "volume": 3616306.0,
+          "volume": 3827306.0,
           "color": "#22c55e"
         }
       ],
@@ -29505,7 +29505,7 @@
       "sector": "電子零組件",
       "close": 1040.0,
       "ema20": 1116.58,
-      "turnover_ma20": 194.71,
+      "turnover_ma20": 194.77,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -30857,7 +30857,7 @@
           "high": 1110.0,
           "low": 1040.0,
           "close": 1040.0,
-          "volume": 15319072.0,
+          "volume": 15449072.0,
           "color": "#22c55e"
         }
       ],
@@ -31470,7 +31470,7 @@
       "sector": "金融保險",
       "close": 75.3,
       "ema20": 72.0,
-      "turnover_ma20": 25.72,
+      "turnover_ma20": 25.75,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -32822,7 +32822,7 @@
           "high": 76.2,
           "low": 74.1,
           "close": 75.3,
-          "volume": 37662046.0,
+          "volume": 38412046.0,
           "color": "#ef4444"
         }
       ],
@@ -43260,7 +43260,7 @@
       "sector": "電腦及週邊",
       "close": 318.0,
       "ema20": 326.33,
-      "turnover_ma20": 37.96,
+      "turnover_ma20": 37.98,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -44612,7 +44612,7 @@
           "high": 330.0,
           "low": 318.0,
           "close": 318.0,
-          "volume": 11705199.0,
+          "volume": 11853199.0,
           "color": "#22c55e"
         }
       ],
@@ -51120,7 +51120,7 @@
       "sector": "其他電子",
       "close": 1945.0,
       "ema20": 2095.2,
-      "turnover_ma20": 61.62,
+      "turnover_ma20": 61.66,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -52472,7 +52472,7 @@
           "high": 2070.0,
           "low": 1910.0,
           "close": 1945.0,
-          "volume": 2980142.0,
+          "volume": 3019142.0,
           "color": "#22c55e"
         }
       ],
@@ -78630,7 +78630,7 @@
       "sector": "",
       "close": 170.5,
       "ema20": 166.58,
-      "turnover_ma20": 111.72,
+      "turnover_ma20": 111.74,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -79982,7 +79982,7 @@
           "high": 178.5,
           "low": 167.0,
           "close": 170.5,
-          "volume": 80669364.0,
+          "volume": 80829364.0,
           "color": "#22c55e"
         }
       ],
@@ -145440,7 +145440,7 @@
       "sector": "電腦及週邊",
       "close": 343.0,
       "ema20": 356.91,
-      "turnover_ma20": 21.77,
+      "turnover_ma20": 21.81,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -146792,7 +146792,7 @@
           "high": 352.5,
           "low": 341.0,
           "close": 343.0,
-          "volume": 11235531.0,
+          "volume": 11468531.0,
           "color": "#22c55e"
         }
       ],
@@ -157230,7 +157230,7 @@
       "sector": "電子通路",
       "close": 214.0,
       "ema20": 210.9,
-      "turnover_ma20": 13.71,
+      "turnover_ma20": 13.74,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -158582,7 +158582,7 @@
           "high": 218.0,
           "low": 212.0,
           "close": 214.0,
-          "volume": 6105913.0,
+          "volume": 6380913.0,
           "color": "#22c55e"
         }
       ],
@@ -159195,7 +159195,7 @@
       "sector": "半導體",
       "close": 524.0,
       "ema20": 468.86,
-      "turnover_ma20": 25.88,
+      "turnover_ma20": 25.89,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -160547,7 +160547,7 @@
           "high": 551.0,
           "low": 501.0,
           "close": 524.0,
-          "volume": 13737088.0,
+          "volume": 13804088.0,
           "color": "#22c55e"
         }
       ],
@@ -169020,7 +169020,7 @@
       "sector": "電腦及週邊",
       "close": 61.4,
       "ema20": 60.53,
-      "turnover_ma20": 9.41,
+      "turnover_ma20": 9.42,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -170372,7 +170372,7 @@
           "high": 63.3,
           "low": 60.3,
           "close": 61.4,
-          "volume": 15484309.0,
+          "volume": 15728309.0,
           "color": "#22c55e"
         }
       ],
@@ -172950,7 +172950,7 @@
       "sector": "金融保險",
       "close": 18.0,
       "ema20": 17.81,
-      "turnover_ma20": 3.68,
+      "turnover_ma20": 3.69,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -174302,7 +174302,7 @@
           "high": 18.1,
           "low": 17.9,
           "close": 18.0,
-          "volume": 14426621.0,
+          "volume": 15576621.0,
           "color": "#ef4444"
         }
       ],
@@ -182775,7 +182775,7 @@
       "sector": "貿易百貨",
       "close": 222.0,
       "ema20": 220.78,
-      "turnover_ma20": 5.78,
+      "turnover_ma20": 5.79,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -184127,7 +184127,7 @@
           "high": 225.5,
           "low": 221.5,
           "close": 222.0,
-          "volume": 1859812.0,
+          "volume": 1943812.0,
           "color": "#ef4444"
         }
       ],
@@ -220110,7 +220110,7 @@
       "sector": "其他電子",
       "close": 196.5,
       "ema20": 198.83,
-      "turnover_ma20": 2.85,
+      "turnover_ma20": 2.92,
       "trend_up": 0,
       "has_signal": 0,
       "grade": "NONE",
@@ -221462,7 +221462,7 @@
           "high": 198.0,
           "low": 195.5,
           "close": 196.5,
-          "volume": 989019.0,
+          "volume": 1780019.0,
           "color": "#22c55e"
         }
       ],
@@ -249585,7 +249585,7 @@
       "sector": "",
       "close": 373.0,
       "ema20": 368.89,
-      "turnover_ma20": 1.89,
+      "turnover_ma20": 1.96,
       "trend_up": 1,
       "has_signal": 0,
       "grade": "NONE",
@@ -250937,7 +250937,7 @@
           "high": 378.5,
           "low": 372.5,
           "close": 373.0,
-          "volume": 171130.0,
+          "volume": 534130.0,
           "color": "#ef4444"
         }
       ],
