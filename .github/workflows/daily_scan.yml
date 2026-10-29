@@ -78,6 +78,6 @@ jobs:
           if [ -f scan_result.json ]; then git add scan_result.json; fi
           if [ -f public/scan_result.json ]; then git add public/scan_result.json; fi
           if [ -f holdings.json ]; then git add holdings.json; fi
-          git diff --staged --quiet || git commit -m "chore: update scan results ($(TZ=Asia/Taipei date +%F)) [skip ci]"
+          git diff --staged --quiet || git commit -m "chore: update scan results ($(TZ=Asia/Taipei date +%F))"
           git pull --rebase
           git push

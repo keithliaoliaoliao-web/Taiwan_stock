@@ -325,7 +325,8 @@ def update_ledger_single_day(
     split_map: dict = None,
     freeze_on_split: bool = True,
     replay_auto_resolve_splits: bool = False,
-    target_ticker: str = None
+    target_ticker: str = None,
+    missing_out: list = None
 ) -> tuple:
     if ledger.empty:
         return ledger, set()
@@ -336,6 +337,8 @@ def update_ledger_single_day(
     updated_rows = []
     tickers_exited_today = set()
     fee_desc = get_actual_fee_params()["desc"]
+    if missing_out is None:
+        missing_out = []
 
     for _, row in ledger.iterrows():
         t = str(row["ticker"])
@@ -373,6 +376,15 @@ def update_ledger_single_day(
 
         today_bar_matches = df[df["DateStr"] == today_str]
         if today_bar_matches.empty:
+            missing_out.append(t)
+            if status == "PENDING":
+                # PENDING 遇到無 K 棒：視為掛單失效，不延到隔天
+                row["status"] = "UNTRIGGERED"
+                row["exit_reason"] = "NO_BAR_ON_TARGET_DAY"
+                row["last_processed_date"] = today_str
+                updated_rows.append(row)
+                continue
+            # OPEN 遇到無 K 棒：跳過但記錄，不更新 last_processed_date
             updated_rows.append(row)
             continue
 
@@ -660,6 +672,18 @@ def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
     if missing_active:
         return retry_or_fail(f"持倉中標的缺資料 (會造成漏算停損/出場)，不能繼續: {missing_active}")
 
+    # 檢查 active 標的在 target 日期是否有 K 棒
+    missing_for_target = []
+    for t in active:
+        df = stock_map.get(t)
+        if df is None or df.empty or target not in df["DateStr"].values:
+            missing_for_target.append(t)
+    if missing_for_target:
+        if final:
+            print(f"【警告】以下持倉/掛單標的在 {target} 缺少 K 棒資料，將跳過: {missing_for_target}")
+        else:
+            return retry_or_fail(f"持倉/掛單標的在 {target} 缺少 K 棒資料: {missing_for_target}")
+
     last_dates = [stock_map[t]["DateStr"].iloc[-1] for t in universe if t in stock_map]
     latest = max(set(last_dates), key=last_dates.count)
     if latest < expected:
@@ -681,9 +705,13 @@ def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
     for d in dates:
         source = "LIVE" if d == target else "BACKFILL"
         n_before = len(ledger)
+        missing_today = []
         ledger, exited = update_ledger_single_day(
-            ledger, stock_map, d, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False
+            ledger, stock_map, d, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False,
+            missing_out=missing_today
         )
+        if missing_today:
+            print(f"【{d}】缺棒標的: {missing_today}")
         ledger = ledger.reset_index(drop=True)
         if len(ledger) != n_before:
             print(f"【致命錯誤】更新 {d} 後帳本筆數異常 ({n_before} -> {len(ledger)})，已中止且未寫入！")
