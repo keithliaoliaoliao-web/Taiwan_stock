@@ -750,6 +750,73 @@ def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
     return True
 
 
+
+
+def run_daily_scan_workflow(target_date=None, clear_cache_on_start=False, ledger_path=LEDGER_FILE,
+                           preloaded_raw_map=None, source_tag="LIVE", **kwargs):
+    """合成測試 / 單日執行用的 workflow 入口"""
+    if target_date is None:
+        from datetime import datetime
+        target_date = datetime.now().strftime("%Y-%m-%d")
+
+    ledger = load_ledger(ledger_path)
+
+    # 準備股票資料
+    stock_map = {}
+    split_map = {}
+    if preloaded_raw_map:
+        for ticker, raw_df in preloaded_raw_map.items():
+            df, ev = prepare_stock_data(raw_df.copy() if hasattr(raw_df, "copy") else raw_df)
+            if not df.empty:
+                stock_map[ticker] = df
+                split_map[ticker] = ev
+
+    # universe
+    universe = sorted(set(stock_map.keys()))
+
+    # 處理既有持倉
+    exited = set()
+    if not ledger.empty:
+        ledger, exited = update_ledger_single_day(
+            ledger, stock_map, target_date, split_map=split_map,
+            freeze_on_split=True, replay_auto_resolve_splits=False
+        )
+        ledger = ledger.reset_index(drop=True)
+
+    # 掃描新訊號
+    active_now = set(ledger.loc[ledger["status"].isin(ACTIVE_STATUSES), "ticker"].astype(str)) if not ledger.empty else set()
+    ineligible = active_now | exited
+    existing = set(zip(ledger["signal_date"].astype(str), ledger["ticker"].astype(str))) if not ledger.empty else set()
+
+    fee_desc = get_actual_fee_params()["desc"]
+    new_rows = []
+    for t in universe:
+        if t in ineligible or t not in stock_map:
+            continue
+        sig = scan_today(stock_map[t], t, target_date)
+        if not sig or (target_date, t) in existing:
+            continue
+        new_rows.append({
+            "signal_date": sig["signal_date"], "ticker": t,
+            "trigger_price": sig["trigger_price"], "stop_price": sig["stop_price"], "risk_pct": sig["risk_pct"],
+            "triggered": False, "entry_price": np.nan, "entry_date": "", "exit_date": "", "exit_price": np.nan,
+            "exit_reason": "", "rule_net_r": np.nan, "actual_net_r": np.nan, "slippage_net_r": np.nan,
+            "actual_fee_settings": fee_desc, "status": "PENDING", "days_held": 0, "pending_ema_exit": False,
+            "last_processed_date": target_date, "source": source_tag, "avg_turnover_20d": sig["avg_turnover_20d"],
+        })
+    if new_rows:
+        ledger = pd.concat([ledger, pd.DataFrame(new_rows)], ignore_index=True)
+
+    if not ledger.empty:
+        ledger["last_processed_date"] = target_date
+        # Set source for updated rows that don't have it
+        if "source" in ledger.columns:
+            ledger["source"] = ledger["source"].astype(object).fillna(source_tag)
+            ledger.loc[ledger["source"].astype(str) == "", "source"] = source_tag
+
+    save_ledger(ledger, ledger_path)
+    return True
+
 def main():
     parser = argparse.ArgumentParser(description="Task K Group C Forward Paper Trading Scanner")
     parser.add_argument("--final", action="store_true", help="最終嘗試：資料沒到位時回報失敗 (紅叉)")
