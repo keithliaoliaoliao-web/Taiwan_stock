@@ -1,0 +1,47 @@
+name: OpenCode review (Groq)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Avoid running the same job twice when a PR is updated rapidly.
+concurrency:
+  group: opencode-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    # Skip fork PRs: their GITHUB_TOKEN is read-only, so posting a comment
+    # would fail. Remove this line if you only ever open PRs from the same repo.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenCode
+        run: npm install --global @opencode/cli
+
+      - name: Run OpenCode review
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          set -o pipefail
+          opencode run --standalone \
+            --model groq/openai/gpt-oss-120b \
+            "Review the changes in this pull request for correctness and regressions. \
+             Summarize findings by severity with file and line references. \
+             Only report issues you are confident about; do not nitpick style." \
+            | tee review.md
+
+      - name: Post review as PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -s review.md ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body-file review.md
+          fi
