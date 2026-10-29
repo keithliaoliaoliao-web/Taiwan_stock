@@ -32,7 +32,8 @@ jobs:
           set -o pipefail
           opencode run --standalone \
             --model groq/gpt-oss-20b \
-            "Review this repository and list any bugs or issues you find." \
+            --steps 3 \
+            "Read only README.md. In 5 sentences, summarize what this project does and list 2 potential issues. Do not run ls or explore other files." \
             | tee review.md
 
       - name: Post review as PR comment
