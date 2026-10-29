@@ -361,9 +361,7 @@ def update_ledger_single_day(
                 row["last_processed_date"] = today_str
                 updated_rows.append(row)
                 continue
-            # OPEN 遇到無 K 棒：跳過但記錄
-            updated_rows.append(row)
-            continue
+            # OPEN 遇到無 K 棒：跳過但記錄（last_processed_date 仍會被外層統一設為 d）
 
         if freeze_on_split and status in ["OPEN", "PENDING"]:
             t_splits = split_map.get(t, {})
@@ -646,6 +644,7 @@ def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
 
     now = now_tw()
     expected = get_expected_latest_trading_date(now)
+    target = expected
     print(f"台灣時間 {now:%Y-%m-%d %H:%M}，預期最新交易日: {expected}")
 
     ledger = load_ledger(ledger_path)
@@ -700,7 +699,6 @@ def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
     latest = max(set(last_dates), key=last_dates.count)
     if latest < expected:
         return retry_or_fail(f"最新資料停在 {latest}，預期 {expected}")
-    target = expected
 
     counts = {}
     for df in stock_map.values():
