@@ -1,25 +1,26 @@
 """
 config.py
 台股價格行為選股系統全域參數設定檔
+(維持實盤 scanner 與策略凍結參數不變，並新增經任務 C/D/E/F 實證驗收之出場模式參數)
 """
 
 import csv
 import os
 
-# 資料與市場設定
+# 資料與市場設定 (實盤 scanner 預設抓取 260 日曆天 / Yahoo 2y 窗口)
 WATCHLIST_FILE = "watchlist.csv"
 DATA_LOOKBACK_DAYS = 260
 TIMEZONE = "Asia/Taipei"
 BENCHMARK_TICKER = "^TWII"
 
-# 價格行為引擎參數 (Al Brooks 規則與趨勢判定)
+# 價格行為引擎參數 (Al Brooks 規則與趨勢判定 - 嚴格凍結)
 EMA_PERIOD = 20
 EMA_TREND_PERIOD = 20
 ATR_PERIOD = 14
 EMA_ATR_TOLERANCE = 1.0
 MAX_PULLBACK_BAR_LIMIT = 8
 FORMING_EMA_ATR_TOLERANCE = 1.5      # 醞釀中雷達容許度 (原 1.0 放寬至 1.5)
-FORMING_MAX_PULLBACK_BARS = 10     # 醞釀中雷達最大拉回棒數 (原 8 放寬至 10)
+FORMING_MAX_PULLBACK_BARS = 10       # 醞釀中雷達最大拉回棒數 (原 8 放寬至 10)
 TREND_EMA_SLOPE_PERIOD = 5
 TREND_EMA_MIN_UP_BARS = 6
 SWING_LOOKBACK_PERIOD = 20
@@ -34,6 +35,19 @@ DEFAULT_STOP_MODEL = "SIGNAL_FAILURE"
 R_MULTIPLE = 2.0
 TAKE_PROFIT_RR = 2.0
 GAP_POLICY = "NOT_IMPLEMENTED"
+
+# 出場模式與評級模式設定 (經任務 C/D/E/F 實證新增)
+# EXIT_MODE 可選：
+#   "V1" : 初始停損不變；取消 2R 停利與 15 日上限；收盤跌破當日 20EMA 時隔日開盤出場；120 日保險上限以收盤價出場 (預設，總報酬與期望值最高)
+#   "V2" : 觸及 2R 時先賣出一半股數 (無條件捨去至整股)，剩餘部位依 V1 規則出場 (高勝率、低回撤穩健型)
+#   "V0" : 舊基準版 (初始停損 + 2R 停利 + 15 日時間出場)
+EXIT_MODE = "V1"
+EMA_EXIT_MAX_HOLDING_DAYS = 120
+
+# GRADE_A_MODE 可選：
+#   "LEGACY"    : 原定義 (實體 > 70% 且 拉回 <= 4 根 且 距 EMA <= 0.5 ATR)，預設維持以確保基準測試 100% 相容
+#   "OPTIMIZED" : 任務 E 實證優化定義 (實體 > 70% 且 [高空淺拉回: 拉回<=4根且距EMA>0.5ATR 或 橫盤貼線: 拉回>4根且距EMA<=0.5ATR])
+GRADE_A_MODE = "LEGACY"
 
 # 資金管理參數
 SIGNAL_GRADE_A_AMOUNT = 15000.0

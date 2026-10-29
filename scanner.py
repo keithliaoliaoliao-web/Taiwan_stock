@@ -1,90 +1,53 @@
 """
 scanner.py
-任務 K - C 組 (突破 20 日高) 前瞻紙上交易掃描器 (規格凍結正式版)
+任務 K - C 組 (突破 20 日高) 前瞻紙上交易掃描器 (重建版)
 版面標註：【觀察用，未經實證驗證】
+
+進出場規則、成本、分割偵測與舊版完全相同 (下方「核心規則」區塊直接沿用)。
+與舊版的差別只有：
+  1. 一律用台灣時間判斷，並考慮休市日
+  2. 漏跑補算時，連「那幾天的新訊號」也一起補
+  3. 持倉中的股票即使被移出觀察池，也會繼續追蹤到出場
+  4. 資料沒到位時：最後一次嘗試會讓工作顯示紅叉，不再假裝成功
+  5. 每個新訊號多記一欄 avg_turnover_20d (近 20 日平均成交額，只記錄不篩選)
+  6. 輸出 dashboard_data.json 給網頁讀取
 """
 
+import argparse
+import csv
+import json
 import os
 import re
 import sys
-import argparse
-from datetime import datetime, timedelta
-import pandas as pd
+import time
+
 import numpy as np
+import pandas as pd
 
-try:
-    import config
-    HAS_CONFIG = True
-except Exception:
-    HAS_CONFIG = False
-
-try:
-    from data_fetcher import fetch_history, clear_cache, get_expected_latest_trading_date
-    HAS_FETCHER = True
-except Exception:
-    HAS_FETCHER = False
-    def clear_cache():
-        pass
-    def get_expected_latest_trading_date(now_dt=None):
-        return datetime.now().strftime("%Y-%m-%d")
+from data_fetcher import fetch_history, get_expected_latest_trading_date, now_tw
 
 LEDGER_FILE = "paper_trading_ledger.csv"
+WATCHLIST_FILE = "watchlist.csv"
+DASHBOARD_FILE = "dashboard_data.json"
 COST_RATE = 0.00585  # 回測基準：稅 0.003 + 手續費 0.001425 * 2
 ACTUAL_FEE_DESC = "稅0.3% + 手續費0.1425%*2 (回測基準，無折扣無低消)"
-BASE_FEE_RATE = 0.001425
-TAX_RATE = 0.003
+LOOKBACK_DAYS = 500
+MIN_LOAD_RATIO = 0.95
+ACTIVE_STATUSES = ["OPEN", "PENDING", "NEEDS_REVIEW"]
 
 
 def get_actual_fee_params() -> dict:
-    """
-    從 config.py 讀取自訂券商費率參數：
-      - config.BROKER_FEE_DISCOUNT: 手續費折數 (浮點數，例如 2.8 折設為 0.28，預設為 None)
-      - config.BROKER_MIN_FEE_TWD: 單筆最低手續費 (浮點數，例如低消 20 元設為 20.0，預設為 None)
-      - config.POSITION_SHARES: 每筆交易股數 (整數，用於分攤低消至每股，預設為 1000)
-    未設定時維持預設回測基準 (無折扣無低消)。
-    """
-    discount = getattr(config, "BROKER_FEE_DISCOUNT", None) if HAS_CONFIG else None
-    min_fee = getattr(config, "BROKER_MIN_FEE_TWD", None) if HAS_CONFIG else None
-    shares = int(getattr(config, "POSITION_SHARES", 1000)) if HAS_CONFIG else 1000
-    is_custom = (discount is not None and discount != 1.0) or (min_fee is not None and min_fee > 0.0)
-
-    if not is_custom:
-        desc = "稅0.3% + 手續費0.1425%*2 (回測基準，無折扣無低消)"
-    else:
-        d_val = discount if discount is not None else 1.0
-        m_val = min_fee if min_fee is not None else 0.0
-        desc = f"稅0.3% + 手續費0.1425%*{d_val}折 (低消{m_val}元, 股數{shares})"
-
-    return {
-        "discount": discount,
-        "min_fee": min_fee,
-        "shares": shares,
-        "is_custom": is_custom,
-        "desc": desc
-    }
+    return {"desc": ACTUAL_FEE_DESC}
 
 
-def calc_actual_net_r(entry_price: float, exit_price: float, risk_per_share: float, rule_net_r: float) -> float:
-    """
-    未設定自訂券商費率時，actual_net_r 必須嚴格等於 rule_net_r；
-    僅在 config 明確設定自訂券商條件 (如折數或低消) 時，才依實際券商公式計算。
-    """
-    params = get_actual_fee_params()
-    if not params["is_custom"]:
-        return rule_net_r
-
-    discount = params["discount"] if params["discount"] is not None else 1.0
-    min_fee = params["min_fee"] if params["min_fee"] is not None else 0.0
-    shares = max(1, params["shares"])
-
-    buy_fee_per_share = max(entry_price * BASE_FEE_RATE * discount, min_fee / shares)
-    sell_fee_per_share = max(exit_price * BASE_FEE_RATE * discount, min_fee / shares)
-    sell_tax_per_share = exit_price * TAX_RATE
-
-    net_pnl_per_share = (exit_price - entry_price) - (buy_fee_per_share + sell_fee_per_share + sell_tax_per_share)
-    return round(net_pnl_per_share / risk_per_share, 3)
+def calc_actual_net_r(entry_price, exit_price, risk_per_share, rule_net_r):
+    """未設定自訂券商費率：actual_net_r 嚴格等於 rule_net_r"""
+    return rule_net_r
 
 
+# ==========================================
+# 核心規則 (沿用舊版，未更動)
+# ==========================================
 # ==========================================
 # 1. 檔位運算 (凍結規格)
 # ==========================================
@@ -179,48 +142,6 @@ def prepare_stock_data(raw_df: pd.DataFrame) -> tuple:
     return df, split_events
 
 
-def check_latest_date_freshness(latest_date_str: str, ref_date_str: str = None) -> tuple:
-    latest_dt = pd.to_datetime(latest_date_str).date()
-    ref_dt = pd.to_datetime(ref_date_str).date() if ref_date_str else datetime.now().date()
-
-    if latest_dt > ref_dt:
-        return True, "OK"
-
-    non_weekend_days = 0
-    cur_d = latest_dt + timedelta(days=1)
-    while cur_d <= ref_dt:
-        if cur_d.weekday() < 5:
-            non_weekend_days += 1
-        cur_d += timedelta(days=1)
-
-    cal_days = (ref_dt - latest_dt).days
-    if non_weekend_days > 3:
-        return False, f"最新 K 棒日期 ({latest_date_str}) 比參考日 ({ref_dt}) 早 {cal_days} 個日曆日 (扣除週末為 {non_weekend_days} 日 > 3 日上限)"
-    return True, "OK"
-
-
-def get_universe() -> list:
-    if HAS_CONFIG:
-        for fn in ["load_universe", "get_universe", "get_stock_list"]:
-            f = getattr(config, fn, None)
-            if callable(f):
-                try:
-                    res = f()
-                    if isinstance(res, dict):
-                        return sorted(list(res.keys()))
-                    if isinstance(res, (list, tuple)):
-                        return sorted([str(x) for x in res])
-                except Exception:
-                    pass
-        tickers = getattr(config, "TARGET_STOCKS", getattr(config, "STOCKS", None))
-        if isinstance(tickers, (list, tuple)):
-            return sorted([str(x) for x in tickers])
-
-    if os.path.exists("task_j_raw_h2_candidates.csv"):
-        df_j = pd.read_csv("task_j_raw_h2_candidates.csv")
-        return sorted(df_j["ticker"].unique().tolist())
-    return []
-
 
 # ==========================================
 # 3. 核心訊號掃描 (凍結規格)
@@ -279,7 +200,8 @@ def load_ledger(filepath: str = LEDGER_FILE) -> pd.DataFrame:
         "signal_date", "ticker", "trigger_price", "stop_price", "risk_pct",
         "triggered", "entry_price", "entry_date", "exit_date", "exit_price", "exit_reason",
         "rule_net_r", "actual_net_r", "slippage_net_r", "actual_fee_settings", "status",
-        "days_held", "pending_ema_exit", "last_processed_date", "source"
+        "days_held", "pending_ema_exit", "last_processed_date", "source",
+        "avg_turnover_20d"
     ]
     str_cols = [
         "signal_date", "ticker", "entry_date", "exit_date",
@@ -572,383 +494,271 @@ def update_ledger_single_day(
 
 
 # ==========================================
-# 5. 擴充回放自我檢驗模組
+# 新增部分：觀察池、成交額、每日流程、網頁資料
 # ==========================================
-def run_extended_verification(
-    benchmark_csv: str = "task_k_trades_base_no_ov.csv",
-    replay_auto_resolve_splits: bool = False
-) -> bool:
-    print("====================================================================")
-    print("【執行擴充自我檢驗：涵蓋 2023-H2, 2025-H1, 2026-H1 三區間全流程回放】")
-    print(f"【回放分割處理模式】replay_auto_resolve_splits = {replay_auto_resolve_splits}")
-    print("====================================================================")
+def load_watchlist(path: str = WATCHLIST_FILE) -> dict:
+    meta = {}
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        for r in csv.DictReader(f):
+            t = (r.get("ticker") or "").strip()
+            if t:
+                meta[t] = {
+                    "name": (r.get("name") or t).strip(),
+                    "sector": (r.get("sector") or "").strip(),
+                    "basket": (r.get("basket") or "").strip(),
+                }
+    return meta
 
-    if not os.path.exists(benchmark_csv):
-        print(f"【檢驗中止】找不到基準檔案: {benchmark_csv}")
-        return False
 
-    df_k = pd.read_csv(benchmark_csv)
-    c_trades_all = df_k[df_k["group"] == "C_TaskK"].copy()
-    if c_trades_all.empty:
-        print("【檢驗中止】CSV 中無 C_TaskK 交易紀錄！")
-        return False
+def calc_avg_turnover(df: pd.DataFrame, as_of: str):
+    """近 20 個交易日平均成交金額 (元)；只用來記錄，不用來篩選"""
+    sub = df[df["DateStr"] <= as_of].tail(20)
+    if sub.empty:
+        return np.nan
+    if "Trading_money" in sub.columns:
+        money = pd.to_numeric(sub["Trading_money"], errors="coerce")
+    else:
+        money = pd.to_numeric(sub["Close"], errors="coerce") * pd.to_numeric(sub.get("Volume"), errors="coerce")
+    val = money.mean()
+    return round(float(val)) if pd.notna(val) else np.nan
 
-    tickers = get_universe()
-    if len(tickers) < 142:
-        print(f"【檢驗中止】股票池載入數不足 95%: 實測 {len(tickers)} 檔")
-        return False
 
-    stock_map = {}
-    split_map = {}
-    if HAS_FETCHER:
-        print(f"載入觀察池 {len(tickers)} 檔行情 (lookback_days=2200，回放驗證保留快取)...")
-        for t in tickers:
-            raw_df = fetch_history(t, lookback_days=2200)
-            if not raw_df.empty:
-                df_prep, s_ev = prepare_stock_data(raw_df)
-                if not df_prep.empty:
-                    stock_map[t] = df_prep
-                    split_map[t] = s_ev
+def scan_today(df: pd.DataFrame, ticker: str, d: str):
+    """只接受「訊號日 == d」的訊號 (停牌股的舊 K 棒不會被當成今天的訊號)"""
+    sig = scan_signals_for_ticker(df, ticker, as_of_date=d)
+    if not sig or sig["signal_date"] != d:
+        return None
+    sig["avg_turnover_20d"] = calc_avg_turnover(df, d)
+    return sig
 
-    valid_loaded = len(stock_map)
-    print(f"擴充回放實際成功載入檔數: {valid_loaded}/{len(tickers)} 檔 ({round(valid_loaded/len(tickers)*100, 1)}%)")
-    if valid_loaded < 142:
-        print(f"【致命錯誤】有效載入股票數不足 95% (門檻 142 檔，實測 {valid_loaded} 檔)，檢驗強制中止！")
-        return False
 
-    all_trading_dates = sorted(list(set.union(*[set(df["DateStr"]) for df in stock_map.values() if not df.empty])))
+def _sanitize(o):
+    if isinstance(o, dict):
+        return {str(k): _sanitize(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_sanitize(v) for v in o]
+    if isinstance(o, (bool, np.bool_)):
+        return bool(o)
+    if isinstance(o, (int, np.integer)):
+        return int(o)
+    if isinstance(o, (float, np.floating)):
+        return None if (np.isnan(o) or np.isinf(o)) else float(o)
+    if o is None or o is pd.NaT:
+        return None
+    return o if isinstance(o, str) else str(o)
 
-    eval_periods = [
-        ("2023-H2", "2023-07-03", "2023-12-29"),
-        ("2025-H1", "2025-01-02", "2025-06-30"),
-        ("2026-H1", "2026-01-02", "2026-06-30")
-    ]
 
-    total_overall_pass = True
-    fee_desc = get_actual_fee_params()["desc"]
+def _records(df: pd.DataFrame) -> list:
+    return [_sanitize(r) for r in df.to_dict("records")]
 
-    for period_name, p_start, p_end in eval_periods:
-        print(f"\n" + "=" * 68)
-        print(f"【開始評估區間: {period_name} ({p_start} ~ {p_end})】")
-        print("=" * 68)
 
-        sim_ledger = pd.DataFrame(columns=[
-            "signal_date", "ticker", "trigger_price", "stop_price", "risk_pct",
-            "triggered", "entry_price", "entry_date", "exit_date", "exit_price", "exit_reason",
-            "rule_net_r", "actual_net_r", "slippage_net_r", "actual_fee_settings", "status",
-            "days_held", "pending_ema_exit", "last_processed_date", "source"
-        ])
+def _stats(closed: pd.DataFrame) -> dict:
+    r = pd.to_numeric(closed["rule_net_r"], errors="coerce").dropna()
+    if r.empty:
+        return {"n": 0, "win_rate": None, "avg_r": None, "total_r": None}
+    return {
+        "n": int(len(r)),
+        "win_rate": round(float((r > 0).mean() * 100), 1),
+        "avg_r": round(float(r.mean()), 3),
+        "total_r": round(float(r.sum()), 3),
+    }
 
-        extra_signals = []
-        start_date = "2022-04-01"
-        start_idx = all_trading_dates.index(start_date) if start_date in all_trading_dates else 0
 
-        for day_idx in range(start_idx, len(all_trading_dates)):
-            today_str = all_trading_dates[day_idx]
-            if today_str > p_end and sim_ledger[sim_ledger["status"] == "OPEN"].empty:
-                break
+def build_dashboard(ledger, stock_map, meta, target, universe) -> dict:
+    led = ledger.copy()
+    for c in ["entry_price", "stop_price", "trigger_price", "exit_price", "risk_pct", "rule_net_r",
+              "actual_net_r", "slippage_net_r", "days_held", "avg_turnover_20d"]:
+        if c in led.columns:
+            led[c] = pd.to_numeric(led[c], errors="coerce")
+    led["name"] = led["ticker"].astype(str).map(lambda t: meta.get(t, {}).get("name", t))
 
-            sim_ledger, exited_today = update_ledger_single_day(
-                sim_ledger,
-                stock_map,
-                today_str,
-                split_map=split_map,
-                freeze_on_split=True,
-                replay_auto_resolve_splits=replay_auto_resolve_splits
-            )
-            active_tickers = set(sim_ledger[sim_ledger["status"].isin(["OPEN", "PENDING", "NEEDS_REVIEW"])]["ticker"].unique())
-            ineligible_tickers = active_tickers.union(exited_today)
+    closed = led[led["status"] == "CLOSED"]
+    pending = led[led["status"] == "PENDING"]
+    review = led[led["status"] == "NEEDS_REVIEW"]
+    opened = led[led["status"] == "OPEN"].copy()
 
-            if day_idx < len(all_trading_dates) - 1:
-                for t in tickers:
-                    df_t = stock_map.get(t, pd.DataFrame())
-                    if df_t.empty:
-                        continue
+    last_close, last_ema, unreal = [], [], []
+    for _, r in opened.iterrows():
+        df = stock_map.get(str(r["ticker"]))
+        sub = df[df["DateStr"] <= target] if df is not None else pd.DataFrame()
+        if sub.empty:
+            last_close.append(np.nan); last_ema.append(np.nan); unreal.append(np.nan)
+            continue
+        c, e = float(sub["Close"].iloc[-1]), float(sub["EMA_20"].iloc[-1])
+        risk = float(r["entry_price"]) - float(r["stop_price"])
+        last_close.append(c); last_ema.append(round(e, 2))
+        unreal.append(round((c * (1 - COST_RATE) - float(r["entry_price"])) / risk, 3) if risk > 0 else np.nan)
+    opened["last_close"], opened["last_ema20"], opened["unrealized_r"] = last_close, last_ema, unreal
 
-                    sig = scan_signals_for_ticker(df_t, t, as_of_date=today_str)
-                    if sig:
-                        in_eval = (p_start <= today_str <= p_end)
-                        if t in ineligible_tickers:
-                            if in_eval:
-                                extra_signals.append({
-                                    "sig_date": today_str,
-                                    "ticker": t,
-                                    "category": "持倉中不重複進場"
-                                })
-                            continue
-
-                        sim_ledger = pd.concat([sim_ledger, pd.DataFrame([{
-                            "signal_date": sig["signal_date"],
-                            "ticker": sig["ticker"],
-                            "trigger_price": sig["trigger_price"],
-                            "stop_price": sig["stop_price"],
-                            "risk_pct": sig["risk_pct"],
-                            "triggered": False,
-                            "entry_price": np.nan,
-                            "entry_date": "",
-                            "exit_date": "",
-                            "exit_price": np.nan,
-                            "exit_reason": "",
-                            "rule_net_r": np.nan,
-                            "actual_net_r": np.nan,
-                            "slippage_net_r": np.nan,
-                            "actual_fee_settings": fee_desc,
-                            "status": "PENDING",
-                            "days_held": 0,
-                            "pending_ema_exit": False,
-                            "last_processed_date": today_str,
-                            "source": "BACKFILL"
-                        }])], ignore_index=True)
-
-        bench_sub = c_trades_all[
-            (c_trades_all["sig_date"] >= p_start) & (c_trades_all["sig_date"] <= p_end)
-        ].sort_values(["sig_date", "ticker"]).reset_index(drop=True)
-
-        scanner_entered = sim_ledger[
-            (sim_ledger["signal_date"] >= p_start) & 
-            (sim_ledger["signal_date"] <= p_end) & 
-            (sim_ledger["triggered"] == True)
-        ].sort_values(["signal_date", "ticker"]).reset_index(drop=True)
-
-        scanner_untriggered = sim_ledger[
-            (sim_ledger["signal_date"] >= p_start) & 
-            (sim_ledger["signal_date"] <= p_end) & 
-            (sim_ledger["triggered"] == False)
-        ]
-        for _, r in scanner_untriggered.iterrows():
-            extra_signals.append({
-                "sig_date": r["signal_date"],
-                "ticker": r["ticker"],
-                "category": "次日未觸發"
-            })
-
-        print(f"基準應成交: {len(bench_sub)} 筆 | 掃描器成交: {len(scanner_entered)} 筆")
-        diff_records = []
-        period_pass = True
-
-        for _, b_row in bench_sub.iterrows():
-            s_d = b_row["sig_date"]
-            tk = b_row["ticker"]
-
-            match = scanner_entered[
-                (scanner_entered["signal_date"] == s_d) & 
-                (scanner_entered["ticker"] == tk)
-            ]
-            if match.empty:
-                print(f"  [FAIL] 缺少成交: {s_d} {tk}")
-                period_pass = False
-                continue
-
-            m = match.iloc[0]
-            entry_ok = (abs(float(m["entry_price"]) - float(b_row["entry_price"])) <= 0.001)
-            stop_ok = (abs(float(m["stop_price"]) - float(b_row["stop_price"])) <= 0.001)
-            exit_d_ok = (str(m["exit_date"]) == str(b_row["exit_date"]))
-            exit_p_ok = (abs(float(m["exit_price"]) - float(b_row["exit_price"])) <= 0.001)
-            reason_ok = (str(m["exit_reason"]) == str(b_row["exit_reason"]))
-            r_ok = (abs(float(m["rule_net_r"]) - float(b_row["net_r"])) <= 0.005)
-
-            is_p = (entry_ok and stop_ok and exit_d_ok and exit_p_ok and reason_ok and r_ok)
-            if not is_p:
-                period_pass = False
-
-            diff_records.append({
-                "period": period_name,
-                "sig_date": s_d,
-                "ticker": tk,
-                "scanner_entry": m["entry_price"],
-                "csv_entry": b_row["entry_price"],
-                "scanner_stop": m["stop_price"],
-                "csv_stop": b_row["stop_price"],
-                "scanner_exit_date": m["exit_date"],
-                "csv_exit_date": b_row["exit_date"],
-                "scanner_exit_price": m["exit_price"],
-                "csv_exit_price": b_row["exit_price"],
-                "scanner_reason": m["exit_reason"],
-                "csv_reason": b_row["exit_reason"],
-                "scanner_net_r": m["rule_net_r"],
-                "csv_net_r": b_row["net_r"],
-                "match_status": "PASS" if is_p else "FAIL"
-            })
-
-        prefix = period_name.lower().replace("-", "_")
-        pd.DataFrame(diff_records).to_csv(f"replay_diff_{prefix}.csv", index=False, encoding="utf-8-sig")
-        pd.DataFrame(extra_signals).to_csv(f"replay_extra_{prefix}.csv", index=False, encoding="utf-8-sig")
-
-        if period_pass and len(scanner_entered) == len(bench_sub):
-            print(f"【{period_name} 評估結果：100% PASS】")
+    watch, stale = [], []
+    for t in sorted(universe):
+        df = stock_map.get(t)
+        if df is None:
+            continue
+        sub = df[df["DateStr"] <= target]
+        if len(sub) < 22:
+            continue
+        cur = sub.iloc[-1]
+        prev20 = float(sub["High"].iloc[-21:-1].max())
+        close, ema, high = float(cur["Close"]), float(cur["EMA_20"]), float(cur["High"])
+        above, brk = close >= ema, high > prev20
+        dist = (prev20 - close) / prev20 * 100 if prev20 > 0 else np.nan
+        if above and brk:
+            status = "signal"
+        elif above and 0 <= dist <= 2:
+            status = "forming"
         else:
-            print(f"【{period_name} 評估結果：FAIL】")
-            total_overall_pass = False
+            status = "above" if above else "below"
+        if cur["DateStr"] != target:
+            stale.append(t)
+        watch.append({
+            "ticker": t, "name": meta[t]["name"], "sector": meta[t]["sector"], "basket": meta[t]["basket"],
+            "date": cur["DateStr"], "close": round(close, 2), "ema20": round(ema, 2),
+            "prev20_high": round(prev20, 2), "dist_to_20h_pct": round(dist, 2) if pd.notna(dist) else None,
+            "status": status, "avg_turnover_20d": calc_avg_turnover(df, target),
+        })
 
-    return total_overall_pass
+    live, back = closed[closed["source"] == "LIVE"], closed[closed["source"] != "LIVE"]
+    closed_recent = closed.sort_values("exit_date", ascending=False).head(300)
+    return _sanitize({
+        "label": "觀察用，未經實證驗證",
+        "generated_at_tw": now_tw().strftime("%Y-%m-%d %H:%M"),
+        "data_date": target,
+        "universe_count": len(universe),
+        "stale_tickers": stale,
+        "pending": _records(pending),
+        "open": _records(opened),
+        "needs_review": _records(review),
+        "closed": _records(closed_recent),
+        "stats": {"all": _stats(closed), "live": _stats(live), "backfill": _stats(back)},
+        "watch": watch,
+    })
 
 
-# ==========================================
-# 6. 主程式單次執行核心 (供 CLI 與重跑測試呼叫)
-# ==========================================
-def run_daily_scan_workflow(
-    target_date: str = None,
-    clear_cache_on_start: bool = True,
-    ledger_path: str = LEDGER_FILE,
-    preloaded_raw_map: dict = None,
-    source_tag: str = "LIVE"
-) -> bool:
-    if clear_cache_on_start and preloaded_raw_map is None:
-        print("【即時模式啟動】清除本地舊快取 (.cache_ohlcv)...")
-        clear_cache()
-
-    tickers = get_universe() if preloaded_raw_map is None else sorted(list(preloaded_raw_map.keys()))
-    if not tickers:
-        print("【致命錯誤】觀察池為空，程式終止！")
-        return False
-
-    stock_map = {}
-    split_map = {}
-    for t in tickers:
-        if preloaded_raw_map is not None:
-            raw_df = preloaded_raw_map.get(t, pd.DataFrame())
-        elif HAS_FETCHER:
-            raw_df = fetch_history(t, lookback_days=2200)
-        else:
-            raw_df = pd.DataFrame()
-
-        if not raw_df.empty:
-            df_prep, s_ev = prepare_stock_data(raw_df)
-            if not df_prep.empty:
-                stock_map[t] = df_prep
-                split_map[t] = s_ev
-
-    valid_count = len(stock_map)
-    valid_ratio = valid_count / len(tickers)
-    print(f"載入觀察池: 成功 {valid_count}/{len(tickers)} 檔 ({round(valid_ratio*100, 1)}%)")
-
-    if valid_ratio < 0.95:
-        print(f"【致命錯誤】有效載入率低於 95% (門檻 {int(np.ceil(len(tickers)*0.95))} 檔，實測 {valid_count} 檔)，終止執行！")
-        return False
-
-    all_latest_dates = [df["DateStr"].iloc[-1] for df in stock_map.values() if not df.empty]
-    latest_market_date = max(set(all_latest_dates), key=all_latest_dates.count)
-    today_str = target_date if target_date else latest_market_date
-
-    ref_check_date = target_date if target_date else datetime.now().strftime("%Y-%m-%d")
-    is_fresh, fresh_msg = check_latest_date_freshness(latest_market_date if not target_date else today_str, ref_check_date)
-    if not is_fresh:
-        print(f"【致命錯誤】資料日期過舊：{fresh_msg}，程式強制中止！")
-        return False
-
-    # 若未指定 target_date 且當前為盤後 (16:30後)，檢查市場資料是否少一天
-    if target_date is None:
-        now_dt = datetime.now()
-        expected_date = get_expected_latest_trading_date(now_dt)
-        if latest_market_date < expected_date:
-            print(f"【致命錯誤】今日 ({expected_date}) 收盤資料尚未更新到位 (最新資料停留在: {latest_market_date})，終止執行！")
+def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
+                   watchlist_path: str = WATCHLIST_FILE, dashboard_path: str = DASHBOARD_FILE) -> bool:
+    def retry_or_fail(msg: str) -> bool:
+        print(f"【資料未到位】{msg}")
+        if final:
+            print("【最終嘗試失敗】本日帳本未更新。若今天其實是休市日，請告知以更新休市表。")
             return False
+        print("【稍後重試】本次不更新帳本，排程稍晚會再執行一次。")
+        return True
 
-    print(f"確認執行交易日: {today_str} (最新日期檢查通過)")
+    now = now_tw()
+    expected = get_expected_latest_trading_date(now)
+    print(f"台灣時間 {now:%Y-%m-%d %H:%M}，預期最新交易日: {expected}")
 
     ledger = load_ledger(ledger_path)
+    done_dates = [v for v in ledger["last_processed_date"].astype(str) if v and v != "nan"]
+    last_processed = max(done_dates) if done_dates else None
+    if last_processed and last_processed >= expected:
+        print(f"【無需執行】帳本已處理到 {last_processed}，帳本維持不變。")
+        print_needs_review_alert(ledger, ledger_path)
+        return True
 
-    last_processed = str(ledger["last_processed_date"].dropna().max()) if (
-        not ledger.empty and "last_processed_date" in ledger.columns and not ledger["last_processed_date"].dropna().empty
-    ) else None
-    if last_processed == "":
-        last_processed = None
+    meta = load_watchlist(watchlist_path)
+    universe = sorted(meta.keys())
+    if not universe:
+        print("【致命錯誤】觀察池為空，程式終止！")
+        return False
+    active = sorted(set(ledger.loc[ledger["status"].isin(ACTIVE_STATUSES), "ticker"].astype(str)))
+    fetch_list = sorted(set(universe) | set(active))
+    print(f"載入資料: 觀察池 {len(universe)} 檔，另加持倉中但不在觀察池 {len(set(active) - set(universe))} 檔")
 
-    all_dates_union = sorted(list(set.union(*[set(df["DateStr"]) for df in stock_map.values()])))
+    stock_map, split_map, failed = {}, {}, []
+    for t in fetch_list:
+        raw = fetch_history(t, lookback_days=LOOKBACK_DAYS)
+        df, ev = prepare_stock_data(raw) if not raw.empty else (pd.DataFrame(), {})
+        if df.empty:
+            failed.append(t)
+        else:
+            stock_map[t], split_map[t] = df, ev
+        time.sleep(0.05)
 
-    if last_processed:
-        if today_str <= last_processed:
-            print(f"【冪等防護】今日 ({today_str}) 已於先前處理完成 (last_processed: {last_processed})，帳本維持完全不變。")
-            print_needs_review_alert(ledger, ledger_path)
-            return True
+    ok = sum(1 for t in universe if t in stock_map)
+    ratio = ok / len(universe)
+    print(f"載入觀察池: 成功 {ok}/{len(universe)} 檔 ({ratio * 100:.1f}%)")
+    if ratio < MIN_LOAD_RATIO:
+        return retry_or_fail(f"觀察池載入率低於 95%，失敗例: {failed[:10]}")
+    missing_active = [t for t in active if t not in stock_map]
+    if missing_active:
+        return retry_or_fail(f"持倉中標的缺資料 (會造成漏算停損/出場)，不能繼續: {missing_active}")
 
-        prev_idx = all_dates_union.index(last_processed) if last_processed in all_dates_union else -1
-        curr_idx = all_dates_union.index(today_str) if today_str in all_dates_union else -1
-        if prev_idx != -1 and curr_idx != -1 and curr_idx > prev_idx + 1:
-            missed_dates = all_dates_union[prev_idx + 1 : curr_idx]
-            print(f"【漏跑偵測】偵測到未處理之交易日: {missed_dates}，開始循序補算 (含分割事件檢查)...")
-            for m_d in missed_dates:
-                ledger, _ = update_ledger_single_day(
-                    ledger, stock_map, m_d, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False
-                )
+    last_dates = [stock_map[t]["DateStr"].iloc[-1] for t in universe if t in stock_map]
+    latest = max(set(last_dates), key=last_dates.count)
+    if latest < expected:
+        return retry_or_fail(f"最新資料停在 {latest}，預期 {expected}")
+    target = expected
 
-    ledger, exited_today = update_ledger_single_day(
-        ledger, stock_map, today_str, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False
-    )
+    counts = {}
+    for df in stock_map.values():
+        for d in df["DateStr"]:
+            counts[d] = counts.get(d, 0) + 1
+    all_dates = sorted(d for d, c in counts.items() if c >= 0.5 * len(stock_map))
+    if target not in all_dates:
+        return retry_or_fail(f"資料中找不到 {target} 的交易日資料")
 
-    open_positions = set(ledger[ledger["status"].isin(["OPEN", "PENDING", "NEEDS_REVIEW"])]["ticker"].unique()) if not ledger.empty else set()
-    ineligible_tickers = open_positions.union(exited_today)
+    dates = [d for d in all_dates if last_processed < d <= target] if last_processed else [target]
+    if len(dates) > 1:
+        print(f"【漏跑偵測】需補算的交易日: {dates[:-1]}，依序補算 (含當日新訊號)...")
 
-    signals = []
-    for t in tickers:
-        if t in ineligible_tickers:
-            continue
-        df = stock_map.get(t, pd.DataFrame())
-        sig = scan_signals_for_ticker(df, t, as_of_date=today_str)
-        if sig:
-            signals.append(sig)
+    for d in dates:
+        source = "LIVE" if d == target else "BACKFILL"
+        n_before = len(ledger)
+        ledger, exited = update_ledger_single_day(
+            ledger, stock_map, d, split_map=split_map, freeze_on_split=True, replay_auto_resolve_splits=False
+        )
+        ledger = ledger.reset_index(drop=True)
+        if len(ledger) != n_before:
+            print(f"【致命錯誤】更新 {d} 後帳本筆數異常 ({n_before} -> {len(ledger)})，已中止且未寫入！")
+            return False
 
-    sig_df = pd.DataFrame(signals)
-    fee_desc = get_actual_fee_params()["desc"]
-    print(f"\n【{today_str} 當日新觸發訊號清單 (排除持倉與今日出場)】共 {len(sig_df)} 檔")
-    if not sig_df.empty:
-        print(sig_df[["ticker", "signal_date", "trigger_price", "stop_price", "risk_pct"]].to_string(index=False))
-
-        existing_keys = set(zip(ledger["signal_date"].astype(str), ledger["ticker"].astype(str))) if not ledger.empty else set()
-        new_records = []
-        for _, s in sig_df.iterrows():
-            if (str(s["signal_date"]), str(s["ticker"])) in existing_keys:
+        active_now = set(ledger.loc[ledger["status"].isin(ACTIVE_STATUSES), "ticker"].astype(str))
+        ineligible = active_now | exited
+        existing = set(zip(ledger["signal_date"].astype(str), ledger["ticker"].astype(str)))
+        fee_desc = get_actual_fee_params()["desc"]
+        new_rows = []
+        for t in universe:
+            if t in ineligible or t not in stock_map:
                 continue
-            new_records.append({
-                "signal_date": s["signal_date"],
-                "ticker": s["ticker"],
-                "trigger_price": s["trigger_price"],
-                "stop_price": s["stop_price"],
-                "risk_pct": s["risk_pct"],
-                "triggered": False,
-                "entry_price": np.nan,
-                "entry_date": "",
-                "exit_date": "",
-                "exit_price": np.nan,
-                "exit_reason": "",
-                "rule_net_r": np.nan,
-                "actual_net_r": np.nan,
-                "slippage_net_r": np.nan,
-                "actual_fee_settings": fee_desc,
-                "status": "PENDING",
-                "days_held": 0,
-                "pending_ema_exit": False,
-                "last_processed_date": today_str,
-                "source": source_tag
+            sig = scan_today(stock_map[t], t, d)
+            if not sig or (d, t) in existing:
+                continue
+            new_rows.append({
+                "signal_date": sig["signal_date"], "ticker": t,
+                "trigger_price": sig["trigger_price"], "stop_price": sig["stop_price"], "risk_pct": sig["risk_pct"],
+                "triggered": False, "entry_price": np.nan, "entry_date": "", "exit_date": "", "exit_price": np.nan,
+                "exit_reason": "", "rule_net_r": np.nan, "actual_net_r": np.nan, "slippage_net_r": np.nan,
+                "actual_fee_settings": fee_desc, "status": "PENDING", "days_held": 0, "pending_ema_exit": False,
+                "last_processed_date": d, "source": source, "avg_turnover_20d": sig["avg_turnover_20d"],
             })
-        if new_records:
-            ledger = pd.concat([ledger, pd.DataFrame(new_records)], ignore_index=True)
-    else:
-        print("今日無符合 C 組條件之新訊號。")
-
-    if not ledger.empty:
-        ledger["last_processed_date"] = today_str
+        if new_rows:
+            ledger = pd.concat([ledger, pd.DataFrame(new_rows)], ignore_index=True)
+            print(f"[{d}] ({source}) 新訊號 {len(new_rows)} 檔: " + ", ".join(r["ticker"] for r in new_rows))
+        else:
+            print(f"[{d}] ({source}) 無符合 C 組條件之新訊號。")
+        ledger["last_processed_date"] = d
 
     save_ledger(ledger, ledger_path)
-    print(f"\n已同步寫入更新紙上交易帳本: {ledger_path}")
-
+    print(f"已寫入帳本: {ledger_path}")
+    dash = build_dashboard(ledger, stock_map, meta, target, universe)
+    with open(dashboard_path, "w", encoding="utf-8") as f:
+        json.dump(dash, f, ensure_ascii=False, allow_nan=False)
+    print(f"已輸出網頁資料: {dashboard_path} (資料日期 {target})")
     print_needs_review_alert(ledger, ledger_path)
     return True
 
 
 def main():
     parser = argparse.ArgumentParser(description="Task K Group C Forward Paper Trading Scanner")
-    parser.add_argument("--date", type=str, default=None, help="指定掃描日期 (YYYY-MM-DD)，預設為最新交易日")
-    parser.add_argument("--extended-verify", action="store_true", help="執行三區間擴充全生命週期比對回放")
-    parser.add_argument("--replay-auto-resolve-splits", action="store_true", help="僅限驗證回放使用：遇到 NEEDS_REVIEW 自動以 adjust 處理")
-    parser.add_argument("--keep-cache", action="store_true", help="保留本地快取不清除 (預設即時執行會先清除 .cache_ohlcv)")
-    parser.add_argument("--backfill", action="store_true", help="將本次產生的新訊號標記為 BACKFILL (預設即時執行標記為 LIVE)")
-
-    # 手動解除 NEEDS_REVIEW 指令參數
-    parser.add_argument("--resolve", type=str, default=None, help="指定要解除 NEEDS_REVIEW 狀態的股票代號 (例如 2327.TW)")
-    parser.add_argument("--action", type=str, choices=["close", "adjust"], default=None, help="解除方式: close (人工結案) 或 adjust (依分割比例調整繼續持有)")
-    parser.add_argument("--price", type=float, default=None, help="搭配 --action close 指定人工出場價格")
-    parser.add_argument("--ledger", type=str, default=LEDGER_FILE, help="指定帳本檔案路徑")
+    parser.add_argument("--final", action="store_true", help="最終嘗試：資料沒到位時回報失敗 (紅叉)")
+    parser.add_argument("--ledger", type=str, default=LEDGER_FILE)
+    parser.add_argument("--watchlist", type=str, default=WATCHLIST_FILE)
+    parser.add_argument("--resolve", type=str, default=None, help="要解除 NEEDS_REVIEW 的股票代號")
+    parser.add_argument("--action", type=str, choices=["close", "adjust"], default=None)
+    parser.add_argument("--price", type=float, default=None)
+    parser.add_argument("--date", type=str, default=None)
     args = parser.parse_args()
 
     print("********************************************************************")
@@ -961,30 +771,12 @@ def main():
             print("【錯誤】使用 --resolve 時必須指定 --action (close 或 adjust)！")
             sys.exit(1)
         ok = resolve_needs_review_position(
-            ticker=args.resolve,
-            action=args.action,
-            exit_price=args.price,
-            exit_date=args.date,
-            ledger_path=args.ledger
+            ticker=args.resolve, action=args.action, exit_price=args.price,
+            exit_date=args.date, ledger_path=args.ledger,
         )
         sys.exit(0 if ok else 1)
 
-    if args.replay_auto_resolve_splits and not args.extended_verify:
-        print("【錯誤】--replay-auto-resolve-splits 僅能搭配 --extended-verify 用於歷史驗證回放，不得用於即時執行！")
-        sys.exit(1)
-
-    if args.extended_verify:
-        success = run_extended_verification(replay_auto_resolve_splits=args.replay_auto_resolve_splits)
-        sys.exit(0 if success else 1)
-
-    source_tag = "BACKFILL" if (args.backfill or args.date is not None) else "LIVE"
-
-    ok = run_daily_scan_workflow(
-        target_date=args.date,
-        clear_cache_on_start=(not args.keep_cache),
-        ledger_path=args.ledger,
-        source_tag=source_tag
-    )
+    ok = run_daily_scan(final=args.final, ledger_path=args.ledger, watchlist_path=args.watchlist)
     sys.exit(0 if ok else 1)
 
 

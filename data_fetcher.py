@@ -1,183 +1,115 @@
 """
 data_fetcher.py
-統一資料取得模組 (FinMind API 完整相容版 + 嚴格以預期最新交易日檢核之本地快取)
+資料取得模組 (FinMind)。
+所有「今天 / 現在」的判斷一律使用台灣時間，並考慮證交所休市日。
 """
 
 import os
-import shutil
 import time
-import requests
-import pandas as pd
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+import pandas as pd
+import requests
 
 FINMIND_API_URL = "https://api.finmindtrade.com/api/v4/data"
-CACHE_DIR = ".cache_ohlcv"
+TZ_TW = ZoneInfo("Asia/Taipei")
+DATA_READY_HM = (16, 30)  # 台灣時間 16:30 之後，才預期當天收盤資料已可取得
+
+# 證交所休市日 (含農曆年前「僅辦理交割、不交易」的日子)。
+# 2026：已對照證交所公告。
+# 2027：暫定 (依國定假日推算)，證交所公布 2027 開休市表後需再核對。
+TWSE_HOLIDAYS = {
+    "2026-01-01", "2026-02-12", "2026-02-13", "2026-02-16", "2026-02-17",
+    "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-27", "2026-04-03",
+    "2026-04-06", "2026-05-01", "2026-06-19", "2026-09-25", "2026-09-28",
+    "2026-10-09", "2026-10-26", "2026-12-25",
+    "2027-01-01", "2027-02-04", "2027-02-05", "2027-02-08", "2027-02-09",
+    "2027-02-10", "2027-03-01", "2027-04-05", "2027-04-06", "2027-04-30",
+    "2027-06-09", "2027-09-15", "2027-09-28", "2027-10-11", "2027-10-25",
+    "2027-12-24", "2027-12-31",
+}
 
 
-def clear_cache():
-    """清除本地快取資料夾 (.cache_ohlcv)，供即時執行流程在啟動時呼叫"""
-    if os.path.exists(CACHE_DIR):
-        shutil.rmtree(CACHE_DIR, ignore_errors=True)
+def now_tw() -> datetime:
+    return datetime.now(TZ_TW)
+
+
+def is_trading_day(d) -> bool:
+    """d 可為 date 或 datetime；週末與休市日回傳 False"""
+    if hasattr(d, "date"):
+        d = d.date()
+    return d.weekday() < 5 and d.strftime("%Y-%m-%d") not in TWSE_HOLIDAYS
 
 
 def get_expected_latest_trading_date(now_dt: datetime = None) -> str:
-    """推算預期最新交易日 (扣除週末；若當日早於 16:30 則預期為前一交易日)"""
+    """
+    推算「此刻應該已經有資料」的最新交易日 (台灣時間)：
+    交易日且已過 16:30 → 今天；否則 → 往前找最近一個交易日。
+    """
     if now_dt is None:
-        now_dt = datetime.now()
-    dt = now_dt
-    if dt.weekday() < 5 and (dt.hour < 16 or (dt.hour == 16 and dt.minute < 30)):
-        dt = dt - timedelta(days=1)
-    while dt.weekday() >= 5:
-        dt = dt - timedelta(days=1)
-    return dt.strftime("%Y-%m-%d")
+        now_dt = now_tw()
+    if now_dt.tzinfo is not None:
+        now_dt = now_dt.astimezone(TZ_TW)
+    d = now_dt.date()
+    ready = (now_dt.hour, now_dt.minute) >= DATA_READY_HM
+    if not (is_trading_day(d) and ready):
+        d -= timedelta(days=1)
+    while not is_trading_day(d):
+        d -= timedelta(days=1)
+    return d.strftime("%Y-%m-%d")
 
 
 def clean_ticker(ticker: str) -> str:
-    """去除 .TW、.TWO、^TWII 等後綴，轉為 FinMind 所需代碼"""
-    t = str(ticker).strip()
-    if t.upper() in ["^TWII", "0000", "TAIEX"]:
-        return "TAIEX"
-    return t.split(".")[0].strip()
+    """去除 .TW / .TWO 後綴，轉為 FinMind 所需代碼"""
+    return str(ticker).strip().split(".")[0].strip()
 
 
-def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 10) -> list:
-    """發送請求至 FinMind API 並處理基礎容錯重試"""
+def _request_finmind(params: dict, max_retries: int = 3, timeout: int = 15) -> list:
     headers = {"User-Agent": "Mozilla/5.0"}
     for attempt in range(max_retries):
         try:
             res = requests.get(FINMIND_API_URL, params=params, headers=headers, timeout=timeout)
             if res.status_code == 200:
                 payload = res.json()
-                if payload.get("status") == 200 or "data" in payload:
+                if payload.get("status") == 200:
                     return payload.get("data", [])
-            elif res.status_code == 429:
-                time.sleep(1.5 * (attempt + 1))
+            time.sleep(1.5 * (attempt + 1))  # 429 / 額度用完 / 其他錯誤：等一下再試
         except Exception:
             time.sleep(0.5 * (attempt + 1))
     return []
 
 
-def fetch_history(ticker: str, lookback_days: int = 300, use_cache: bool = True) -> pd.DataFrame:
-    """
-    從 FinMind 取得歷史日 K 線並轉為標準 DataFrame
-    快取規則：僅在「最後一根 K 棒日期 >= 預期最新交易日」時才使用快取 (不使用 12 小時替代條件)
-    """
+def fetch_history(ticker: str, lookback_days: int = 500) -> pd.DataFrame:
+    """從 FinMind 取得日 K (未還原)，回傳欄位 Date/Open/High/Low/Close/Volume (+ Trading_money)"""
     stock_id = clean_ticker(ticker)
-    try:
-        days = int(lookback_days)
-    except (ValueError, TypeError):
-        days = 300
-
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    cache_file = os.path.join(CACHE_DIR, f"{stock_id}_{days}.csv")
-
-    if use_cache and os.path.exists(cache_file):
-        try:
-            df_c = pd.read_csv(cache_file)
-            if not df_c.empty and "Date" in df_c.columns:
-                last_bar_date = str(df_c["Date"].iloc[-1])[:10]
-                expected_date = get_expected_latest_trading_date()
-                if last_bar_date >= expected_date:
-                    df_c["Date"] = pd.to_datetime(df_c["Date"])
-                    return df_c
-        except Exception:
-            pass
-
-    end_date = datetime.now().strftime("%Y-%m-%d")
-    start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-
+    end = now_tw().date()
+    start = end - timedelta(days=int(lookback_days))
     params = {
         "dataset": "TaiwanStockPrice",
         "data_id": stock_id,
-        "start_date": start_date,
-        "end_date": end_date
+        "start_date": start.strftime("%Y-%m-%d"),
+        "end_date": end.strftime("%Y-%m-%d"),
     }
+    token = os.environ.get("FINMIND_TOKEN", "").strip()
+    if token:
+        params["token"] = token
 
-    raw_data = _request_finmind(params)
-    if not raw_data:
+    raw = _request_finmind(params)
+    if not raw:
         return pd.DataFrame()
 
     try:
-        df = pd.DataFrame(raw_data)
-        rename_map = {
-            "date": "Date",
-            "open": "Open",
-            "max": "High",
-            "min": "Low",
-            "close": "Close",
-            "Trading_Volume": "Volume"
-        }
-        df = df.rename(columns=rename_map)
-
+        df = pd.DataFrame(raw).rename(columns={
+            "date": "Date", "open": "Open", "max": "High",
+            "min": "Low", "close": "Close", "Trading_Volume": "Volume",
+        })
         df["Date"] = pd.to_datetime(df["Date"])
-        num_cols = ["Open", "High", "Low", "Close", "Volume"]
-        for col in num_cols:
+        for col in ["Open", "High", "Low", "Close", "Volume", "Trading_money"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
-
         df = df.dropna(subset=["Close", "Open", "High", "Low"])
-        df = df.sort_values("Date").reset_index(drop=True)
-
-        if not df.empty:
-            df.to_csv(cache_file, index=False)
-
-        return df
-
+        return df.sort_values("Date").reset_index(drop=True)
     except Exception as e:
         print(f"[{ticker}] 轉換日K線資料失敗: {e}")
         return pd.DataFrame()
-
-
-def get_market_status(ticker: str = "^TWII", lookback_days: int = 120) -> dict:
-    if isinstance(ticker, int):
-        lookback_days = ticker
-        target_ticker = "TAIEX"
-    else:
-        target_ticker = clean_ticker(ticker)
-        try:
-            lookback_days = int(lookback_days)
-        except (ValueError, TypeError):
-            lookback_days = 120
-
-    df = fetch_history(target_ticker, lookback_days=lookback_days)
-    if df.empty or len(df) < 25:
-        df = fetch_history("0050", lookback_days=lookback_days)
-
-    if df.empty or len(df) < 20:
-        return {
-            "bullish": True,
-            "close": 0.0,
-            "ema20": 0.0,
-            "market_phase": "盤後定盤"
-        }
-
-    df["EMA_20"] = df["Close"].ewm(span=20, adjust=False).mean()
-    last_row = df.iloc[-1]
-    close_val = round(float(last_row["Close"]), 2)
-    ema20_val = round(float(last_row["EMA_20"]), 2)
-    is_bullish = bool(close_val >= ema20_val)
-
-    now = datetime.now()
-    phase = "盤後定盤" if (now.hour > 13 or (now.hour == 13 and now.minute >= 45)) else "盤中即時"
-
-    return {
-        "bullish": is_bullish,
-        "close": close_val,
-        "ema20": ema20_val,
-        "market_phase": phase
-    }
-
-
-def fetch_batch_history(tickers: list, lookback_days: int = 300, delay_sec: float = 0.05) -> dict:
-    results = {}
-    for t in tickers:
-        df = fetch_history(t, lookback_days=lookback_days)
-        if not df.empty:
-            results[t] = df
-        if delay_sec > 0:
-            time.sleep(delay_sec)
-    return results
-
-
-def fetch_institutional_investors(ticker: str, days: int = 15) -> dict:
-    return {"investment_trust_net_buy": 0}
