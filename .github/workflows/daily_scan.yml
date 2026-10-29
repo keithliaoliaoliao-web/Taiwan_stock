@@ -1,40 +1,81 @@
-name: Taiwan Stock Scanner
+name: Daily Paper Trading
 
 on:
   schedule:
-    - cron: '12,42 1-5 * * 1-5'
-    - cron: '35 7 * * 1-5'
+    - cron: '30 10 * * 1-5'   # 台灣時間 18:30 (第一次嘗試；資料沒到就安靜結束)
+    - cron: '30 13 * * 1-5'   # 台灣時間 21:30 (最後一次；資料還沒到就顯示紅叉)
   workflow_dispatch:
-
-concurrency:
-  group: stock-scanner-group
-  cancel-in-progress: true
+    inputs:
+      resolve_ticker:
+        description: '解除 NEEDS_REVIEW 的股票代號，例如 2327.TW (日常請留空)'
+        required: false
+        default: ''
+      resolve_action:
+        description: '解除方式：adjust 或 close (日常請留空)'
+        required: false
+        default: ''
+      resolve_price:
+        description: '搭配 close 的出場價 (日常請留空)'
+        required: false
+        default: ''
+      resolve_date:
+        description: '搭配 close 的出場日 YYYY-MM-DD (日常請留空)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
 
+concurrency:
+  group: paper-trading
+  cancel-in-progress: false
+
 jobs:
   scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Run scanner
-        run: python scanner.py
-
-      - name: Commit scan result
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+          # 18:30 那次不是最終嘗試；21:30 與手動執行都算最終嘗試
+          IS_FINAL: ${{ github.event.schedule != '30 10 * * 1-5' }}
+          RESOLVE_TICKER: ${{ github.event.inputs.resolve_ticker }}
+          RESOLVE_ACTION: ${{ github.event.inputs.resolve_action }}
+          RESOLVE_PRICE: ${{ github.event.inputs.resolve_price }}
+          RESOLVE_DATE: ${{ github.event.inputs.resolve_date }}
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add -A
-          git diff --staged --quiet || git commit -m "chore: update scan result and holdings"
+          if [ -n "$RESOLVE_TICKER" ]; then
+            python scanner.py --resolve "$RESOLVE_TICKER" --action "$RESOLVE_ACTION" ${RESOLVE_PRICE:+--price "$RESOLVE_PRICE"} ${RESOLVE_DATE:+--date "$RESOLVE_DATE"}
+          elif [ "$IS_FINAL" = "true" ]; then
+            python scanner.py --final
+          else
+            python scanner.py
+          fi
+
+      - name: Run price action scanner
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+        run: python price_action_scanner.py
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add paper_trading_ledger.csv
+          if [ -f dashboard_data.json ]; then git add dashboard_data.json; fi
+          if [ -f scan_result.json ]; then git add scan_result.json; fi
+          if [ -f public/scan_result.json ]; then git add public/scan_result.json; fi
+          if [ -f holdings.json ]; then git add holdings.json; fi
+          git diff --staged --quiet || git commit -m "chore: update scan results ($(TZ=Asia/Taipei date +%F))"
+          git pull --rebase
           git push
