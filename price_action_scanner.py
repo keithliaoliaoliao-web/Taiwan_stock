@@ -78,6 +78,9 @@ def fetch_institutional_chips(ticker: str, target_date: str) -> dict:
 
 
 def get_market_status(ticker: str) -> dict:
+    # 大盤指數 (如 ^TWII) 不在 FinMind 中，直接回傳占位
+    if not ticker or ticker.startswith("^") or "." not in ticker:
+        return {"ticker": ticker, "status": "index_not_available", "note": "大盤指數不在 FinMind 資料集中"}
     try:
         df = fetch_history(ticker, lookback_days=30)
         if df.empty:

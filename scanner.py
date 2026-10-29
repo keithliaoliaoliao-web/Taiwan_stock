@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 from data_fetcher import fetch_history, get_expected_latest_trading_date, now_tw
+from taiwan_market_rules import next_tick_price, previous_tick_price
 
 LEDGER_FILE = "paper_trading_ledger.csv"
 WATCHLIST_FILE = "watchlist.csv"
@@ -51,33 +52,7 @@ def calc_actual_net_r(entry_price, exit_price, risk_per_share, rule_net_r):
 # ==========================================
 # 1. 檔位運算 (凍結規格)
 # ==========================================
-def get_tw_tick(price: float) -> float:
-    if price < 10.0:
-        return 0.01
-    elif price < 50.0:
-        return 0.05
-    elif price < 100.0:
-        return 0.1
-    elif price < 500.0:
-        return 0.5
-    elif price < 1000.0:
-        return 1.0
-    else:
-        return 5.0
-
-
-def get_tick_down(price: float) -> float:
-    tick = get_tw_tick(price)
-    if price in [10.0, 50.0, 100.0, 500.0, 1000.0]:
-        tick = get_tw_tick(price - 0.001)
-    return round(price - tick, 2)
-
-
-def get_tick_up(price: float) -> float:
-    tick = get_tw_tick(price)
-    return round(price + tick, 2)
-
-
+# tick 函式統一使用 taiwan_market_rules.py 的版本
 # ==========================================
 # 2. 資料清洗與還原 (凍結規格)
 # ==========================================
@@ -174,8 +149,8 @@ def scan_signals_for_ticker(df: pd.DataFrame, ticker: str, as_of_date: str = Non
     high = float(cur_bar["High"])
     low = float(cur_bar["Low"])
     close = float(cur_bar["Close"])
-    trigger_price = get_tick_up(high)
-    stop_price = get_tick_down(low)
+    trigger_price = next_tick_price(high)
+    stop_price = previous_tick_price(low)
     risk_pct = round(((trigger_price - stop_price) / trigger_price) * 100, 2)
 
     return {
@@ -299,8 +274,8 @@ def resolve_needs_review_position(
 
         rule_r = round(((exit_p * (1.0 - COST_RATE)) - entry_p) / risk_per_share, 3)
         act_r = calc_actual_net_r(entry_p, exit_p, risk_per_share, rule_r)
-        slip_entry = get_tick_up(entry_p)
-        slip_exit = get_tick_down(exit_p)
+        slip_entry = next_tick_price(entry_p)
+        slip_exit = previous_tick_price(exit_p)
         slip_r = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
 
         ledger.loc[idx, "status"] = "CLOSED"
@@ -429,8 +404,8 @@ def update_ledger_single_day(
                     r_rule = round(((exit_price * (1.0 - COST_RATE)) - entry_price) / risk_per_share, 3)
                     row["rule_net_r"] = r_rule
                     row["actual_net_r"] = calc_actual_net_r(entry_price, exit_price, risk_per_share, r_rule)
-                    slip_entry = get_tick_up(entry_price)
-                    slip_exit = get_tick_down(exit_price)
+                    slip_entry = next_tick_price(entry_price)
+                    slip_exit = previous_tick_price(exit_price)
                     row["slippage_net_r"] = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
                     tickers_exited_today.add(t)
                 else:
@@ -477,8 +452,8 @@ def update_ledger_single_day(
                 r_rule = round(((exit_price * (1.0 - COST_RATE)) - entry_price) / risk_per_share, 3)
                 row["rule_net_r"] = r_rule
                 row["actual_net_r"] = calc_actual_net_r(entry_price, exit_price, risk_per_share, r_rule)
-                slip_entry = get_tick_up(entry_price)
-                slip_exit = get_tick_down(exit_price)
+                slip_entry = next_tick_price(entry_price)
+                slip_exit = previous_tick_price(exit_price)
                 row["slippage_net_r"] = round(((slip_exit * (1.0 - COST_RATE)) - slip_entry) / risk_per_share, 3)
                 tickers_exited_today.add(t)
             else:
