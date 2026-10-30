@@ -362,6 +362,8 @@ def update_ledger_single_day(
                 updated_rows.append(row)
                 continue
             # OPEN 遇到無 K 棒：跳過但記錄（last_processed_date 仍會被外層統一設為 d）
+            updated_rows.append(row)
+            continue
 
         if freeze_on_split and status in ["OPEN", "PENDING"]:
             t_splits = split_map.get(t, {})
