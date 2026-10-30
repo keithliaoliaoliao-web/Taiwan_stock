@@ -170,17 +170,30 @@ def scan_signals_for_ticker(df: pd.DataFrame, ticker: str, as_of_date: str = Non
 # ==========================================
 # 4. 帳本狀態管理、時序撮合與手動解除指令
 # ==========================================
+def get_scanner_version() -> str:
+    """回傳 scanner.py 的 MD5（大寫），用於記錄產生訊號時的程式版本。"""
+    import hashlib
+    import os
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scanner.py")
+    try:
+        with open(path, "rb") as f:
+            return hashlib.md5(f.read()).hexdigest().upper()
+    except Exception:
+        return ""
+
+
 def load_ledger(filepath: str = LEDGER_FILE) -> pd.DataFrame:
     cols = [
         "signal_date", "ticker", "trigger_price", "stop_price", "risk_pct",
         "triggered", "entry_price", "entry_date", "exit_date", "exit_price", "exit_reason",
         "rule_net_r", "actual_net_r", "slippage_net_r", "actual_fee_settings", "status",
         "days_held", "pending_ema_exit", "last_processed_date", "source",
-        "avg_turnover_20d"
+        "avg_turnover_20d", "scanner_version"
     ]
     str_cols = [
         "signal_date", "ticker", "entry_date", "exit_date",
-        "exit_reason", "actual_fee_settings", "status", "last_processed_date", "source"
+        "exit_reason", "actual_fee_settings", "status", "last_processed_date", "source",
+        "scanner_version"
     ]
     if os.path.exists(filepath):
         df = pd.read_csv(filepath, dtype={c: object for c in str_cols})
@@ -664,6 +677,7 @@ def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
     expected = get_expected_latest_trading_date(now)
     target = expected
     print(f"台灣時間 {now:%Y-%m-%d %H:%M}，預期最新交易日: {expected}")
+    print(f"scanner_version: {get_scanner_version()}")
 
     ledger = load_ledger(ledger_path)
     done_dates = [v for v in ledger["last_processed_date"].astype(str) if v and v != "nan"]
@@ -763,6 +777,7 @@ def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
                 "exit_reason": "", "rule_net_r": np.nan, "actual_net_r": np.nan, "slippage_net_r": np.nan,
                 "actual_fee_settings": fee_desc, "status": "PENDING", "days_held": 0, "pending_ema_exit": False,
                 "last_processed_date": d, "source": source, "avg_turnover_20d": sig["avg_turnover_20d"],
+                "scanner_version": get_scanner_version(),
             })
         if new_rows:
             ledger = pd.concat([ledger, pd.DataFrame(new_rows)], ignore_index=True)
@@ -842,6 +857,7 @@ def run_daily_scan_workflow(target_date=None, clear_cache_on_start=False, ledger
             "exit_reason": "", "rule_net_r": np.nan, "actual_net_r": np.nan, "slippage_net_r": np.nan,
             "actual_fee_settings": fee_desc, "status": "PENDING", "days_held": 0, "pending_ema_exit": False,
             "last_processed_date": target_date, "source": source_tag, "avg_turnover_20d": sig["avg_turnover_20d"],
+            "scanner_version": get_scanner_version(),
         })
     if new_rows:
         ledger = pd.concat([ledger, pd.DataFrame(new_rows)], ignore_index=True)
