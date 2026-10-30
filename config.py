@@ -55,6 +55,11 @@ MTR_MIN_TREND_BARS = 6          # 至少 N 根同向 K 線才算趨勢
 MTR_REVERSAL_BODY_RATIO = 0.5    # 反轉 K 線實體佔振幅比例
 MTR_REVERSAL_CLOSE_POS = 0.33    # 反轉 K 線收盤位置 (多頭反轉: 收在高點 1/3 以下)
 
+# Brooks Wedge detection
+WEDGE_ENABLED = True
+WEDGE_MIN_PUSHES = 3             # 至少 3 推
+WEDGE_CONVERGENCE_RATIO = 0.85   # 後推振幅 <= 前推的此比例才算收斂
+
 # 資金管理參數
 SIGNAL_GRADE_A_AMOUNT = 15000.0
 SIGNAL_GRADE_B_AMOUNT = 10000.0

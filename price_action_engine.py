@@ -949,6 +949,96 @@ class PriceActionEngine:
         return "NONE", np.nan, np.nan, np.nan
 
     @staticmethod
+    def _detect_wedge(df: pd.DataFrame, i: int, swing_info) -> tuple:
+        '''Brooks Wedge detection: 3 pushes with converging trend lines.
+
+        Returns (type, entry, stop, target) where type is
+        WEDGE_TOP (bearish) / WEDGE_BOTTOM (bullish) / NONE.
+        '''
+        min_pushes = int(getattr(config, "WEDGE_MIN_PUSHES", 3))
+        conv_ratio = float(getattr(config, "WEDGE_CONVERGENCE_RATIO", 0.85))
+
+        if i < min_pushes + 2:
+            return "NONE", np.nan, np.nan, np.nan
+
+        # Prior trend
+        ai_vals = [str(df["Always_In"].iloc[k]) for k in range(i - min_pushes - 1, i)]
+        uptrend = all(v == "LONG" for v in ai_vals[-min_pushes:])
+        downtrend = all(v == "SHORT" for v in ai_vals[-min_pushes:])
+        if not (uptrend or downtrend):
+            return "NONE", np.nan, np.nan, np.nan
+
+        row = df.iloc[i]
+        try:
+            o = float(row["Open"]); h = float(row["High"]); l = float(row["Low"]); c = float(row["Close"])
+            ema = float(row["EMA_20"])
+        except Exception:
+            return "NONE", np.nan, np.nan, np.nan
+
+        rng = h - l
+        if rng <= 0:
+            return "NONE", np.nan, np.nan, np.nan
+
+        body = abs(c - o)
+        if body / rng < 0.4:
+            return "NONE", np.nan, np.nan, np.nan
+
+        bos = bool(getattr(swing_info, "bos", False))
+
+        if uptrend:
+            # Wedge top: 3 higher highs with converging ranges, then strong bear reversal bar
+            if c >= o:
+                return "NONE", np.nan, np.nan, np.nan
+            close_in_lower = c <= l + 0.33 * rng
+            if not close_in_lower:
+                return "NONE", np.nan, np.nan, np.nan
+            # Check 3 pushes: last 3 highs progressively higher but ranges shrinking
+            highs = [float(df["High"].iloc[k]) for k in range(i-2, i+1)]
+            ranges = [float(df["High"].iloc[k]) - float(df["Low"].iloc[k]) for k in range(i-2, i+1)]
+            if not (highs[0] < highs[1] < highs[2]):
+                return "NONE", np.nan, np.nan, np.nan
+            if not (ranges[2] <= ranges[1] * conv_ratio or ranges[1] <= ranges[0] * conv_ratio):
+                return "NONE", np.nan, np.nan, np.nan
+            structure_break = bos or (c < ema)
+            if not structure_break:
+                return "NONE", np.nan, np.nan, np.nan
+            entry = c
+            stop = h
+            risk = stop - entry
+            if risk <= 0:
+                return "NONE", np.nan, np.nan, np.nan
+            r_mult = float(getattr(config, "R_MULTIPLE", getattr(config, "TAKE_PROFIT_RR", 2.0)))
+            target = entry - risk * r_mult
+            return "WEDGE_TOP", entry, stop, target
+
+        if downtrend:
+            # Wedge bottom: 3 lower lows with converging ranges, then strong bull reversal bar
+            if c <= o:
+                return "NONE", np.nan, np.nan, np.nan
+            close_in_upper = c >= h - 0.33 * rng
+            if not close_in_upper:
+                return "NONE", np.nan, np.nan, np.nan
+            lows = [float(df["Low"].iloc[k]) for k in range(i-2, i+1)]
+            ranges = [float(df["High"].iloc[k]) - float(df["Low"].iloc[k]) for k in range(i-2, i+1)]
+            if not (lows[0] > lows[1] > lows[2]):
+                return "NONE", np.nan, np.nan, np.nan
+            if not (ranges[2] <= ranges[1] * conv_ratio or ranges[1] <= ranges[0] * conv_ratio):
+                return "NONE", np.nan, np.nan, np.nan
+            structure_break = bos or (c > ema)
+            if not structure_break:
+                return "NONE", np.nan, np.nan, np.nan
+            entry = c
+            stop = l
+            risk = entry - stop
+            if risk <= 0:
+                return "NONE", np.nan, np.nan, np.nan
+            r_mult = float(getattr(config, "R_MULTIPLE", getattr(config, "TAKE_PROFIT_RR", 2.0)))
+            target = entry + risk * r_mult
+            return "WEDGE_BOTTOM", entry, stop, target
+
+        return "NONE", np.nan, np.nan, np.nan
+
+    @staticmethod
     def _stop_models(
         signal_low: float,
         pullback_low: float,
@@ -980,6 +1070,13 @@ class PriceActionEngine:
         out["MTR_Entry"] = np.nan
         out["MTR_Stop"] = np.nan
         out["MTR_Target"] = np.nan
+
+        # Brooks Wedge columns
+        out["Wedge_Detected"] = False
+        out["Wedge_Type"] = "NONE"      # WEDGE_TOP (bearish) / WEDGE_BOTTOM (bullish)
+        out["Wedge_Entry"] = np.nan
+        out["Wedge_Stop"] = np.nan
+        out["Wedge_Target"] = np.nan
 
         # 量化 Always In 多空狀態：收盤價 >= 20 EMA 且 20 EMA 向上為多頭 (LONG)
         ema_diff = out["EMA_20"].diff()
@@ -1050,6 +1147,15 @@ class PriceActionEngine:
                     out.at[out.index[i], "MTR_Entry"] = mtr_entry
                     out.at[out.index[i], "MTR_Stop"] = mtr_stop
                     out.at[out.index[i], "MTR_Target"] = mtr_target
+
+            if getattr(config, "WEDGE_ENABLED", True):
+                w_type, w_entry, w_stop, w_target = cls._detect_wedge(out, i, swing_info)
+                if w_type != "NONE":
+                    out.at[out.index[i], "Wedge_Detected"] = True
+                    out.at[out.index[i], "Wedge_Type"] = w_type
+                    out.at[out.index[i], "Wedge_Entry"] = w_entry
+                    out.at[out.index[i], "Wedge_Stop"] = w_stop
+                    out.at[out.index[i], "Wedge_Target"] = w_target
 
             confirmed, details = cls._strict_h1_h2_state(out, i, swing_res=swing_info)
             out.at[out.index[i], "H2_Status"] = details.get("h2_status", "CONFIRMED" if confirmed else "NOT_CONFIRMED")
