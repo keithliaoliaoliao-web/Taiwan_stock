@@ -49,6 +49,12 @@ EMA_EXIT_MAX_HOLDING_DAYS = 120
 #   "OPTIMIZED" : 任務 E 實證優化定義 (實體 > 70% 且 [高空淺拉回: 拉回<=4根且距EMA>0.5ATR 或 橫盤貼線: 拉回>4根且距EMA<=0.5ATR])
 GRADE_A_MODE = "LEGACY"
 
+# Brooks MTR (Major Trend Reversal) detection
+MTR_ENABLED = True
+MTR_MIN_TREND_BARS = 6          # 至少 N 根同向 K 線才算趨勢
+MTR_REVERSAL_BODY_RATIO = 0.5    # 反轉 K 線實體佔振幅比例
+MTR_REVERSAL_CLOSE_POS = 0.33    # 反轉 K 線收盤位置 (多頭反轉: 收在高點 1/3 以下)
+
 # 資金管理參數
 SIGNAL_GRADE_A_AMOUNT = 15000.0
 SIGNAL_GRADE_B_AMOUNT = 10000.0

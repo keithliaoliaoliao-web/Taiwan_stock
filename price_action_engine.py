@@ -874,6 +874,81 @@ class PriceActionEngine:
         return float(round_to_tick(raw_target, "floor"))
 
     @staticmethod
+    def _detect_mtr(df: pd.DataFrame, i: int, swing_info) -> tuple:
+        '''Brooks MTR (Major Trend Reversal) detection.
+
+        Returns (direction, entry, stop, target) where direction is
+        'BULL_REVERSAL' / 'BEAR_REVERSAL' / 'NONE'.
+        '''
+        min_trend = int(getattr(config, "MTR_MIN_TREND_BARS", 6))
+        body_ratio = float(getattr(config, "MTR_REVERSAL_BODY_RATIO", 0.5))
+        close_pos = float(getattr(config, "MTR_REVERSAL_CLOSE_POS", 0.33))
+
+        if i < min_trend + 1:
+            return "NONE", np.nan, np.nan, np.nan
+
+        # Prior trend: check Always_In for the last min_trend bars
+        ai_vals = [str(df["Always_In"].iloc[k]) for k in range(i - min_trend, i)]
+        uptrend = all(v == "LONG" for v in ai_vals)
+        downtrend = all(v == "SHORT" for v in ai_vals)
+        if not (uptrend or downtrend):
+            return "NONE", np.nan, np.nan, np.nan
+
+        row = df.iloc[i]
+        try:
+            o = float(row["Open"]); h = float(row["High"]); l = float(row["Low"]); c = float(row["Close"])
+            ema = float(row["EMA_20"])
+        except Exception:
+            return "NONE", np.nan, np.nan, np.nan
+
+        rng = h - l
+        if rng <= 0:
+            return "NONE", np.nan, np.nan, np.nan
+        body = abs(c - o)
+        if body / rng < body_ratio:
+            return "NONE", np.nan, np.nan, np.nan
+
+        # BOS / structure break required for MTR confirmation
+        bos = bool(getattr(swing_info, "bos", False))
+
+        if uptrend:
+            # Bearish MTR: new high + strong bear bar closing in lower third
+            # and breaking below prior structure (BOS) or below EMA
+            if c >= o:
+                return "NONE", np.nan, np.nan, np.nan
+            close_in_lower = c <= l + close_pos * rng
+            new_high = (swing_info.tentative_high_idx == i) if hasattr(swing_info, "tentative_high_idx") else (h >= float(df["High"].iloc[i-1]))
+            structure_break = bos or (c < ema and c < float(df["Low"].iloc[i-1]))
+            if close_in_lower and (new_high or structure_break) and structure_break:
+                entry = c  # sell the close
+                stop = h
+                risk = stop - entry
+                if risk <= 0:
+                    return "NONE", np.nan, np.nan, np.nan
+                r_mult = float(getattr(config, "R_MULTIPLE", getattr(config, "TAKE_PROFIT_RR", 2.0)))
+                target = entry - risk * r_mult
+                return "BEAR_REVERSAL", entry, stop, target
+
+        if downtrend:
+            # Bullish MTR: new low + strong bull bar closing in upper third
+            if c <= o:
+                return "NONE", np.nan, np.nan, np.nan
+            close_in_upper = c >= h - close_pos * rng
+            new_low = (swing_info.tentative_low_idx == i) if hasattr(swing_info, "tentative_low_idx") else (l <= float(df["Low"].iloc[i-1]))
+            structure_break = bos or (c > ema and c > float(df["High"].iloc[i-1]))
+            if close_in_upper and (new_low or structure_break) and structure_break:
+                entry = c  # buy the close
+                stop = l
+                risk = entry - stop
+                if risk <= 0:
+                    return "NONE", np.nan, np.nan, np.nan
+                r_mult = float(getattr(config, "R_MULTIPLE", getattr(config, "TAKE_PROFIT_RR", 2.0)))
+                target = entry + risk * r_mult
+                return "BULL_REVERSAL", entry, stop, target
+
+        return "NONE", np.nan, np.nan, np.nan
+
+    @staticmethod
     def _stop_models(
         signal_low: float,
         pullback_low: float,
@@ -898,6 +973,13 @@ class PriceActionEngine:
         out["Signal_Grade"] = "NONE"
         out["Setup_Forming"] = False
         out["Progress_Stage"] = 1
+
+        # Brooks MTR (Major Trend Reversal) columns
+        out["MTR_Detected"] = False
+        out["MTR_Direction"] = "NONE"   # BULL_REVERSAL / BEAR_REVERSAL
+        out["MTR_Entry"] = np.nan
+        out["MTR_Stop"] = np.nan
+        out["MTR_Target"] = np.nan
 
         # 量化 Always In 多空狀態：收盤價 >= 20 EMA 且 20 EMA 向上為多頭 (LONG)
         ema_diff = out["EMA_20"].diff()
@@ -958,6 +1040,17 @@ class PriceActionEngine:
                 continue
 
             swing_info = swing_series[i]
+
+            # Brooks MTR (Major Trend Reversal) detection
+            if getattr(config, "MTR_ENABLED", True):
+                mtr_dir, mtr_entry, mtr_stop, mtr_target = cls._detect_mtr(out, i, swing_info)
+                if mtr_dir != "NONE":
+                    out.at[out.index[i], "MTR_Detected"] = True
+                    out.at[out.index[i], "MTR_Direction"] = mtr_dir
+                    out.at[out.index[i], "MTR_Entry"] = mtr_entry
+                    out.at[out.index[i], "MTR_Stop"] = mtr_stop
+                    out.at[out.index[i], "MTR_Target"] = mtr_target
+
             confirmed, details = cls._strict_h1_h2_state(out, i, swing_res=swing_info)
             out.at[out.index[i], "H2_Status"] = details.get("h2_status", "CONFIRMED" if confirmed else "NOT_CONFIRMED")
             out.at[out.index[i], "H2_Reason"] = details.get("reason", "")

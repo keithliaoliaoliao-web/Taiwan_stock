@@ -159,6 +159,7 @@ def run_scanner():
 
     signals = []
     forming = []
+    mtr_signals = []
     universe_list = []
     current_prices = {}
     dfs = {}
@@ -264,6 +265,23 @@ def run_scanner():
                 "candles": candles, "ema": ema_series,
             })
 
+        # Brooks MTR (Major Trend Reversal) 訊號
+        is_mtr = bool(last_row.get("MTR_Detected", False)) and is_liquid and is_valid_price
+        if is_mtr:
+            mtr_dir = str(last_row.get("MTR_Direction", "NONE"))
+            mtr_entry = float(last_row.get("MTR_Entry", close_price))
+            mtr_stop = float(last_row.get("MTR_Stop", 0.0))
+            mtr_target = float(last_row.get("MTR_Target", 0.0))
+            mtr_risk_pct = round((abs(mtr_entry - mtr_stop) / mtr_entry) * 100, 2) if mtr_entry > 0 else 0.0
+            mtr_signals.append({
+                "ticker": ticker, "name": name, "sector": sector, "direction": mtr_dir,
+                "close": round(close_price, 2),
+                "entry_price": round(mtr_entry, 2), "stop_loss": round(mtr_stop, 2),
+                "target_price": round(mtr_target, 2), "risk_pct": mtr_risk_pct,
+                "candles": candles, "ema": ema_series,
+            })
+            print(f"  ★ [MTR 反轉訊號] {ticker} {name} ({mtr_dir}) | 入場: {mtr_entry}, 停損: {mtr_stop}, 目標: {mtr_target}")
+
     # 5. 評估現有持倉 (呼叫更新後的 portfolio_tracker)
     holdings_raw = load_holdings()
     for h in holdings_raw:
@@ -285,6 +303,7 @@ def run_scanner():
         "scan_time": scan_time,
         "market_status": market_status,
         "signals": signals,
+        "mtr_signals": mtr_signals,
         "forming": forming,
         "holdings_status": holdings_status,
         "universe": universe_list,
@@ -300,7 +319,7 @@ def run_scanner():
     print()
     print("=" * 50)
     print(f"【掃描摘要】時間: {scan_date} {scan_time}")
-    print(f"買進訊號 (H2+投信): {len(signals)} 檔 | 追蹤持倉: {len(holdings_status)} 檔")
+    print(f"買進訊號 (H2+投信): {len(signals)} 檔 | MTR 反轉: {len(mtr_signals)} 檔 | 追蹤持倉: {len(holdings_status)} 檔")
     print(f"輸出成功: public/scan_result.json")
     print("=" * 50)
 
