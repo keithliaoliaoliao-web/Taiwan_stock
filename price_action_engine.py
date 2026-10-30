@@ -1039,6 +1039,70 @@ class PriceActionEngine:
         return "NONE", np.nan, np.nan, np.nan
 
     @staticmethod
+    def _detect_bom(df: pd.DataFrame, i: int) -> tuple:
+        '''Brooks BOM (Buy/Sell the close) strong trend bar entry.
+
+        Returns (direction, entry, stop, target) where direction is
+        BULL_BOM / BEAR_BOM / NONE.
+        '''
+        body_ratio = float(getattr(config, "BOM_BODY_RATIO", 0.6))
+        close_pos = float(getattr(config, "BOM_CLOSE_POS", 0.25))
+        range_atr = float(getattr(config, "BOM_RANGE_ATR_RATIO", 1.5))
+
+        if i < 2:
+            return "NONE", np.nan, np.nan, np.nan
+
+        row = df.iloc[i]
+        try:
+            o = float(row["Open"]); h = float(row["High"]); l = float(row["Low"]); c = float(row["Close"])
+            ema = float(row["EMA_20"])
+        except Exception:
+            return "NONE", np.nan, np.nan, np.nan
+
+        rng = h - l
+        if rng <= 0:
+            return "NONE", np.nan, np.nan, np.nan
+
+        body = abs(c - o)
+        if body / rng < body_ratio:
+            return "NONE", np.nan, np.nan, np.nan
+
+        ai = str(df["Always_In"].iloc[i])
+        # ATR proxy: use recent average range
+        recent_ranges = [float(df["High"].iloc[k]) - float(df["Low"].iloc[k]) for k in range(max(0, i-14), i)]
+        atr = (sum(recent_ranges) / len(recent_ranges)) if recent_ranges else rng
+        if rng < atr * range_atr:
+            return "NONE", np.nan, np.nan, np.nan
+
+        r_mult = float(getattr(config, "R_MULTIPLE", getattr(config, "TAKE_PROFIT_RR", 2.0)))
+
+        if ai == "LONG" and c > o:
+            # Bull BOM: close in top 25% of bar
+            if c < h - close_pos * rng:
+                return "NONE", np.nan, np.nan, np.nan
+            entry = c
+            stop = l
+            risk = entry - stop
+            if risk <= 0:
+                return "NONE", np.nan, np.nan, np.nan
+            target = entry + risk * r_mult
+            return "BULL_BOM", entry, stop, target
+
+        if ai == "SHORT" and c < o:
+            # Bear BOM: close in bottom 25% of bar
+            if c > l + close_pos * rng:
+                return "NONE", np.nan, np.nan, np.nan
+            entry = c
+            stop = h
+            risk = stop - entry
+            if risk <= 0:
+                return "NONE", np.nan, np.nan, np.nan
+            target = entry - risk * r_mult
+            return "BEAR_BOM", entry, stop, target
+
+        return "NONE", np.nan, np.nan, np.nan
+
+    @staticmethod
     def _stop_models(
         signal_low: float,
         pullback_low: float,
@@ -1077,6 +1141,13 @@ class PriceActionEngine:
         out["Wedge_Entry"] = np.nan
         out["Wedge_Stop"] = np.nan
         out["Wedge_Target"] = np.nan
+
+        # Brooks BOM (Buy/Sell the close) columns
+        out["BOM_Detected"] = False
+        out["BOM_Direction"] = "NONE"   # BULL_BOM / BEAR_BOM
+        out["BOM_Entry"] = np.nan
+        out["BOM_Stop"] = np.nan
+        out["BOM_Target"] = np.nan
 
         # 量化 Always In 多空狀態：收盤價 >= 20 EMA 且 20 EMA 向上為多頭 (LONG)
         ema_diff = out["EMA_20"].diff()
@@ -1156,6 +1227,15 @@ class PriceActionEngine:
                     out.at[out.index[i], "Wedge_Entry"] = w_entry
                     out.at[out.index[i], "Wedge_Stop"] = w_stop
                     out.at[out.index[i], "Wedge_Target"] = w_target
+
+            if getattr(config, "BOM_ENABLED", True):
+                bom_dir, bom_entry, bom_stop, bom_target = cls._detect_bom(out, i)
+                if bom_dir != "NONE":
+                    out.at[out.index[i], "BOM_Detected"] = True
+                    out.at[out.index[i], "BOM_Direction"] = bom_dir
+                    out.at[out.index[i], "BOM_Entry"] = bom_entry
+                    out.at[out.index[i], "BOM_Stop"] = bom_stop
+                    out.at[out.index[i], "BOM_Target"] = bom_target
 
             confirmed, details = cls._strict_h1_h2_state(out, i, swing_res=swing_info)
             out.at[out.index[i], "H2_Status"] = details.get("h2_status", "CONFIRMED" if confirmed else "NOT_CONFIRMED")

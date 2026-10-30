@@ -161,6 +161,7 @@ def run_scanner():
     forming = []
     mtr_signals = []
     wedge_signals = []
+    bom_signals = []
     universe_list = []
     current_prices = {}
     dfs = {}
@@ -300,6 +301,23 @@ def run_scanner():
             })
             print(f"  ★ [Wedge 楔形訊號] {ticker} {name} ({w_type}) | 入場: {w_entry}, 停損: {w_stop}, 目標: {w_target}")
 
+        # Brooks BOM (Buy/Sell the close) 強趨勢棒進場
+        is_bom = bool(last_row.get("BOM_Detected", False)) and is_liquid and is_valid_price
+        if is_bom:
+            bom_dir = str(last_row.get("BOM_Direction", "NONE"))
+            bom_entry = float(last_row.get("BOM_Entry", close_price))
+            bom_stop = float(last_row.get("BOM_Stop", 0.0))
+            bom_target = float(last_row.get("BOM_Target", 0.0))
+            bom_risk_pct = round((abs(bom_entry - bom_stop) / bom_entry) * 100, 2) if bom_entry > 0 else 0.0
+            bom_signals.append({
+                "ticker": ticker, "name": name, "sector": sector, "direction": bom_dir,
+                "close": round(close_price, 2),
+                "entry_price": round(bom_entry, 2), "stop_loss": round(bom_stop, 2),
+                "target_price": round(bom_target, 2), "risk_pct": bom_risk_pct,
+                "candles": candles, "ema": ema_series,
+            })
+            print(f"  ★ [BOM 強趨勢棒] {ticker} {name} ({bom_dir}) | 入場: {bom_entry}, 停損: {bom_stop}, 目標: {bom_target}")
+
     # 5. 評估現有持倉 (呼叫更新後的 portfolio_tracker)
     holdings_raw = load_holdings()
     for h in holdings_raw:
@@ -323,6 +341,7 @@ def run_scanner():
         "signals": signals,
         "mtr_signals": mtr_signals,
         "wedge_signals": wedge_signals,
+        "bom_signals": bom_signals,
         "forming": forming,
         "holdings_status": holdings_status,
         "universe": universe_list,
@@ -338,7 +357,7 @@ def run_scanner():
     print()
     print("=" * 50)
     print(f"【掃描摘要】時間: {scan_date} {scan_time}")
-    print(f"買進訊號 (H2+投信): {len(signals)} 檔 | MTR 反轉: {len(mtr_signals)} 檔 | Wedge: {len(wedge_signals)} 檔 | 追蹤持倉: {len(holdings_status)} 檔")
+    print(f"買進訊號 (H2+投信): {len(signals)} 檔 | MTR 反轉: {len(mtr_signals)} 檔 | Wedge: {len(wedge_signals)} 檔 | BOM: {len(bom_signals)} 檔 | 追蹤持倉: {len(holdings_status)} 檔")
     print(f"輸出成功: public/scan_result.json")
     print("=" * 50)
 

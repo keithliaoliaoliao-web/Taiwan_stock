@@ -60,6 +60,12 @@ WEDGE_ENABLED = True
 WEDGE_MIN_PUSHES = 3             # 至少 3 推
 WEDGE_CONVERGENCE_RATIO = 0.85   # 後推振幅 <= 前推的此比例才算收斂
 
+# Brooks BOM (Buy/Sell the close) strong trend bar entry
+BOM_ENABLED = True
+BOM_BODY_RATIO = 0.6             # 實體佔振幅比例
+BOM_CLOSE_POS = 0.25             # 收盤位置 (多頭: 收在高點 25% 內)
+BOM_RANGE_ATR_RATIO = 1.5        # 振幅 >= ATR 的此倍數
+
 # 資金管理參數
 SIGNAL_GRADE_A_AMOUNT = 15000.0
 SIGNAL_GRADE_B_AMOUNT = 10000.0
