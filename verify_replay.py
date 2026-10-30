@@ -35,7 +35,7 @@ def get_universe() -> list:
 
 def run_extended_verification(
     benchmark_csv: str = "task_k_trades_base_no_ov.csv",
-    replay_auto_resolve_splits: bool = False
+    replay_auto_resolve_splits: bool = True
 ) -> bool:
     print("====================================================================")
     print("【執行擴充自我檢驗：涵蓋 2023-H2, 2025-H1, 2026-H1 三區間全流程回放】")
@@ -112,7 +112,7 @@ def run_extended_verification(
                 today_str,
                 split_map=split_map,
                 freeze_on_split=True,
-                replay_auto_resolve_splits=replay_auto_resolve_splits
+                replay_auto_resolve_splits=True
             )
             active_tickers = set(sim_ledger[sim_ledger["status"].isin(["OPEN", "PENDING", "NEEDS_REVIEW"])]["ticker"].unique())
             ineligible_tickers = active_tickers.union(exited_today)
