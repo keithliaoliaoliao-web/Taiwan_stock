@@ -634,6 +634,22 @@ def build_dashboard(ledger, stock_map, meta, target, universe) -> dict:
     })
 
 
+
+def check_latest_date_freshness(latest_date: str, reference_date: str) -> tuple:
+    """檢查最新資料日期是否在參考日期的 3 個交易日內"""
+    from datetime import datetime, timedelta
+    try:
+        d_latest = datetime.strptime(latest_date, "%Y-%m-%d").date()
+        d_ref = datetime.strptime(reference_date, "%Y-%m-%d").date()
+    except ValueError:
+        return False, f"日期格式錯誤: {latest_date}, {reference_date}"
+    delta = (d_ref - d_latest).days
+    if delta <= 3:
+        return True, f"資料新鮮 (差距 {delta} 天)"
+    else:
+        return False, f"資料過舊 (差距 {delta} 天)"
+
+
 def run_daily_scan(final: bool = False, ledger_path: str = LEDGER_FILE,
                    watchlist_path: str = WATCHLIST_FILE, dashboard_path: str = DASHBOARD_FILE) -> bool:
     def retry_or_fail(msg: str) -> bool:
@@ -775,6 +791,14 @@ def run_daily_scan_workflow(target_date=None, clear_cache_on_start=False, ledger
         target_date = datetime.now().strftime("%Y-%m-%d")
 
     ledger = load_ledger(ledger_path)
+
+    # 同日重跑保護：已處理過就跳過
+    if not ledger.empty:
+        done_dates = [v for v in ledger["last_processed_date"].astype(str) if v and v != "nan"]
+        last_processed = max(done_dates) if done_dates else None
+        if last_processed and last_processed >= target_date:
+            print(f"【無需執行】帳本已處理到 {last_processed}，帳本維持不變。")
+            return True
 
     # 準備股票資料
     stock_map = {}
