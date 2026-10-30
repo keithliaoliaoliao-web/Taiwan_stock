@@ -622,6 +622,33 @@ class PriceActionEngine:
             tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
             out["ATR"] = tr.rolling(window=atr_period, min_periods=1).mean()
 
+        # Multi-timeframe: weekly trend (Brooks: higher TF determines direction)
+        out["Weekly_Trend"] = "LONG"
+        if getattr(config, "MTF_ENABLED", True):
+            try:
+                import bisect
+                tmp = out.copy()
+                tmp["_d"] = pd.to_datetime(tmp["Date"])
+                w = out.copy()
+                w["_d"] = pd.to_datetime(w["Date"])
+                w = w.set_index("_d")
+                weekly = w.resample("W").agg(Close=("Close", "last"))
+                weekly["EMA"] = weekly["Close"].ewm(span=20, adjust=False, min_periods=20).mean()
+                weekly["ema_diff"] = weekly["EMA"].diff()
+                weekly["trend"] = np.where(
+                    (weekly["Close"] >= weekly["EMA"]) & (weekly["ema_diff"] >= 0),
+                    "LONG", "SHORT",
+                )
+                wdates = [d.to_pydatetime() for d in weekly.index]
+                wtrends = weekly["trend"].tolist()
+                trends = []
+                for d in tmp["_d"]:
+                    idx = bisect.bisect_right(wdates, d.to_pydatetime()) - 1
+                    trends.append(wtrends[idx] if idx >= 0 else "LONG")
+                out["Weekly_Trend"] = trends
+            except Exception:
+                out["Weekly_Trend"] = "LONG"
+
         return out
 
     @staticmethod
@@ -913,6 +940,7 @@ class PriceActionEngine:
 
         if uptrend:
             # Bearish MTR: new high + strong bear bar closing in lower third
+            # (MTR is a reversal setup; no strict weekly filter)
             # and breaking below prior structure (BOS) or below EMA
             if c >= o:
                 return "NONE", np.nan, np.nan, np.nan
@@ -931,6 +959,7 @@ class PriceActionEngine:
 
         if downtrend:
             # Bullish MTR: new low + strong bull bar closing in upper third
+            # (MTR is a reversal setup; no strict weekly filter)
             if c <= o:
                 return "NONE", np.nan, np.nan, np.nan
             close_in_upper = c >= h - close_pos * rng
@@ -986,6 +1015,8 @@ class PriceActionEngine:
         bos = bool(getattr(swing_info, "bos", False))
 
         if uptrend:
+            if getattr(config, "MTF_ENABLED", True) and str(df["Weekly_Trend"].iloc[i]) != "LONG":
+                return "NONE", np.nan, np.nan, np.nan
             # Wedge top: 3 higher highs with converging ranges, then strong bear reversal bar
             if c >= o:
                 return "NONE", np.nan, np.nan, np.nan
@@ -1012,6 +1043,8 @@ class PriceActionEngine:
             return "WEDGE_TOP", entry, stop, target
 
         if downtrend:
+            if getattr(config, "MTF_ENABLED", True) and str(df["Weekly_Trend"].iloc[i]) != "SHORT":
+                return "NONE", np.nan, np.nan, np.nan
             # Wedge bottom: 3 lower lows with converging ranges, then strong bull reversal bar
             if c <= o:
                 return "NONE", np.nan, np.nan, np.nan
@@ -1077,6 +1110,8 @@ class PriceActionEngine:
         r_mult = float(getattr(config, "R_MULTIPLE", getattr(config, "TAKE_PROFIT_RR", 2.0)))
 
         if ai == "LONG" and c > o:
+            if getattr(config, "MTF_ENABLED", True) and str(df["Weekly_Trend"].iloc[i]) != "LONG":
+                return "NONE", np.nan, np.nan, np.nan
             # Bull BOM: close in top 25% of bar
             if c < h - close_pos * rng:
                 return "NONE", np.nan, np.nan, np.nan
@@ -1089,6 +1124,8 @@ class PriceActionEngine:
             return "BULL_BOM", entry, stop, target
 
         if ai == "SHORT" and c < o:
+            if getattr(config, "MTF_ENABLED", True) and str(df["Weekly_Trend"].iloc[i]) != "SHORT":
+                return "NONE", np.nan, np.nan, np.nan
             # Bear BOM: close in bottom 25% of bar
             if c > l + close_pos * rng:
                 return "NONE", np.nan, np.nan, np.nan
@@ -1129,6 +1166,7 @@ class PriceActionEngine:
         out["Progress_Stage"] = 1
 
         # Brooks MTR (Major Trend Reversal) columns
+        out["Weekly_Trend"] = "LONG"
         out["MTR_Detected"] = False
         out["MTR_Direction"] = "NONE"   # BULL_REVERSAL / BEAR_REVERSAL
         out["MTR_Entry"] = np.nan
@@ -1238,6 +1276,14 @@ class PriceActionEngine:
                     out.at[out.index[i], "BOM_Target"] = bom_target
 
             confirmed, details = cls._strict_h1_h2_state(out, i, swing_res=swing_info)
+
+            # Multi-timeframe filter: H2 is a long (bull) setup; require weekly trend not SHORT
+            if confirmed and getattr(config, "MTF_ENABLED", True):
+                wt = str(out["Weekly_Trend"].iloc[i])
+                if wt == "SHORT":
+                    confirmed = False
+                    details["h2_status"] = "INVALIDATED_WEEKLY_TREND"
+                    details["reason"] = "WEEKLY_TREND_OPPOSES (SHORT)"
             out.at[out.index[i], "H2_Status"] = details.get("h2_status", "CONFIRMED" if confirmed else "NOT_CONFIRMED")
             out.at[out.index[i], "H2_Reason"] = details.get("reason", "")
             out.at[out.index[i], "Setup_Type"] = details.get("setup_type", "NONE")
