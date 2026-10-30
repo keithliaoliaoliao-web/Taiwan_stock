@@ -69,6 +69,18 @@ BOM_RANGE_ATR_RATIO = 1.5        # 振幅 >= ATR 的此倍數
 # Brooks Multi-timeframe (weekly trend filter)
 MTF_ENABLED = True
 
+# Brooks Climax (exhaustion) bar detection
+CLIMAX_ENABLED = True
+CLIMAX_ATR_RATIO = 2.0           # 振幅 >= ATR 的此倍數
+CLIMAX_MIN_TREND_BARS = 3        # 至少 N 根同向趨勢棒
+CLIMAX_CLOSE_POS = 0.25          # 收盤在極值 25% 內
+
+# Brooks Leg counting
+LEG_COUNTING_ENABLED = True
+
+# Brooks Channel detection
+CHANNEL_ENABLED = True
+
 # 資金管理參數
 SIGNAL_GRADE_A_AMOUNT = 15000.0
 SIGNAL_GRADE_B_AMOUNT = 10000.0

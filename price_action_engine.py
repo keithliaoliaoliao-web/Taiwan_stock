@@ -1140,6 +1140,89 @@ class PriceActionEngine:
         return "NONE", np.nan, np.nan, np.nan
 
     @staticmethod
+    def _detect_climax(df: pd.DataFrame, i: int) -> str:
+        '''Brooks Climax (exhaustion) bar detection.
+
+        Returns 'BULL_CLIMAX' / 'BEAR_CLIMAX' / 'NONE'.
+        '''
+        if not getattr(config, "CLIMAX_ENABLED", True):
+            return "NONE"
+        min_trend = int(getattr(config, "CLIMAX_MIN_TREND_BARS", 3))
+        atr_ratio = float(getattr(config, "CLIMAX_ATR_RATIO", 2.0))
+        close_pos = float(getattr(config, "CLIMAX_CLOSE_POS", 0.25))
+
+        if i < min_trend + 1:
+            return "NONE"
+
+        ai_vals = [str(df["Always_In"].iloc[k]) for k in range(i - min_trend, i)]
+        uptrend = all(v == "LONG" for v in ai_vals)
+        downtrend = all(v == "SHORT" for v in ai_vals)
+        if not (uptrend or downtrend):
+            return "NONE"
+
+        row = df.iloc[i]
+        try:
+            o = float(row["Open"]); h = float(row["High"]); l = float(row["Low"]); c = float(row["Close"])
+        except Exception:
+            return "NONE"
+
+        rng = h - l
+        if rng <= 0:
+            return "NONE"
+
+        atr = float(row.get("ATR", rng))
+        if atr <= 0 or rng < atr * atr_ratio:
+            return "NONE"
+
+        # recent average range for comparison
+        recent = [float(df["High"].iloc[k]) - float(df["Low"].iloc[k]) for k in range(max(0, i-10), i)]
+        avg_range = (sum(recent) / len(recent)) if recent else rng
+        if rng < avg_range * 1.5:
+            return "NONE"
+
+        body = abs(c - o)
+        if body / rng < 0.5:
+            return "NONE"
+
+        if uptrend and c > o:
+            # bull climax: close in top 25%
+            if c >= h - close_pos * rng:
+                return "BULL_CLIMAX"
+        if downtrend and c < o:
+            if c <= l + close_pos * rng:
+                return "BEAR_CLIMAX"
+
+        return "NONE"
+
+    @staticmethod
+    def _channel_type(df: pd.DataFrame, i: int) -> str:
+        '''Brooks channel detection: bull/bear channel via parallel trend lines.'''
+        if not getattr(config, "CHANNEL_ENABLED", True):
+            return "NONE"
+        window = 20
+        start = max(0, i - window + 1)
+        if i - start + 1 < 8:
+            return "NONE"
+        try:
+            highs = df["High"].iloc[start:i+1].to_numpy(dtype=float)
+            lows = df["Low"].iloc[start:i+1].to_numpy(dtype=float)
+            x = np.arange(len(highs), dtype=float)
+            slope_h = float(np.polyfit(x, highs, 1)[0])
+            slope_l = float(np.polyfit(x, lows, 1)[0])
+        except Exception:
+            return "NONE"
+
+        if slope_h > 0 and slope_l > 0:
+            ratio = slope_h / slope_l if slope_l != 0 else 999.0
+            if 0.3 <= ratio <= 3.0:
+                return "BULL_CHANNEL"
+        if slope_h < 0 and slope_l < 0:
+            ratio = slope_h / slope_l if slope_l != 0 else 999.0
+            if 0.3 <= ratio <= 3.0:
+                return "BEAR_CHANNEL"
+        return "NONE"
+
+    @staticmethod
     def _stop_models(
         signal_low: float,
         pullback_low: float,
@@ -1168,6 +1251,19 @@ class PriceActionEngine:
         # Brooks MTR (Major Trend Reversal) columns
         out["Weekly_Trend"] = "LONG"
         out["MTR_Detected"] = False
+
+        # Brooks Climax (exhaustion) bar columns
+        out["Climax_Detected"] = False
+        out["Climax_Direction"] = "NONE"   # BULL_CLIMAX / BEAR_CLIMAX
+
+        # Brooks Leg counting column
+        out["Leg_Count"] = 0
+
+        # Brooks Channel columns
+        out["Channel_Type"] = "NONE"       # BULL_CHANNEL / BEAR_CHANNEL / NONE
+
+        # Brooks Measured Move target column
+        out["MM_Target"] = np.nan
         out["MTR_Direction"] = "NONE"   # BULL_REVERSAL / BEAR_REVERSAL
         out["MTR_Confirmed"] = False    # 第二次嘗試確認 (MTR2)
         out["MTR_Entry"] = np.nan
@@ -1286,6 +1382,18 @@ class PriceActionEngine:
                     out.at[out.index[i], "BOM_Stop"] = bom_stop
                     out.at[out.index[i], "BOM_Target"] = bom_target
 
+            # Brooks Climax (exhaustion) bar detection
+            if getattr(config, "CLIMAX_ENABLED", True):
+                clim_dir = cls._detect_climax(out, i)
+                if clim_dir != "NONE":
+                    out.at[out.index[i], "Climax_Detected"] = True
+                    out.at[out.index[i], "Climax_Direction"] = clim_dir
+
+            # Brooks Channel detection (series-level state)
+            if getattr(config, "CHANNEL_ENABLED", True):
+                ct = cls._channel_type(out, i)
+                out.at[out.index[i], "Channel_Type"] = ct
+
             confirmed, details = cls._strict_h1_h2_state(out, i, swing_res=swing_info)
 
             # Multi-timeframe filter: H2 is a long (bull) setup; require weekly trend not SHORT
@@ -1380,5 +1488,66 @@ class PriceActionEngine:
                 if pd.notna(target) and risk > 0
                 else np.nan
             )
+
+        # Brooks Leg counting (series-level)
+        if getattr(config, "LEG_COUNTING_ENABLED", True) and len(out) > 1:
+            leg_count = 0
+            cur_dir = None
+            in_pullback = False
+            leg_arr = [0] * len(out)
+            for k in range(1, len(out)):
+                ai = str(out["Always_In"].iloc[k])
+                prev_close = float(out["Close"].iloc[k-1])
+                cur_close = float(out["Close"].iloc[k])
+                if ai == "LONG":
+                    if cur_dir != "LONG":
+                        cur_dir = "LONG"
+                        leg_count = 1
+                        in_pullback = False
+                    else:
+                        if cur_close < prev_close:
+                            in_pullback = True
+                        elif in_pullback and cur_close > prev_close:
+                            leg_count += 1
+                            in_pullback = False
+                elif ai == "SHORT":
+                    if cur_dir != "SHORT":
+                        cur_dir = "SHORT"
+                        leg_count = 1
+                        in_pullback = False
+                    else:
+                        if cur_close > prev_close:
+                            in_pullback = True
+                        elif in_pullback and cur_close < prev_close:
+                            leg_count += 1
+                            in_pullback = False
+                leg_arr[k] = leg_count
+            out["Leg_Count"] = leg_arr
+        else:
+            out["Leg_Count"] = 0
+
+        # Brooks Measured Move target (replace fixed R with MM where possible)
+        # MM target = entry + (first leg height) for longs; entry - (first leg height) for shorts
+        # Implemented as an additional column MM_Target using swing range
+        if "Major_Swing_High" in out.columns and "Major_Swing_Low" in out.columns:
+            mm_targets = []
+            for k in range(len(out)):
+                try:
+                    mh = out["Major_Swing_High"].iloc[k]
+                    ml = out["Major_Swing_Low"].iloc[k]
+                    if pd.isna(mh) or pd.isna(ml):
+                        mm_targets.append(np.nan)
+                        continue
+                    leg_height = float(mh) - float(ml)
+                    # use last close as reference entry proxy
+                    ref = float(out["Close"].iloc[k])
+                    ai = str(out["Always_In"].iloc[k])
+                    if ai == "LONG":
+                        mm_targets.append(ref + leg_height)
+                    else:
+                        mm_targets.append(ref - leg_height)
+                except Exception:
+                    mm_targets.append(np.nan)
+            out["MM_Target"] = mm_targets
 
         return out

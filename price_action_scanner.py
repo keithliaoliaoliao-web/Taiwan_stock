@@ -162,6 +162,7 @@ def run_scanner():
     mtr_signals = []
     wedge_signals = []
     bom_signals = []
+    climax_signals = []
     universe_list = []
     current_prices = {}
     dfs = {}
@@ -320,6 +321,17 @@ def run_scanner():
             })
             print(f"  ★ [BOM 強趨勢棒] {ticker} {name} ({bom_dir}) | 入場: {bom_entry}, 停損: {bom_stop}, 目標: {bom_target}")
 
+        # Brooks Climax (高潮/耗盡) 訊號
+        is_climax = bool(last_row.get("Climax_Detected", False)) and is_liquid and is_valid_price
+        if is_climax:
+            clim_dir = str(last_row.get("Climax_Direction", "NONE"))
+            climax_signals.append({
+                "ticker": ticker, "name": name, "sector": sector, "direction": clim_dir,
+                "close": round(close_price, 2),
+                "candles": candles, "ema": ema_series,
+            })
+            print(f"  ★ [Climax 高潮棒] {ticker} {name} ({clim_dir})")
+
     # 5. 評估現有持倉 (呼叫更新後的 portfolio_tracker)
     holdings_raw = load_holdings()
     for h in holdings_raw:
@@ -344,6 +356,7 @@ def run_scanner():
         "mtr_signals": mtr_signals,
         "wedge_signals": wedge_signals,
         "bom_signals": bom_signals,
+        "climax_signals": climax_signals,
         "forming": forming,
         "holdings_status": holdings_status,
         "universe": universe_list,
@@ -359,7 +372,7 @@ def run_scanner():
     print()
     print("=" * 50)
     print(f"【掃描摘要】時間: {scan_date} {scan_time}")
-    print(f"買進訊號 (H2+投信): {len(signals)} 檔 | MTR 反轉: {len(mtr_signals)} 檔 | Wedge: {len(wedge_signals)} 檔 | BOM: {len(bom_signals)} 檔 | 追蹤持倉: {len(holdings_status)} 檔")
+    print(f"買進訊號 (H2+投信): {len(signals)} 檔 | MTR 反轉: {len(mtr_signals)} 檔 | Wedge: {len(wedge_signals)} 檔 | BOM: {len(bom_signals)} 檔 | Climax: {len(climax_signals)} 檔 | 追蹤持倉: {len(holdings_status)} 檔")
     print(f"輸出成功: public/scan_result.json")
     print("=" * 50)
 
