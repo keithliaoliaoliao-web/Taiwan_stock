@@ -82,6 +82,10 @@
           <span>⏳ 醞釀中標的</span>
           <span id="tab-badge-forming" class="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold">0 檔</span>
         </button>
+        <button onclick="scrollToSection('pa', this)" id="tab-pa" class="px-4 py-2 rounded-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-xs transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
+          <span>⚡ 進階訊號</span>
+          <span id="tab-badge-pa" class="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-800 font-bold">0 檔</span>
+        </button>
         <button onclick="scrollToSection('holdings', this)" id="tab-holdings" class="px-4 py-2 rounded-full bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-xs transition whitespace-nowrap flex items-center gap-1.5 cursor-pointer">
           <span>💼 個人持股</span>
           <span id="tab-badge-holdings" class="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">0 檔</span>
@@ -221,6 +225,23 @@
       </div>
 
       <div id="forming-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+        <!-- JS 動態渲染 -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 5b. Price Action 進階訊號 (MTR / Wedge / BOM / Climax) -->
+    <!-- ========================================== -->
+    <section id="section-pa">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⚡</span>
+          <h2 class="text-lg font-bold text-slate-900">Price Action 進階訊號</h2>
+          <span id="pa-count-badge" class="px-2 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800">0 檔</span>
+        </div>
+        <p class="text-xs text-slate-500">Brooks MTR / Wedge / BOM / Climax 反轉與強勢棒訊號</p>
+      </div>
+      <div id="pa-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
         <!-- JS 動態渲染 -->
       </div>
     </section>
@@ -755,6 +776,7 @@
       renderHoldings(combinedHoldings);
       renderSignals(data.signals || []);
       renderForming(data.forming || []);
+      renderPA(data);
       renderUniverse(data.universe || []);
 
       const datalist = document.getElementById('ticker-suggestions');
@@ -1104,6 +1126,47 @@
           `).join('')}
         </div>
       `;
+    }
+
+    function renderPA(data) {
+      const container = document.getElementById('pa-container');
+      const badge = document.getElementById('pa-count-badge');
+      const mtr = data.mtr_signals || [];
+      const wedge = data.wedge_signals || [];
+      const bom = data.bom_signals || [];
+      const climax = data.climax_signals || [];
+      const all = [
+        ...mtr.map(s => Object.assign({}, s, {_type: 'MTR', _label: s.direction === 'BULL_REVERSAL' ? 'MTR 多頭反轉' : 'MTR 空頭反轉', _color: 'purple'})),
+        ...wedge.map(s => Object.assign({}, s, {_type: 'WEDGE', _label: s.type === 'WEDGE_BOTTOM' ? 'Wedge 底部' : 'Wedge 頂部', _color: 'indigo'})),
+        ...bom.map(s => Object.assign({}, s, {_type: 'BOM', _label: s.direction === 'BULL_BOM' ? 'BOM 多頭' : 'BOM 空頭', _color: 'blue'})),
+        ...climax.map(s => Object.assign({}, s, {_type: 'CLIMAX', _label: s.direction === 'BULL_CLIMAX' ? 'Climax 多頭' : 'Climax 空頭', _color: 'rose'})),
+      ];
+      badge.innerText = all.length + ' 檔';
+      const paTabBadge = document.getElementById('tab-badge-pa');
+      if (paTabBadge) paTabBadge.innerText = all.length + ' 檔';
+
+      if (all.length === 0) {
+        container.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">目前無 Price Action 進階訊號</div>';
+        return;
+      }
+
+      container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">' + all.map(s => {
+        const entryHtml = (s.entry_price !== undefined && s.entry_price !== null) ? `<div class="bg-emerald-50 rounded-lg p-1.5 border border-emerald-200"><span class="text-emerald-700 block text-[9px]">進場</span><span class="font-bold text-emerald-600">$${s.entry_price}</span></div>` : '';
+        const stopHtml = (s.stop_loss !== undefined && s.stop_loss !== null) ? `<div class="bg-rose-50 rounded-lg p-1.5 border border-rose-200"><span class="text-rose-700 block text-[9px]">停損</span><span class="font-bold text-rose-600">$${s.stop_loss}</span></div>` : '';
+        const confHtml = (s.confirmed !== undefined) ? `<div class="mt-2 text-[10px] text-center ${s.confirmed ? 'text-emerald-600 font-bold' : 'text-slate-400'}">${s.confirmed ? '✓ MTR2 確認' : 'MTR1 首次嘗試'}</div>` : '';
+        return `<div onclick="openChartModal('${s.ticker}')" class="bg-slate-50 hover:bg-white rounded-xl p-4 border border-slate-200 hover:border-purple-400 hover:shadow-md transition cursor-pointer">
+          <div class="flex items-center justify-between mb-2">
+            <div><span class="font-bold text-slate-900">${s.ticker}</span><span class="text-xs text-slate-600 ml-1">${s.name}</span></div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-${s._color}-100 text-${s._color}-800">${s._label}</span>
+          </div>
+          <div class="text-[11px] text-slate-500 mb-2">${s.sector || ''}</div>
+          <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+            <div class="bg-white rounded-lg p-1.5 border border-slate-200"><span class="text-slate-400 block text-[9px]">收盤</span><span class="font-bold text-slate-900">$${s.close}</span></div>
+            ${entryHtml}${stopHtml}
+          </div>
+          ${confHtml}
+        </div>`;
+      }).join('') + '</div>';
     }
 
     function renderUniverse(universe) {
