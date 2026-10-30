@@ -1,0 +1,49 @@
+name: Verify Replay (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      benchmark_file:
+        description: '基準檔名稱 (例如 task_k_trades_base_no_ov.csv)'
+        required: false
+        default: 'task_k_trades_base_no_ov.csv'
+
+permissions:
+  contents: write
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run verification replay
+        env:
+          FINMIND_TOKEN: ${{ secrets.FINMIND_TOKEN }}
+        run: |
+          echo "=== scanner.py MD5 ==="
+          md5sum scanner.py
+          echo "=== benchmark file ==="
+          ls -la ${{ github.event.inputs.benchmark_file }}
+          md5sum ${{ github.event.inputs.benchmark_file }}
+          echo "=== task_j_raw_h2_candidates.csv ==="
+          md5sum task_j_raw_h2_candidates.csv
+          python verify_replay.py --benchmark ${{ github.event.inputs.benchmark_file }}
+
+      - name: Upload diff CSVs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-diffs
+          path: |
+            replay_diff_*.csv
+            replay_extra_*.csv
+          retention-days: 30
