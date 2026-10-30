@@ -17,6 +17,7 @@ from scanner import (
     ACTUAL_FEE_DESC,
 )
 from data_fetcher import fetch_history
+HAS_FETCHER = True
 
 
 def get_md5(filepath: str) -> str:
