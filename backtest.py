@@ -65,7 +65,28 @@ def fetch_with_cache(ticker, lookback_days=2200, rate_limit=True):
     return df
 
 
-def simulate_trades(analyzed_df, strategy="all"):
+def passes_filter(sig_type, row, entry, stop, target, min_rr, max_risk_pct, mtr_confirmed_only):
+    risk = abs(entry - stop)
+    if risk <= 0:
+        return False
+    risk_pct = (risk / entry) * 100 if entry > 0 else 100
+    if risk_pct > max_risk_pct:
+        return False
+    # R:R using target if available, else R_MULTIPLE
+    if target is not None and not (isinstance(target, float) and np.isnan(target)):
+        rr = abs(target - entry) / risk
+    else:
+        rr = float(getattr(config, "R_MULTIPLE", 2.0))
+    if rr < min_rr:
+        return False
+    if sig_type == "MTR" and mtr_confirmed_only:
+        if not bool(row.get("MTR_Confirmed", False)):
+            return False
+    return True
+
+
+def simulate_trades(analyzed_df, strategy="all", min_rr=0.0, max_risk_pct=100.0,
+                    mtr_confirmed_only=False, exit_mode="v1", trail_mult=1.0):
     """Simulate trades from analyzed_df. Returns list of trade dicts."""
     trades = []
     n = len(analyzed_df)
@@ -132,25 +153,40 @@ def simulate_trades(analyzed_df, strategy="all"):
             # start exit checks from the NEXT day.
             track_start = entry_day_actual + 1
             days_held = 0
+            trail_stop = stop
+            best_price = entry_price
             for j in range(track_start, n):
                 days_held += 1
+                if direction > 0:
+                    if close[j] > best_price:
+                        best_price = close[j]
+                        if exit_mode == "trailing":
+                            trail_stop = max(trail_stop, best_price - risk * trail_mult)
+                    effective_stop = trail_stop if exit_mode == "trailing" else stop
+                else:
+                    if close[j] < best_price:
+                        best_price = close[j]
+                        if exit_mode == "trailing":
+                            trail_stop = min(trail_stop, best_price + risk * trail_mult)
+                    effective_stop = trail_stop if exit_mode == "trailing" else stop
+
                 if pending_ema:
                     exit_day = j
                     exit_price = openp[j]
                     exit_reason = "EXIT_EMA20"
                     break
-                if low[j] <= stop:
+                if (direction > 0 and low[j] <= effective_stop) or (direction < 0 and high[j] >= effective_stop):
                     exit_day = j
-                    exit_price = min(openp[j], stop)
-                    exit_reason = "INITIAL_STOP"
+                    exit_price = (min(openp[j], effective_stop) if direction > 0
+                                  else max(openp[j], effective_stop))
+                    exit_reason = "TRAILING_STOP" if exit_mode == "trailing" else "INITIAL_STOP"
                     break
-                # (V1 mode: no target exit; follow EMA/stop/120d only)
                 if days_held >= max_hold:
                     exit_day = j
                     exit_price = close[j]
                     exit_reason = "MAX_120D"
                     break
-                if close[j] < ema[j] if direction > 0 else close[j] > ema[j]:
+                if (direction > 0 and close[j] < ema[j]) or (direction < 0 and close[j] > ema[j]):
                     pending_ema = True
                 else:
                     pending_ema = False
@@ -191,6 +227,8 @@ def simulate_trades(analyzed_df, strategy="all"):
                 stop = row.get("Stop_Loss", np.nan)
                 target = row.get("Target_Price", np.nan)
                 if pd.notna(trig) and pd.notna(stop):
+                    if not passes_filter("H2", row, float(trig), float(stop), float(target) if pd.notna(target) else None, min_rr, max_risk_pct, mtr_confirmed_only):
+                        continue
                     record(i, float(trig), float(stop), float(target) if pd.notna(target) else None, 1, "H2")
 
         # MTR
@@ -201,6 +239,8 @@ def simulate_trades(analyzed_df, strategy="all"):
                 stop = row.get("MTR_Stop", np.nan)
                 target = row.get("MTR_Target", np.nan)
                 if pd.notna(entry) and pd.notna(stop):
+                    if not passes_filter("MTR", row, float(entry), float(stop), float(target) if pd.notna(target) else None, min_rr, max_risk_pct, mtr_confirmed_only):
+                        continue
                     direction = 1 if "BULL" in d else -1
                     record(i, float(entry), float(stop), float(target) if pd.notna(target) else None, direction, "MTR")
 
@@ -212,6 +252,8 @@ def simulate_trades(analyzed_df, strategy="all"):
                 stop = row.get("Wedge_Stop", np.nan)
                 target = row.get("Wedge_Target", np.nan)
                 if pd.notna(entry) and pd.notna(stop):
+                    if not passes_filter("Wedge", row, float(entry), float(stop), float(target) if pd.notna(target) else None, min_rr, max_risk_pct, mtr_confirmed_only):
+                        continue
                     direction = 1 if "BOTTOM" in typ else -1
                     record(i, float(entry), float(stop), float(target) if pd.notna(target) else None, direction, "Wedge")
 
@@ -223,6 +265,8 @@ def simulate_trades(analyzed_df, strategy="all"):
                 stop = row.get("BOM_Stop", np.nan)
                 target = row.get("BOM_Target", np.nan)
                 if pd.notna(entry) and pd.notna(stop):
+                    if not passes_filter("BOM", row, float(entry), float(stop), float(target) if pd.notna(target) else None, min_rr, max_risk_pct, mtr_confirmed_only):
+                        continue
                     direction = 1 if "BULL" in d else -1
                     record(i, float(entry), float(stop), float(target) if pd.notna(target) else None, direction, "BOM")
 
@@ -274,7 +318,50 @@ def main():
     parser.add_argument("--lookback", type=int, default=2200, help="lookback days for fetch")
     parser.add_argument("--out", type=str, default="backtest_trades.csv", help="output trades CSV")
     parser.add_argument("--no-cache", action="store_true", help="disable cache")
+    parser.add_argument("--priority-tickers", type=str, default="", help="comma-separated priority tickers (shorter cache)")
+    parser.add_argument("--priority-file", type=str, default="", help="file with priority tickers (one per line)")
+    parser.add_argument("--refresh-signals", action="store_true", help="refresh only tickers found in scan_result.json signals")
+    parser.add_argument("--priority-max-age", type=int, default=1, help="cache max age (hours) for priority tickers")
+    parser.add_argument("--min-rr", type=float, default=0.0, help="minimum risk/reward ratio filter")
+    parser.add_argument("--max-risk-pct", type=float, default=100.0, help="max risk pct per trade filter")
+    parser.add_argument("--mtr-confirmed-only", action="store_true", help="only take MTR_Confirmed signals")
+    parser.add_argument("--exit-mode", type=str, default="v1", choices=["v1", "trailing"], help="exit mode")
+    parser.add_argument("--trail-mult", type=float, default=1.0, help="trailing stop ATR multiple")
     args = parser.parse_args()
+
+    # Resolve priority tickers (signal watchlist)
+    priority = set()
+    if args.priority_tickers:
+        for t in args.priority_tickers.split(","):
+            t = t.strip()
+            if t:
+                if not t.endswith(".TW") and not t.endswith(".TWO"):
+                    t = f"{t}.TW"
+                priority.add(t)
+    if args.priority_file:
+        with open(args.priority_file, encoding="utf-8") as f:
+            for line in f:
+                t = line.strip()
+                if t and not t.startswith("#"):
+                    if not t.endswith(".TW") and not t.endswith(".TWO"):
+                        t = f"{t}.TW"
+                    priority.add(t)
+    if args.refresh_signals:
+        # read scan_result.json and extract all signal tickers
+        for sf in ["scan_result.json", "public/scan_result.json"]:
+            if os.path.exists(sf):
+                try:
+                    with open(sf, encoding="utf-8") as f:
+                        data = json.load(f)
+                    for key in ["signals", "mtr_signals", "wedge_signals", "bom_signals", "climax_signals"]:
+                        for s in data.get(key, []) or []:
+                            t = s.get("ticker", "").strip()
+                            if t:
+                                if not t.endswith(".TW") and not t.endswith(".TWO"):
+                                    t = f"{t}.TW"
+                                priority.add(t)
+                except Exception:
+                    pass
 
     if args.watchlist:
         import csv
@@ -289,13 +376,33 @@ def main():
     else:
         tickers = [t.strip() for t in args.tickers.split(",") if t.strip()]
 
-    print(f"Backtest: {len(tickers)} tickers, {args.start} ~ {args.end}, strategy={args.strategy}")
+    # Deduplicate while preserving priority-first order
+    seen = set()
+    ordered = []
+    for t in list(priority) + tickers:
+        if t not in seen:
+            seen.add(t)
+            ordered.append(t)
+    tickers = ordered
+
+    print(f"Backtest: {len(tickers)} tickers ({len(priority)} priority), {args.start} ~ {args.end}, strategy={args.strategy}")
 
     all_trades = []
     for idx, ticker in enumerate(tickers):
         print(f"[{idx+1}/{len(tickers)}] {ticker} ...", end=" ", flush=True)
         try:
-            df = fetch_with_cache(ticker, lookback_days=args.lookback) if not args.no_cache else fetch_history(ticker, lookback_days=args.lookback)
+            is_priority = ticker in priority
+            if args.no_cache:
+                df = fetch_history(ticker, lookback_days=args.lookback)
+            else:
+                cached = load_cached(ticker, max_age_hours=(args.priority_max_age if is_priority else 24))
+                if cached is not None and not cached.empty:
+                    df = cached
+                else:
+                    time.sleep(RATE_LIMIT_SEC)
+                    df = fetch_history(ticker, lookback_days=args.lookback)
+                    if df is not None and not df.empty:
+                        save_cache(ticker, df)
             if df is None or df.empty:
                 print("NO DATA")
                 continue
@@ -310,7 +417,9 @@ def main():
             mask = (analyzed["Date"] >= pd.to_datetime(args.start)) & (analyzed["Date"] <= pd.to_datetime(args.end))
             # keep full history for simulation but only record signals in range
             # (simulate_trades filters by sig_date internally via range? We'll filter trades after)
-            trades = simulate_trades(analyzed, strategy=args.strategy)
+            trades = simulate_trades(analyzed, strategy=args.strategy, min_rr=args.min_rr,
+                                    max_risk_pct=args.max_risk_pct, mtr_confirmed_only=args.mtr_confirmed_only,
+                                    exit_mode=args.exit_mode, trail_mult=args.trail_mult)
             # filter trades by sig_date range
             filtered = [t for t in trades if args.start <= t["sig_date"] <= args.end]
             all_trades.extend(filtered)
