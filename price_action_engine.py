@@ -1169,6 +1169,7 @@ class PriceActionEngine:
         out["Weekly_Trend"] = "LONG"
         out["MTR_Detected"] = False
         out["MTR_Direction"] = "NONE"   # BULL_REVERSAL / BEAR_REVERSAL
+        out["MTR_Confirmed"] = False    # 第二次嘗試確認 (MTR2)
         out["MTR_Entry"] = np.nan
         out["MTR_Stop"] = np.nan
         out["MTR_Target"] = np.nan
@@ -1237,6 +1238,11 @@ class PriceActionEngine:
         # O(N) 單次全序列評估波段結構，避免 O(N^2) 重複重算
         swing_series = PriceActionSwingEngine.evaluate_series(out)
 
+        # MTR confirmation state (Brooks: MTR1 fails -> MTR2 confirms)
+        mtr_last_dir = None
+        mtr_last_idx = -10**9
+        MTR_CONFIRM_WINDOW = 15
+
         for i in range(1, len(out)):
             row = out.iloc[i]
 
@@ -1256,6 +1262,11 @@ class PriceActionEngine:
                     out.at[out.index[i], "MTR_Entry"] = mtr_entry
                     out.at[out.index[i], "MTR_Stop"] = mtr_stop
                     out.at[out.index[i], "MTR_Target"] = mtr_target
+                    # MTR confirmation: if a prior MTR in same direction within window -> confirmed (MTR2)
+                    if mtr_last_dir == mtr_dir and (i - mtr_last_idx) <= MTR_CONFIRM_WINDOW:
+                        out.at[out.index[i], "MTR_Confirmed"] = True
+                    mtr_last_dir = mtr_dir
+                    mtr_last_idx = i
 
             if getattr(config, "WEDGE_ENABLED", True):
                 w_type, w_entry, w_stop, w_target = cls._detect_wedge(out, i, swing_info)

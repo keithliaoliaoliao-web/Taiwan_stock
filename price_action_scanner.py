@@ -275,8 +275,10 @@ def run_scanner():
             mtr_stop = float(last_row.get("MTR_Stop", 0.0))
             mtr_target = float(last_row.get("MTR_Target", 0.0))
             mtr_risk_pct = round((abs(mtr_entry - mtr_stop) / mtr_entry) * 100, 2) if mtr_entry > 0 else 0.0
+            mtr_confirmed = bool(last_row.get("MTR_Confirmed", False))
             mtr_signals.append({
                 "ticker": ticker, "name": name, "sector": sector, "direction": mtr_dir,
+                "confirmed": mtr_confirmed,
                 "close": round(close_price, 2),
                 "entry_price": round(mtr_entry, 2), "stop_loss": round(mtr_stop, 2),
                 "target_price": round(mtr_target, 2), "risk_pct": mtr_risk_pct,
