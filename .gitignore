@@ -18,3 +18,8 @@ index.html.bak
 .gitignore.bak
 T:/
 .DS_Store
+bt_*.csv
+bt_*.log
+backtest_trades.csv
+evidence_freeze/
+frozen_*.csv
