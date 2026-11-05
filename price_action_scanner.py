@@ -15,7 +15,12 @@ import requests
 import config
 from data_fetcher import fetch_history
 from price_action_engine import PriceActionEngine
-from universe_updater import update_universe
+try:
+    from universe_updater import update_universe
+except Exception:
+    def update_universe():
+        print("[跳過] universe_updater.py 未包含，使用現有 watchlist.csv")
+        return True
 
 
 def sanitize_for_json(obj):
