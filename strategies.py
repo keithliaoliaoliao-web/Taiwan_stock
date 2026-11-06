@@ -223,7 +223,10 @@ def backtest_momentum(data: dict[str, PriceData],
                 raw_close.loc[d, t] = r.loc[d, "Close"]
 
     adj_ret = adj_close.pct_change(MOMENTUM_LOOKBACK)
-    monthly_last = adj_close.resample("ME").last().index
+    # month-end = last TRADING day of that month (not the calendar month-end)
+    monthly_last = pd.DatetimeIndex(
+        adj_close.groupby(adj_close.index.to_period("M")).apply(lambda x: x.index.max())
+    )
     end_ts = pd.Timestamp(end_date) if end_date else adj_close.index[-1]
     sel_months = [d for d in monthly_last if pd.Timestamp(start_date) <= d <= end_ts]
 
